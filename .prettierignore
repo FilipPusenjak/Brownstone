@@ -1,0 +1,10 @@
+.next/
+node_modules/
+src/generated/
+pnpm-lock.yaml
+storage/
+.mail/
+coverage/
+playwright-report/
+test-results/
+prisma/migrations/
