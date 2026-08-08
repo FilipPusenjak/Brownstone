@@ -14,7 +14,7 @@ import next from "eslint-config-next";
  */
 const prismaImportBoundary = {
   files: ["**/*.ts", "**/*.tsx"],
-  ignores: ["src/lib/db/**", "prisma/**", "scripts/**", "tests/**"],
+  ignores: ["src/lib/db/**", "src/lib/auth/config.ts", "prisma/**", "scripts/**", "tests/**"],
   rules: {
     "no-restricted-imports": [
       "error",
@@ -28,7 +28,17 @@ const prismaImportBoundary = {
         ],
         patterns: [
           {
-            group: ["~/generated/prisma", "~/generated/prisma/**", "**/generated/prisma", "**/generated/prisma/**"],
+            // The query surface is off limits; the generated *types* are not.
+            // Enums like Role and EntityType are part of the domain vocabulary
+            // and belong in capability maps and component props. Banning them
+            // would push people to redeclare the enums by hand, which is how
+            // they drift out of sync with the schema.
+            group: [
+              "~/generated/prisma/client",
+              "**/generated/prisma/client",
+              "~/generated/prisma/internal/**",
+              "**/generated/prisma/internal/**",
+            ],
             message:
               "Do not import the generated Prisma client directly. Data access goes through src/lib/db/scoped/*, which requires a BuildingContext. See ARCHITECTURE.md.",
           },
@@ -58,11 +68,14 @@ const config = [
     ],
   },
   {
+    // App Router only. Without this the Next plugin looks for a pages/
+    // directory and warns on every run.
+    settings: { next: { rootDir: import.meta.dirname } },
     rules: {
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
-      ],
+      // Unused locals and parameters are caught by tsconfig's noUnusedLocals
+      // and noUnusedParameters, which run in `pnpm verify`. Duplicating them
+      // here would need the TypeScript plugin registered in this same config
+      // object, for no additional coverage.
       "no-console": ["warn", { allow: ["warn", "error", "info"] }],
       eqeqeq: ["error", "always", { null: "ignore" }],
     },

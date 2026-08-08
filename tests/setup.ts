@@ -5,6 +5,11 @@ import { config as loadDotenv } from "dotenv";
 loadDotenv({ path: ".env.test", quiet: true });
 loadDotenv({ path: ".env", quiet: true });
 
-process.env.NODE_ENV = "test";
-process.env.EMAIL_DRIVER = "catcher";
-process.env.STORAGE_DRIVER = "local";
+// `process.env.NODE_ENV` is typed readonly, so it is assigned through the
+// index signature. Tests must never pick up the development mail or storage
+// driver from a stray .env.
+Object.assign(process.env, {
+  NODE_ENV: "test",
+  EMAIL_DRIVER: "catcher",
+  STORAGE_DRIVER: "local",
+});

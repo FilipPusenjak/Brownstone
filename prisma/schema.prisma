@@ -1,7 +1,23 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Co-operator — domain schema
+//
+// Reading notes for anyone new:
+//
+// 1. `Building` is the tenant root. Every table holding building data carries a
+//    non-nullable `buildingId` with an index, including join tables. There are
+//    exactly four exceptions, all deliberate and all marked: User, Account,
+//    Session and VerificationToken (identity is not owned by a building), plus
+//    ComplianceRule (shared legal reference data, identical for every co-op).
+//
+// 2. Every one of those tenant tables also carries a Postgres row-level
+//    security policy, generated from this file by scripts/generate-rls.ts and
+//    applied in a migration. tests/tenancy/coverage.test.ts fails the build if
+//    a table with a buildingId is missing one.
+//
+// 3. Anything with a legal deadline is `@db.Date`, never a timestamp. A filing
+//    due "March 1" is not due at 00:00 UTC, and treating it as one produces a
+//    calendar that is a day off for five months of the year.
+//
+// 4. Money is integer cents, always, in a field named `...Cents`.
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +26,1494 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Identity — NOT tenant-scoped
+//
+// A person exists independently of any building. Someone who owns in one
+// brownstone and sits on the board of another is rare but real, and modelling
+// it now costs nothing; retrofitting it later costs everything.
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String    @unique
+  name          String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  memberships Membership[]
+}
+
+model Account {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Tenant root
+// ---------------------------------------------------------------------------
+
+model Building {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug   String @unique
+  name   String
+  legalName String?
+
+  addressLine1 String
+  addressLine2 String?
+  borough      Borough
+  zip          String
+  bbl          String?
+  bin          String?
+  communityDistrict String?
+
+  timezone    String      @default("America/New_York")
+  floorNaming FloorNaming @default(BROWNSTONE)
+
+  // Physical attributes. These are the inputs to compliance applicability —
+  // every rule predicate reads from this set and nothing else, which is what
+  // keeps the ruleset declarative.
+  unitCount        Int
+  stories          Int
+  yearBuilt        Int?
+  grossSquareFeet  Int?
+  hasElevator      Boolean         @default(false)
+  gasService       GasService      @default(UNKNOWN)
+  oilTankPresent   Boolean         @default(false)
+  sprinklerStatus  SprinklerStatus @default(UNKNOWN)
+  facadeHeightFt   Int?
+  isLandmarked     Boolean         @default(false)
+  hasParapet       Boolean         @default(true)
+  ownerOccupied    Boolean         @default(true)
+
+  // Where those attributes came from, and whether a human has vouched for
+  // them. An unconfirmed attribute set produces a compliance assessment marked
+  // provisional, because a wrong unit count silently changes which laws apply.
+  attributeSource           AttributeSource @default(MANUAL)
+  attributesConfirmedAt     DateTime?
+  attributesConfirmedById   String?         @db.Uuid
+
+  subletCapPercent Int? // building-wide sublet ceiling, if the house rules set one
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships       Membership[]
+  membershipUnits   MembershipUnit[]
+  invitations       Invitation[]
+  units             Unit[]
+  shareAllocations  ShareAllocation[]
+  unitHoldings      UnitHolding[]
+  ruleAssessments   BuildingRuleAssessment[]
+  obligations       Obligation[]
+  obligationReminders ObligationReminder[]
+  documents         Document[]
+  documentLinks     DocumentLink[]
+  certificates      CertificateOfInsurance[]
+  approvalRequests  ApprovalRequest[]
+  approvalComments  ApprovalComment[]
+  alterations       AlterationRequest[]
+  charges           Charge[]
+  payments          Payment[]
+  paymentPlans      PaymentPlan[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  resources         Resource[]
+  resourcePrereqs   ResourcePrerequisite[]
+  bookings          Booking[]
+  bookingChecks     BookingPrerequisiteCheck[]
+  meetings          Meeting[]
+  meetingAttendance MeetingAttendance[]
+  proxies           Proxy[]
+  resolutions       Resolution[]
+  sublets           SubletRegistration[]
+  tickets           Ticket[]
+  dutyRotations     DutyRotation[]
+  dutyAssignments   DutyAssignment[]
+  dsnyFines         DsnyFine[]
+  noticeCampaigns   NoticeCampaign[]
+  noticeDeliveries  NoticeDelivery[]
+  dataLookups       BuildingDataLookup[]
+}
+
+/// Raw payload from a NYC Open Data lookup, kept so a prefilled attribute can
+/// always be traced back to what the city actually said on a given day.
+model BuildingDataLookup {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String   @db.Uuid
+  source     String // e.g. "pluto", "dob_bis", "hpd_registrations"
+  query      String
+  payload    Json
+  fetchedAt  DateTime @default(now())
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+
+  @@index([buildingId, source])
+}
+
+// ---------------------------------------------------------------------------
+// Membership — the join between a person and a building
+//
+// Roles are a set on the membership, never a type on the user. In a twelve-unit
+// co-op the treasurer *is* a shareholder; any model that separates "board
+// member" from "shareholder" fights that reality on every screen.
+//
+// Roles carry no permission logic. Capabilities are derived from them in
+// src/lib/auth/capabilities.ts and checked at every call site.
+// ---------------------------------------------------------------------------
+
+model Membership {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String           @db.Uuid
+  buildingId String           @db.Uuid
+  roles      Role[]
+  status     MembershipStatus @default(ACTIVE)
+  title      String? // "Board President" as the building writes it, for display only
+  joinedOn   DateTime         @db.Date
+  endedOn    DateTime?        @db.Date
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  building Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  units    MembershipUnit[]
+
+  invitationsSent     Invitation[]             @relation("InvitationInvitedBy")
+  holdings            UnitHolding[]
+  uploadedDocuments   Document[]               @relation("DocumentUploadedBy")
+  verifiedCertificates CertificateOfInsurance[] @relation("CoiVerifiedBy")
+  assessmentDecisions BuildingRuleAssessment[] @relation("AssessmentDecidedBy")
+  assignedObligations Obligation[]             @relation("ObligationAssignee")
+  completedObligations Obligation[]            @relation("ObligationCompletedBy")
+  submittedApprovals  ApprovalRequest[]        @relation("ApprovalSubmittedBy")
+  assignedApprovals   ApprovalRequest[]        @relation("ApprovalAssignee")
+  decidedApprovals    ApprovalRequest[]        @relation("ApprovalDecidedBy")
+  approvalComments    ApprovalComment[]
+  chargesCreated      Charge[]
+  paymentsRecorded    Payment[]
+  bookingsRequested   Booking[]
+  auditLogs           AuditLog[]
+  ticketsReported     Ticket[]                 @relation("TicketReportedBy")
+  proxiesHeld         Proxy[]                  @relation("ProxyHolder")
+
+  @@unique([userId, buildingId])
+  @@index([buildingId])
+  @@index([buildingId, status])
+}
+
+/// Which units a member holds or occupies. A join table, and it carries
+/// buildingId like every other tenant table — a join table is exactly where a
+/// cross-tenant leak hides.
+model MembershipUnit {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId   String       @db.Uuid
+  membershipId String       @db.Uuid
+  unitId       String       @db.Uuid
+  relation     UnitRelation @default(OWNER)
+  createdAt    DateTime     @default(now())
+
+  building   Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  unit       Unit       @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, unitId])
+  @@index([buildingId])
+  @@index([buildingId, unitId])
+}
+
+model Invitation {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId          String    @db.Uuid
+  email               String
+  roles               Role[]
+  unitIds             String[]  @db.Uuid
+  /// SHA-256 of the token. The token itself only ever exists in the emailed
+  /// link, so a database dump does not hand over building access.
+  tokenHash           String    @unique
+  expiresAt           DateTime
+  acceptedAt          DateTime?
+  acceptedByUserId    String?   @db.Uuid
+  revokedAt           DateTime?
+  invitedByMembershipId String  @db.Uuid
+  createdAt           DateTime  @default(now())
+
+  building    Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  invitedBy   Membership @relation("InvitationInvitedBy", fields: [invitedByMembershipId], references: [id], onDelete: Cascade)
+
+  @@index([buildingId])
+  @@index([buildingId, email])
+}
+
+// ---------------------------------------------------------------------------
+// Primitive 3 — Share register
+//
+// Quorum and maintenance in a co-op are share-weighted, never unit-weighted.
+// Both share counts and ownership are stored as dated records rather than
+// current-value fields, so a meeting held in 2021 still computes the quorum it
+// actually had after a 2024 transfer. There is deliberately no `Unit.shares`
+// column: a denormalised mirror of this data is exactly the thing that drifts.
+// ---------------------------------------------------------------------------
+
+model Unit {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String   @db.Uuid
+  label      String // "3R", "GARDEN", "2F" — as the building says it
+  /// Ordinal from the bottom of the stack: 0 is the lowest floor the building
+  /// has. Display names come from Building.floorNaming, so a brownstone reads
+  /// Garden / Parlor / Second and a walk-up reads 1 / 2 / 3.
+  floorIndex Int
+  line       String?
+  unitType   UnitType @default(RESIDENTIAL)
+  createdAt  DateTime @default(now())
+
+  building         Building          @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  memberships      MembershipUnit[]
+  shareAllocations ShareAllocation[]
+  holdings         UnitHolding[]
+  certificates     CertificateOfInsurance[]
+  alterations      AlterationRequest[]
+  charges          Charge[]
+  payments         Payment[]
+  paymentPlans     PaymentPlan[]
+  bookings         Booking[]
+  sublets          SubletRegistration[]
+  tickets          Ticket[]
+  attendance       MeetingAttendance[]
+  proxies          Proxy[]
+  dutyAssignments  DutyAssignment[]
+  dsnyFines        DsnyFine[]
+  noticeDeliveries NoticeDelivery[]
+
+  @@unique([buildingId, label])
+  @@index([buildingId])
+  @@index([buildingId, floorIndex])
+}
+
+model ShareAllocation {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId    String    @db.Uuid
+  unitId        String    @db.Uuid
+  shares        Int
+  effectiveFrom DateTime  @db.Date
+  effectiveTo   DateTime? @db.Date
+  note          String?
+  createdAt     DateTime  @default(now())
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit     Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([buildingId])
+  @@index([buildingId, unitId, effectiveFrom])
+}
+
+model UnitHolding {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId    String    @db.Uuid
+  unitId        String    @db.Uuid
+  /// The name on the stock certificate, which is not always a Co-operator user
+  /// — estates, trusts and LLCs hold co-op shares too.
+  holderName    String
+  membershipId  String?   @db.Uuid
+  effectiveFrom DateTime  @db.Date
+  effectiveTo   DateTime? @db.Date
+  certificateNo String?
+  note          String?
+  createdAt     DateTime  @default(now())
+
+  building   Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit       Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  membership Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+
+  @@index([buildingId])
+  @@index([buildingId, unitId, effectiveFrom])
+}
+
+// ---------------------------------------------------------------------------
+// Compliance ruleset — NOT tenant-scoped
+//
+// The legal requirements are identical for every co-op in the city, so they are
+// shared reference data rather than per-building rows. Each rule records what
+// is required, who requires it, the citation, and a declarative applicability
+// predicate evaluated against Building attributes. No rule logic lives in a
+// conditional anywhere in the app.
+//
+// Rules are upserted by `code` via `pnpm rules:sync`, so a citation can be
+// corrected in production without reseeding tenant data.
+// ---------------------------------------------------------------------------
+
+model ComplianceRule {
+  id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code     String    @unique // "hpd-annual-registration"
+  title    String // "HPD property registration"
+  authority Authority
+  citation String // "NYC Admin Code § 27-2097"
+  sourceUrl String?
+  /// What the building actually has to do, in the words a board member would
+  /// use. This is display copy, not a summary of the statute.
+  requirement String
+  /// Why this rule applies to buildings like yours, shown next to the proposal.
+  appliesWhen String
+
+  /// Declarative predicate over Building attributes, evaluated by
+  /// src/lib/compliance/applicability.ts. Never a hardcoded conditional.
+  applicability Json
+
+  recurrenceType     RecurrenceType
+  intervalMonths     Int?
+  cycleYears         Int?
+  cycleAnchorYear    Int?
+  /// Sub-cycle key for rules the city staggers across the city rather than
+  /// running on one date — facade cycles by block, gas piping by community
+  /// district. Resolved per building at assessment time.
+  cycleGroupSource   String?
+  dueMonth           Int?
+  dueDay             Int?
+  windowOpensMonth   Int?
+  windowOpensDay     Int?
+  anchorOffsetMonths Int?
+
+  /// Days before the due date to send a reminder. Ordered, deduped at send.
+  reminderOffsets Int[]
+
+  /// True when the obligation is real but some detail — the exact filing
+  /// deadline, an exemption boundary — could not be confirmed to a citation.
+  /// Surfaced in the UI as unverified rather than quietly presented as fact. A
+  /// confidently wrong deadline is worse than an absent one.
+  needsVerification Boolean @default(false)
+  verificationNote  String?
+
+  effectiveFrom DateTime? @db.Date
+  effectiveTo   DateTime? @db.Date
+  supersededBy  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assessments BuildingRuleAssessment[]
+
+  @@index([authority])
+}
+
+/// The board's review queue and, afterwards, the permanent record of what the
+/// board decided about each rule.
+///
+/// Nothing reaches the compliance calendar unclaimed: the engine proposes,
+/// a member with `compliance.manage` confirms or dismisses, and the dismissal
+/// reason is kept. When the next board asks "why aren't we tracking gas
+/// inspections", the answer is here with a name and a date on it.
+model BuildingRuleAssessment {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String   @db.Uuid
+  ruleCode   String
+
+  /// What the applicability engine concluded, and the attribute values it
+  /// concluded it from — kept verbatim so a later attribute change can show
+  /// exactly what shifted.
+  engineVerdict Boolean
+  engineReason  String
+  engineInputs  Json
+
+  decision   AssessmentDecision @default(PROPOSED)
+  decidedAt  DateTime?
+  decidedById String?           @db.Uuid
+  decisionNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  building  Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  rule      ComplianceRule @relation(fields: [ruleCode], references: [code], onDelete: Cascade)
+  decidedBy Membership?    @relation("AssessmentDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  obligations Obligation[]
+
+  @@unique([buildingId, ruleCode])
+  @@index([buildingId])
+  @@index([buildingId, decision])
+}
+
+// ---------------------------------------------------------------------------
+// Primitive 1 — Obligations
+//
+// A duty with a due date, an owner, a status lifecycle and a reminder
+// schedule. One table serves the compliance calendar, annual notices, COI
+// expiry, sublet expiry and the trash rotation.
+//
+// Recurrence is modelled as data, not as a cron string. "Next inspection is due
+// three years after the last one passed" has no cron expression, and it is the
+// single most common shape in building compliance.
+//
+// Note what is absent: a stored status column. Status is derived from dueOn,
+// completedOn and waivedAt at read time. A stored status goes stale the first
+// day nobody runs the cron, and a compliance calendar that is quietly stale is
+// worse than no calendar.
+// ---------------------------------------------------------------------------
+
+model Obligation {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String         @db.Uuid
+  kind       ObligationKind
+  title      String
+  detail     String?
+
+  /// Set when this obligation came from the compliance ruleset. Null for
+  /// one-off duties a board adds by hand.
+  assessmentId String? @db.Uuid
+  ruleCode     String?
+
+  /// Legally date-only. See the note at the top of this file.
+  dueOn DateTime @db.Date
+  /// When work can begin — a filing window that opens on 1 December is not
+  /// something to nag about in June.
+  opensOn DateTime? @db.Date
+
+  recurrenceType     RecurrenceType @default(NONE)
+  intervalMonths     Int?
+  cycleYears         Int?
+  cycleAnchorYear    Int?
+  cycleGroup         String?
+  dueMonth           Int?
+  dueDay             Int?
+  anchorOffsetMonths Int?
+  reminderOffsets    Int[]
+
+  state         ObligationState @default(OPEN)
+  completedOn   DateTime?       @db.Date
+  completedById String?         @db.Uuid
+  completionNote String?
+  waivedAt      DateTime?
+  waivedReason  String?
+
+  assigneeId String? @db.Uuid
+
+  /// Polymorphic link to whatever this obligation is about: the COI that
+  /// expires, the sublet that ends, the unit whose turn it is.
+  subjectType EntityType?
+  subjectId   String?     @db.Uuid
+
+  /// Recurring obligations chain: completing one generates the next, and the
+  /// chain is how "3 years after the last passing inspection" stays anchored.
+  parentObligationId String? @db.Uuid
+
+  needsVerification Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  building    Building                @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  assessment  BuildingRuleAssessment? @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
+  assignee    Membership?             @relation("ObligationAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  completedBy Membership?             @relation("ObligationCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  parent      Obligation?             @relation("ObligationChain", fields: [parentObligationId], references: [id], onDelete: SetNull)
+  children    Obligation[]            @relation("ObligationChain")
+
+  reminders     ObligationReminder[]
+  certificates  CertificateOfInsurance[]
+  dutyAssignments DutyAssignment[]
+  noticeCampaigns NoticeCampaign[]
+
+  @@index([buildingId])
+  @@index([buildingId, state, dueOn])
+  @@index([buildingId, subjectType, subjectId])
+}
+
+/// One row per (obligation, offset, scheduled date). The unique constraint is
+/// the cron's idempotency key: a double invocation cannot double-send, because
+/// the second insert loses the race rather than queuing a second email.
+model ObligationReminder {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId   String    @db.Uuid
+  obligationId String    @db.Uuid
+  offsetDays   Int
+  scheduledFor DateTime  @db.Date
+  sentAt       DateTime?
+  notificationId String? @db.Uuid
+  createdAt    DateTime  @default(now())
+
+  building   Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  obligation Obligation @relation(fields: [obligationId], references: [id], onDelete: Cascade)
+
+  @@unique([obligationId, offsetDays, scheduledFor])
+  @@index([buildingId])
+  @@index([buildingId, scheduledFor])
+}
+
+// ---------------------------------------------------------------------------
+// Primitive 2 — Document store
+//
+// An uploaded file with a type, an optional expiry, and links to any number of
+// entities. Expiry is a first-class column because the whole value of tracking
+// a certificate of insurance is being told before it lapses, not after.
+// ---------------------------------------------------------------------------
+
+model Document {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String       @db.Uuid
+  type       DocumentType
+  title      String
+
+  /// Object storage key, always namespaced buildings/{buildingId}/... . Never
+  /// a URL: downloads are issued as short-lived presigned GETs after a
+  /// capability check, so there is no such thing as a public document link.
+  storageKey  String  @unique
+  contentType String
+  sizeBytes   Int
+  checksum    String?
+
+  uploadedById String?   @db.Uuid
+  issuedOn     DateTime? @db.Date
+  expiresOn    DateTime? @db.Date
+
+  /// Soft delete only. A document referenced by a decision record is part of
+  /// that record; hard deletion is not exposed anywhere in the app.
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  building     Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  uploadedBy   Membership? @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  links        DocumentLink[]
+  certificates CertificateOfInsurance[]
+  noticeDeliveries NoticeDelivery[]
+
+  @@index([buildingId])
+  @@index([buildingId, type])
+  @@index([buildingId, expiresOn])
+}
+
+model DocumentLink {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String     @db.Uuid
+  documentId String     @db.Uuid
+  entityType EntityType
+  entityId   String     @db.Uuid
+  createdAt  DateTime   @default(now())
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, entityType, entityId])
+  @@index([buildingId])
+  @@index([buildingId, entityType, entityId])
+}
+
+model CertificateOfInsurance {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String       @db.Uuid
+  documentId String?      @db.Uuid
+  holderKind CoiHolderKind
+  holderName String
+  unitId     String?      @db.Uuid
+  alterationRequestId String? @db.Uuid
+
+  carrier       String
+  policyNumber  String
+  coverageCents Int?
+  effectiveOn   DateTime @db.Date
+  expiresOn     DateTime @db.Date
+
+  /// The single most common defect in a co-op COI: the certificate is valid but
+  /// does not name the corporation as an additional insured, which makes it
+  /// worthless to the building. Tracked as its own verified fact.
+  additionalInsuredVerified Boolean   @default(false)
+  verifiedById              String?   @db.Uuid
+  verifiedAt                DateTime?
+  note                      String?
+
+  /// The expiry obligation generated for this certificate, so the alert has a
+  /// home on the same calendar as everything else.
+  obligationId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  building   Building           @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  document   Document?          @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  unit       Unit?              @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  alteration AlterationRequest? @relation(fields: [alterationRequestId], references: [id], onDelete: SetNull)
+  verifiedBy Membership?        @relation("CoiVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  obligation Obligation?        @relation(fields: [obligationId], references: [id], onDelete: SetNull)
+
+  @@index([buildingId])
+  @@index([buildingId, expiresOn])
+  @@index([buildingId, unitId])
+}
+
+// ---------------------------------------------------------------------------
+// Primitive 7 — Approval workflow
+//
+// Submitted → under review → decided, with a comment thread, an assignee, and a
+// decision record naming the officer who decided. Alterations, sublets and
+// ticket responsibility determinations are all this shape, so they are all this
+// table plus a detail table.
+// ---------------------------------------------------------------------------
+
+model ApprovalRequest {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId  String         @db.Uuid
+  kind        ApprovalKind
+  status      ApprovalStatus @default(DRAFT)
+
+  submittedById String    @db.Uuid
+  assigneeId    String?   @db.Uuid
+  submittedAt   DateTime?
+
+  decidedAt    DateTime?
+  decidedById  String?   @db.Uuid
+  decisionNote String?
+  /// Approvals in small co-ops are rarely unconditional — "approved, provided
+  /// work stops at 5pm and the mover's COI is on file". The conditions are the
+  /// operative part of the decision, so they are stored, not buried in a note.
+  conditions   String?
+
+  withdrawnAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  building    Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  submittedBy Membership  @relation("ApprovalSubmittedBy", fields: [submittedById], references: [id], onDelete: Cascade)
+  assignee    Membership? @relation("ApprovalAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  decidedBy   Membership? @relation("ApprovalDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  comments  ApprovalComment[]
+  alteration AlterationRequest?
+  sublet     SubletRegistration?
+  ticket     Ticket?
+
+  @@index([buildingId])
+  @@index([buildingId, kind, status])
+}
+
+model ApprovalComment {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String            @db.Uuid
+  requestId  String            @db.Uuid
+  authorId   String            @db.Uuid
+  body       String
+  /// BOARD_ONLY comments are invisible to the shareholder who filed the
+  /// request. Boards need somewhere to say "we should ask about the plumbing
+  /// riser" without it reading as a decision.
+  visibility CommentVisibility @default(SHARED)
+  createdAt  DateTime          @default(now())
+
+  building Building        @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  request  ApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author   Membership      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([buildingId])
+  @@index([buildingId, requestId])
+}
+
+model AlterationRequest {
+  id                String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId        String @db.Uuid
+  unitId            String @db.Uuid
+  approvalRequestId String @unique @db.Uuid
+
+  title String
+  scope String
+
+  contractorName    String?
+  contractorLicense String?
+  contractorPhone   String?
+
+  /// Wet-over-dry — a bathroom or kitchen moved over a neighbour's dry room —
+  /// is the classic alteration a co-op board refuses, so it is asked directly
+  /// rather than left to be discovered in the plans.
+  wetOverDry       Boolean @default(false)
+  affectsStructure Boolean @default(false)
+  affectsRiser     Boolean @default(false)
+  requiresDobPermit Boolean @default(false)
+  dobJobNumber     String?
+
+  plannedStart DateTime? @db.Date
+  plannedEnd   DateTime? @db.Date
+  completedOn  DateTime? @db.Date
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  building Building        @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit     Unit            @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  approval ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
+  certificates CertificateOfInsurance[]
+
+  @@index([buildingId])
+  @@index([buildingId, unitId])
+}
+
+// ---------------------------------------------------------------------------
+// Primitive 4 — Ledger
+//
+// Append-only. There is no update or delete path exposed for either table; a
+// correction is a reversing entry that points at what it reverses. Integer
+// cents throughout — a maintenance ledger is the last place to discover that
+// 0.1 + 0.2 is not 0.3.
+// ---------------------------------------------------------------------------
+
+model Charge {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String     @db.Uuid
+  unitId     String     @db.Uuid
+  kind       ChargeKind
+  amountCents Int
+  dueOn      DateTime   @db.Date
+  postedOn   DateTime   @db.Date
+  memo       String?
+
+  reversesChargeId String? @db.Uuid
+  createdById      String? @db.Uuid
+  createdAt        DateTime @default(now())
+
+  building  Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit      Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  createdBy Membership? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  reverses  Charge?     @relation("ChargeReversal", fields: [reversesChargeId], references: [id], onDelete: SetNull)
+  reversedBy Charge[]   @relation("ChargeReversal")
+
+  @@index([buildingId])
+  @@index([buildingId, unitId, dueOn])
+}
+
+model Payment {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId  String        @db.Uuid
+  unitId      String        @db.Uuid
+  amountCents Int
+  receivedOn  DateTime      @db.Date
+  /// Payments are *recorded*, never collected. Co-operator does not touch money
+  /// and has no payment processor by design.
+  method      PaymentMethod
+  reference   String?
+  memo        String?
+
+  reversesPaymentId String? @db.Uuid
+  recordedById      String? @db.Uuid
+  createdAt         DateTime @default(now())
+
+  building   Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit       Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  recordedBy Membership? @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  reverses   Payment?    @relation("PaymentReversal", fields: [reversesPaymentId], references: [id], onDelete: SetNull)
+  reversedBy Payment[]   @relation("PaymentReversal")
+
+  @@index([buildingId])
+  @@index([buildingId, unitId, receivedOn])
+}
+
+model PaymentPlan {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId     String   @db.Uuid
+  unitId         String   @db.Uuid
+  totalCents     Int
+  installmentCents Int
+  startsOn       DateTime @db.Date
+  endsOn         DateTime @db.Date
+  note           String?
+  createdAt      DateTime @default(now())
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit     Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([buildingId])
+  @@index([buildingId, unitId])
+}
+
+// ---------------------------------------------------------------------------
+// Primitive 6 — Notification log
+//
+// Not observability. When a shareholder says they never received the window
+// guard notice, this table is the building's defence, so the record is written
+// before dispatch and updated from the provider's delivery webhook afterwards.
+// Immutable apart from the status fields.
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String @db.Uuid
+
+  recipientEmail  String
+  recipientUserId String? @db.Uuid
+  template        String
+  subject         String
+  payload         Json
+  /// The plain-text rendering, stored verbatim. Proving delivery means being
+  /// able to show what was actually sent, not re-rendering today's template
+  /// against today's data.
+  textBody        String
+
+  status            NotificationStatus @default(QUEUED)
+  providerMessageId String?
+  /// Deduplication key. Reminder sends derive it from
+  /// (obligation, offset, date), so a retried cron cannot double-send.
+  dedupeKey         String             @unique
+
+  queuedAt    DateTime  @default(now())
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  failedAt    DateTime?
+  lastError   String?
+
+  subjectType EntityType?
+  subjectId   String?     @db.Uuid
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+
+  @@index([buildingId])
+  @@index([buildingId, status])
+  @@index([buildingId, subjectType, subjectId])
+}
+
+/// Append-only. Board turnover is the reason this product exists; this table is
+/// the continuity. Never exposed as mutable — there is no update or delete path.
+model AuditLog {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String     @db.Uuid
+  actorUserId String?   @db.Uuid
+  actorMembershipId String? @db.Uuid
+  /// Dotted verb matching the capability that authorised it:
+  /// "obligation.complete", "alteration.decide".
+  action     String
+  entityType EntityType
+  entityId   String     @db.Uuid
+  before     Json?
+  after      Json?
+  summary    String?
+  createdAt  DateTime   @default(now())
+
+  building        Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  actorMembership Membership? @relation(fields: [actorMembershipId], references: [id], onDelete: SetNull)
+
+  @@index([buildingId])
+  @@index([buildingId, entityType, entityId])
+  @@index([buildingId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Primitive 5 — Bookable resources
+//
+// A resource, a slot, and prerequisites that must be satisfied before a booking
+// confirms. The freight elevator needs a deposit and a valid mover COI; because
+// prerequisites are a registry rather than a special case, the roof deck needs
+// only a row.
+// ---------------------------------------------------------------------------
+
+model Resource {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId  String       @db.Uuid
+  name        String
+  kind        ResourceKind
+  slotMinutes Int          @default(240)
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+
+  building      Building               @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  prerequisites ResourcePrerequisite[]
+  bookings      Booking[]
+
+  @@index([buildingId])
+}
+
+model ResourcePrerequisite {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String           @db.Uuid
+  resourceId String           @db.Uuid
+  type       PrerequisiteType
+  /// Type-specific settings — the deposit amount, the minimum COI coverage.
+  /// Validated by the checker registered for `type`.
+  config     Json
+  createdAt  DateTime         @default(now())
+
+  building Building  @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  resource Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  checks   BookingPrerequisiteCheck[]
+
+  @@index([buildingId])
+  @@index([buildingId, resourceId])
+}
+
+model Booking {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String        @db.Uuid
+  resourceId String        @db.Uuid
+  unitId     String        @db.Uuid
+  requestedById String     @db.Uuid
+  startsAt   DateTime
+  endsAt     DateTime
+  status     BookingStatus @default(HELD)
+  note       String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  building    Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  resource    Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  unit        Unit       @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  requestedBy Membership @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+  checks      BookingPrerequisiteCheck[]
+
+  @@index([buildingId])
+  @@index([buildingId, resourceId, startsAt])
+}
+
+model BookingPrerequisiteCheck {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId     String      @db.Uuid
+  bookingId      String      @db.Uuid
+  prerequisiteId String      @db.Uuid
+  satisfied      Boolean
+  checkedAt      DateTime    @default(now())
+  evidenceType   EntityType?
+  evidenceId     String?     @db.Uuid
+  note           String?
+
+  building     Building             @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  booking      Booking              @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  prerequisite ResourcePrerequisite @relation(fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, prerequisiteId])
+  @@index([buildingId])
+}
+
+// ---------------------------------------------------------------------------
+// Scaffolded modules
+//
+// Real tables with real seeded rows and a working list view. Each module folder
+// carries a TODO.md saying exactly what is missing. A clean stub beats a
+// half-built feature.
+// ---------------------------------------------------------------------------
+
+model Meeting {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String      @db.Uuid
+  title      String
+  type       MeetingType @default(ANNUAL)
+  scheduledFor DateTime
+  location   String?
+  /// Quorum threshold in basis points of total shares — 5000 is 50%. Co-op
+  /// bylaws routinely say two-thirds, which is not expressible in whole
+  /// percent without rounding someone out of a vote.
+  quorumBasisPoints Int  @default(5000)
+  minutesDocumentId String? @db.Uuid
+  heldAt     DateTime?
+  createdAt  DateTime    @default(now())
+
+  building   Building            @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  attendance MeetingAttendance[]
+  proxies    Proxy[]
+  resolutions Resolution[]
+
+  @@index([buildingId])
+  @@index([buildingId, scheduledFor])
+}
+
+model MeetingAttendance {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String         @db.Uuid
+  meetingId  String         @db.Uuid
+  unitId     String         @db.Uuid
+  mode       AttendanceMode @default(IN_PERSON)
+  recordedAt DateTime       @default(now())
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  meeting  Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  unit     Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, unitId])
+  @@index([buildingId])
+}
+
+model Proxy {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String   @db.Uuid
+  meetingId  String   @db.Uuid
+  unitId     String   @db.Uuid
+  holderId   String?  @db.Uuid
+  holderName String
+  grantedAt  DateTime @default(now())
+  revokedAt  DateTime?
+  /// How the grant was captured, kept because a proxy is only as good as the
+  /// evidence that it was granted.
+  evidence   String?
+
+  building Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  meeting  Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  unit     Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  holder   Membership? @relation("ProxyHolder", fields: [holderId], references: [id], onDelete: SetNull)
+
+  @@unique([meetingId, unitId])
+  @@index([buildingId])
+}
+
+model Resolution {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String   @db.Uuid
+  meetingId  String   @db.Uuid
+  title      String
+  text       String
+  sharesFor  Int      @default(0)
+  sharesAgainst Int   @default(0)
+  sharesAbstain Int   @default(0)
+  passed     Boolean?
+  createdAt  DateTime @default(now())
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  meeting  Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([buildingId])
+}
+
+model SubletRegistration {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId        String    @db.Uuid
+  unitId            String    @db.Uuid
+  approvalRequestId String?   @unique @db.Uuid
+  subtenantName     String
+  termStart         DateTime  @db.Date
+  termEnd           DateTime  @db.Date
+  feeCents          Int       @default(0)
+  obligationId      String?   @db.Uuid
+  createdAt         DateTime  @default(now())
+
+  building Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit     Unit             @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  approval ApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: SetNull)
+
+  @@index([buildingId])
+  @@index([buildingId, termEnd])
+}
+
+model Ticket {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String         @db.Uuid
+  unitId     String?        @db.Uuid
+  reportedById String       @db.Uuid
+  title      String
+  detail     String
+  area       String?
+  status     TicketStatus   @default(OPEN)
+  priority   TicketPriority @default(NORMAL)
+  /// Who pays. In a co-op this is the question every repair turns into, so the
+  /// determination is a written record with an officer's name on it rather than
+  /// a conversation nobody can reconstruct two boards later.
+  responsibility Responsibility @default(UNDETERMINED)
+  approvalRequestId String?  @unique @db.Uuid
+  resolvedAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  building   Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit       Unit?            @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  reportedBy Membership       @relation("TicketReportedBy", fields: [reportedById], references: [id], onDelete: Cascade)
+  approval   ApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: SetNull)
+
+  @@index([buildingId])
+  @@index([buildingId, status])
+}
+
+model DutyRotation {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String   @db.Uuid
+  name       String
+  kind       DutyKind @default(TRASH_SET_OUT)
+  /// Unit ids in rotation order. Order is the point, so it is stored as an
+  /// ordered array rather than inferred from unit labels.
+  unitOrder  String[] @db.Uuid
+  startsOn   DateTime @db.Date
+  periodDays Int      @default(7)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  building    Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  assignments DutyAssignment[]
+
+  @@index([buildingId])
+}
+
+model DutyAssignment {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId   String   @db.Uuid
+  rotationId   String   @db.Uuid
+  unitId       String   @db.Uuid
+  periodStart  DateTime @db.Date
+  periodEnd    DateTime @db.Date
+  obligationId String?  @db.Uuid
+  createdAt    DateTime @default(now())
+
+  building   Building     @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  rotation   DutyRotation @relation(fields: [rotationId], references: [id], onDelete: Cascade)
+  unit       Unit         @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  obligation Obligation?  @relation(fields: [obligationId], references: [id], onDelete: SetNull)
+
+  @@unique([rotationId, periodStart])
+  @@index([buildingId])
+}
+
+model DsnyFine {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId   String   @db.Uuid
+  unitId       String?  @db.Uuid
+  ticketNumber String
+  issuedOn     DateTime @db.Date
+  violation    String
+  amountCents  Int
+  paidOn       DateTime? @db.Date
+  contestedOn  DateTime? @db.Date
+  note         String?
+  createdAt    DateTime @default(now())
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit     Unit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
+
+  @@index([buildingId])
+}
+
+model NoticeCampaign {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId   String     @db.Uuid
+  noticeType   NoticeType
+  year         Int
+  dueOn        DateTime   @db.Date
+  obligationId String?    @db.Uuid
+  sentAt       DateTime?
+  createdAt    DateTime   @default(now())
+
+  building   Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  obligation Obligation?      @relation(fields: [obligationId], references: [id], onDelete: SetNull)
+  deliveries NoticeDelivery[]
+
+  @@unique([buildingId, noticeType, year])
+  @@index([buildingId])
+}
+
+model NoticeDelivery {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId     String   @db.Uuid
+  campaignId     String   @db.Uuid
+  unitId         String   @db.Uuid
+  recipientName  String
+  recipientEmail String?
+  notificationId String?  @db.Uuid
+  /// Proof of delivery — the signed return card, the photo of the notice under
+  /// the door. The reason the module exists.
+  documentId     String?  @db.Uuid
+  respondedAt    DateTime?
+  response       Json?
+  createdAt      DateTime @default(now())
+
+  building Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  campaign NoticeCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  unit     Unit           @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  document Document?      @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, unitId])
+  @@index([buildingId])
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SHAREHOLDER
+  PRESIDENT
+  TREASURER
+  SECRETARY
+  BOARD_MEMBER
+  SUPER
+  OBSERVER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  FORMER
+}
+
+enum UnitRelation {
+  OWNER
+  OCCUPANT
+}
+
+enum UnitType {
+  RESIDENTIAL
+  COMMERCIAL
+  STORAGE
+  COMMON
+}
+
+enum Borough {
+  MANHATTAN
+  BROOKLYN
+  QUEENS
+  BRONX
+  STATEN_ISLAND
+}
+
+enum FloorNaming {
+  BROWNSTONE
+  NUMERIC
+}
+
+enum GasService {
+  NONE
+  COOKING_ONLY
+  HEATING_AND_COOKING
+  UNKNOWN
+}
+
+enum SprinklerStatus {
+  NONE
+  PARTIAL
+  FULL
+  UNKNOWN
+}
+
+enum AttributeSource {
+  MANUAL
+  NYC_OPEN_DATA
+  MIXED
+}
+
+enum Authority {
+  DOB
+  HPD
+  FDNY
+  DEP
+  DSNY
+  DOHMH
+  DOF
+  OTHER
+}
+
+enum RecurrenceType {
+  NONE
+  FIXED_INTERVAL
+  CYCLICAL_BY_YEAR
+  ANCHORED_TO_COMPLETION
+}
+
+enum AssessmentDecision {
+  PROPOSED
+  CONFIRMED
+  DISMISSED
+}
+
+enum ObligationKind {
+  COMPLIANCE
+  NOTICE
+  COI_EXPIRY
+  SUBLET_EXPIRY
+  DUTY
+  CUSTOM
+}
+
+enum ObligationState {
+  OPEN
+  COMPLETED
+  WAIVED
+  NOT_APPLICABLE
+}
+
+enum EntityType {
+  BUILDING
+  MEMBERSHIP
+  UNIT
+  OBLIGATION
+  DOCUMENT
+  CERTIFICATE_OF_INSURANCE
+  APPROVAL_REQUEST
+  ALTERATION_REQUEST
+  SUBLET_REGISTRATION
+  CHARGE
+  PAYMENT
+  BOOKING
+  MEETING
+  TICKET
+  DUTY_ASSIGNMENT
+  NOTICE_CAMPAIGN
+  NOTICE_DELIVERY
+  INVITATION
+}
+
+enum DocumentType {
+  CERTIFICATE_OF_INSURANCE
+  INSPECTION_REPORT
+  FILING_RECEIPT
+  NOTICE_PROOF
+  ALTERATION_PLAN
+  TICKET_PHOTO
+  MEETING_MINUTES
+  PROPRIETARY_LEASE
+  HOUSE_RULES
+  OTHER
+}
+
+enum CoiHolderKind {
+  SHAREHOLDER
+  CONTRACTOR
+  MOVER
+  VENDOR
+}
+
+enum ApprovalKind {
+  ALTERATION
+  SUBLET
+  TICKET_RESPONSIBILITY
+}
+
+enum ApprovalStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  APPROVED_WITH_CONDITIONS
+  DENIED
+  WITHDRAWN
+}
+
+enum CommentVisibility {
+  SHARED
+  BOARD_ONLY
+}
+
+enum ChargeKind {
+  MAINTENANCE
+  ASSESSMENT
+  LATE_FEE
+  SUBLET_FEE
+  DEPOSIT
+  MOVE_FEE
+  LEGAL_FEE
+  OTHER
+}
+
+enum PaymentMethod {
+  CHECK
+  ACH_MANUAL
+  CASH
+  MONEY_ORDER
+  OTHER
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  BOUNCED
+  COMPLAINED
+  FAILED
+}
+
+enum ResourceKind {
+  FREIGHT_ELEVATOR
+  ROOF_DECK
+  LAUNDRY
+  COMMON_ROOM
+  STORAGE
+  COURTYARD
+}
+
+enum PrerequisiteType {
+  DEPOSIT_PAID
+  VALID_COI
+  NO_ARREARS
+  APPROVED_ALTERATION
+}
+
+enum BookingStatus {
+  HELD
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum MeetingType {
+  ANNUAL
+  SPECIAL
+  BOARD
+}
+
+enum AttendanceMode {
+  IN_PERSON
+  REMOTE
+  PROXY
+}
+
+enum TicketStatus {
+  OPEN
+  TRIAGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  URGENT
+  EMERGENCY
+}
+
+enum Responsibility {
+  UNDETERMINED
+  SHAREHOLDER
+  COOPERATIVE
+  SHARED
+}
+
+enum DutyKind {
+  TRASH_SET_OUT
+  RECYCLING_SET_OUT
+  SIDEWALK
+  OTHER
+}
+
+enum NoticeType {
+  WINDOW_GUARD
+  LEAD_PAINT
+  STOVE_KNOB_COVER
+  SPRINKLER_STATUS
+  BEDBUG_HISTORY
+  GAS_LEAK_PROCEDURE
 }

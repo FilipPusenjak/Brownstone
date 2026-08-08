@@ -7,9 +7,6 @@ const nextConfig: NextConfig = {
     // themselves — uploads go straight to object storage over a presigned PUT.
     serverActions: { bodySizeLimit: "1mb" },
   },
-  eslint: {
-    dirs: ["src", "tests", "scripts", "prisma"],
-  },
 };
 
 export default nextConfig;

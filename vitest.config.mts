@@ -7,6 +7,7 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./tests/setup.ts"],
+    globalSetup: ["./tests/global-setup.ts"],
     include: ["tests/**/*.test.ts", "src/**/*.test.ts"],
     exclude: ["tests/e2e/**", "node_modules/**"],
     // Tenancy tests share one Postgres database and assert on absolute row
