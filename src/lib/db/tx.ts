@@ -108,9 +108,8 @@ export async function withMemberBootstrapTx<T>(
 
 /**
  * Runs `fn` with no tenant setting, for the handful of operations that are
- * genuinely tenant-free: Auth.js session and verification-token tables, the
- * shared compliance ruleset, and invitation redemption, where the whole point
- * is that the caller does not yet belong to the building.
+ * genuinely tenant-free: the Auth.js user, session and verification-token
+ * tables, and the shared compliance ruleset.
  *
  * None of those tables carry RLS, so this grants nothing extra — it exists to
  * make the intent legible at the call site and greppable in review. A tenant
@@ -146,6 +145,37 @@ export async function withUntenantedTx<T>(fn: (tx: ScopedTx) => Promise<T>): Pro
 export async function withJobTx<T>(fn: (tx: ScopedTx) => Promise<T>): Promise<T> {
   return prisma.$transaction(async (tx) => {
     await tx.$executeRawUnsafe(`SET LOCAL app.job_scope = 'all_buildings'`);
+    return fn(tx);
+  }, TX_OPTIONS);
+}
+
+/**
+ * Runs `fn` with permission to read exactly one invitation: the one whose token
+ * the caller can already present.
+ *
+ * Someone following an invitation link has no membership yet, so there is no
+ * tenant to resolve, and `tenant_isolation` would hide the very row that is
+ * about to grant them one. Rather than widening the job scope to cover
+ * Invitation — which would make every invitation in every building readable by
+ * any background code path — the policy matches on the hash itself. The scope
+ * is one row wide, and the caller must already hold the token to open it.
+ *
+ * Everything after "which building is this?" runs in `withBuildingTx`.
+ */
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+
+export async function withInvitationTokenTx<T>(
+  tokenHash: string,
+  fn: (tx: ScopedTx) => Promise<T>,
+): Promise<T> {
+  if (!SHA256_HEX.test(tokenHash)) {
+    throw new Error("tokenHash must be a sha-256 hex digest");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(
+      `SET LOCAL app.invitation_token_hash = '${tokenHash}'`,
+    );
     return fn(tx);
   }, TX_OPTIONS);
 }

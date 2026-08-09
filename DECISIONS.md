@@ -302,3 +302,92 @@ verification runs the real Svix algorithm.
 verified (a DNS matter no code can prove); and inbox placement. All three are
 first-deploy checks, not logic. Do a single live test send before trusting the
 notices module with a legally required notice.
+
+---
+
+## Invitations, and the rest of M8
+
+**An invitation is bound to the address it was sent to.**
+Accepting requires being signed in as the invited person. Email gets forwarded —
+"here's the co-op thing, can you take a look?" — and without this binding a
+forwarded link is a membership for whoever opens it. The friction is one
+sentence on a page ("this invitation was sent to …"); the failure it prevents is
+a stranger inside a building's records. Rejected: treating the token alone as
+proof, which is how most invite systems work and why forwarded invites are a
+recurring class of incident.
+
+**The token is never stored.** Only its SHA-256 hash, looked up by hash and
+compared in constant time. A database dump, a leaked backup or a read replica
+hands over hashes, not building access. It expires in fourteen days, is
+single-use, and can be withdrawn — a board that invites the wrong address needs
+to close that door before the wrong person notices, so the members page lists
+every invitation still outstanding.
+
+**Every invalid case gets the same sentence.** No such token, revoked, wrong
+building — all "That invitation link isn't valid", so a caller cannot learn
+which invitations exist by probing. Expiry and revocation are the exceptions:
+those are told plainly, because the person holding that link is almost always
+the invited neighbour and "ask the board for a new one" is the useful answer.
+
+**Accepting is a button, not a page load.** A mail client or a corporate link
+scanner that prefetches the URL would otherwise consume the invitation before
+the person ever saw it — the single-use rule turned against its owner.
+
+**Inviting is not promoting.** `member.invite` lets an officer add a neighbour;
+attaching an officer role additionally requires `member.manage`. Without that
+split, a treasurer could mint a president by inviting one.
+
+**A one-row RLS scope for redemption.**
+Someone following an invitation link has no membership yet, so there is no
+tenant to resolve and `tenant_isolation` hides the row that is about to grant
+them one. Rejected: adding `Invitation` to the background job scope, which would
+make every invitation in every building readable by any code path that opens a
+job transaction. Instead `invitation_by_token` matches on the token hash the
+caller has already presented: the scope is one row wide, enumeration is
+impossible, and the rest of redemption runs inside `withBuildingTx` like
+everything else. `tests/tenancy/rls.test.ts` asserts that scope reads exactly
+one row, reads nothing else, and cannot write.
+
+**The boot guard gained an opt-out that cannot reach production.**
+`next start` sets `NODE_ENV=production`, and the guard refuses the catcher mail
+driver there — correctly, since a deployment that writes notices to a temporary
+disk reports success and sends nothing. But the smoke test needs exactly that:
+a real production build whose magic links it can read. So
+`ALLOW_DEV_DRIVERS_IN_PRODUCTION=1` lifts the two driver checks and is ignored
+outright when `VERCEL=1`. Pasting it into a Vercel project's environment does
+nothing at all, which is the only version of this flag worth having.
+
+**Three pages existed only in the navigation.** Units, Documents and the audit
+trail were linked from the shell and had no routes, as did `/verify-request` —
+the page Auth.js sends every person to immediately after they ask for a sign-in
+link. That one was the worst of the four: the primary path into the product
+ended on a 404. All four are now built, along with a 404 page that reads as part
+of the product rather than as a framework default.
+
+**The 404 page has to serve two meanings at once.** A building you are not a
+member of returns 404 rather than 403, deliberately, so a stranger cannot
+confirm a co-op exists at a slug. That means the wording must cover "no such
+page" and "not yours" without telling the reader which one they hit.
+
+### The smoke test, and what it is worth
+
+`tests/e2e/smoke.spec.ts` runs one path: a president signs in, invites a
+neighbour as a board member, the neighbour opens the link, is bounced to sign in
+and carried back, joins, confirms a proposed requirement onto the calendar,
+files it, and is refused the other building with a 404. Nothing in it reaches
+into the database to fake a session — it reads magic links out of `./.mail` the
+way a person reads them out of an inbox.
+
+It earned its place by finding four defects that unit tests could not: a
+cookie-host mismatch that made sign-in silently fail whenever the app was driven
+on `127.0.0.1` while issuing links for `localhost`; a sign-in page that dropped
+the invitation token, sending an invited person to a building list they are not
+a member of; the missing `/verify-request` page; and the three dead navigation
+links. The first two are invisible to any test that does not use a real browser
+and a real inbox.
+
+Two things about running it. It needs a browser Playwright can find —
+`PLAYWRIGHT_CHROMIUM_PATH` overrides the executable where the container ships
+one at a fixed path. And it drives one host end to end, because `localhost` and
+`127.0.0.1` are different hosts to a cookie jar; the config picks the host and
+hands it to the server as `AUTH_URL` rather than letting the two disagree.

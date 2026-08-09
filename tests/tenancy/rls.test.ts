@@ -237,6 +237,116 @@ describe("row-level security", () => {
     }
   });
 
+  it("confines the invitation scope to the single row whose token is presented", async () => {
+    // The one pre-tenant read in the product: a visitor holding an invitation
+    // link has no membership yet. The database hands over exactly the row whose
+    // hash they can already produce — so the scope cannot be used to enumerate
+    // invitations, and cannot be used to read anything else at all.
+    await client.query("BEGIN");
+    try {
+      await client.query(`SET LOCAL app.current_building_id = '${adelaideId}'`);
+
+      const mine = `rls-probe-${Date.now().toString(16)}`.padEnd(64, "0");
+      const theirs = `rls-other-${Date.now().toString(16)}`.padEnd(64, "0");
+
+      for (const [buildingId, hash] of [
+        [adelaideId, mine],
+        [adelaideId, theirs],
+      ] as const) {
+        await client.query(
+          `INSERT INTO "Invitation"
+             ("buildingId", email, roles, "unitIds", "tokenHash", "expiresAt",
+              "invitedByMembershipId")
+           SELECT $1, 'probe@example.com', ARRAY['SHAREHOLDER']::"Role"[],
+                  ARRAY[]::uuid[], $2, now() + interval '14 days', m.id
+           FROM "Membership" m WHERE m."buildingId" = $1 LIMIT 1`,
+          [buildingId, hash],
+        );
+      }
+
+      // Drop the tenant and pick up the invitation scope.
+      await client.query(`SET LOCAL app.current_building_id = ''`);
+      await client.query(`SET LOCAL app.invitation_token_hash = '${mine}'`);
+
+      const { rows: visible } = await client.query<{ tokenHash: string }>(
+        `SELECT "tokenHash" FROM "Invitation"`,
+      );
+      expect(visible.map((row) => row.tokenHash)).toEqual([mine]);
+
+      for (const table of tables) {
+        if (table === "Invitation") continue;
+        const { rows } = await client.query<{ count: string }>(
+          `SELECT count(*)::text AS count FROM "${table}"`,
+        );
+        expect(
+          { table, count: rows[0]?.count },
+          `${table} is readable under the invitation scope and should not be`,
+        ).toEqual({ table, count: "0" });
+      }
+    } finally {
+      await client.query("ROLLBACK");
+    }
+  });
+
+  it("gives the invitation scope no way to write", async () => {
+    // The policy is FOR SELECT. Marking an invitation accepted still happens
+    // inside withBuildingTx, under tenant isolation like everything else — so a
+    // caller holding a token can read their invitation and change nothing.
+    await client.query("BEGIN");
+    try {
+      const hash = `rls-write-${Date.now().toString(16)}`.padEnd(64, "0");
+
+      await client.query(`SET LOCAL app.current_building_id = '${adelaideId}'`);
+      await client.query(
+        `INSERT INTO "Invitation"
+           ("buildingId", email, roles, "unitIds", "tokenHash", "expiresAt",
+            "invitedByMembershipId")
+         SELECT $1, 'probe@example.com', ARRAY['SHAREHOLDER']::"Role"[],
+                ARRAY[]::uuid[], $2, now() + interval '14 days', m.id
+         FROM "Membership" m WHERE m."buildingId" = $1 LIMIT 1`,
+        [adelaideId, hash],
+      );
+
+      await client.query(`SET LOCAL app.current_building_id = ''`);
+      await client.query(`SET LOCAL app.invitation_token_hash = '${hash}'`);
+
+      // Visible…
+      const seen = await client.query(
+        `SELECT id FROM "Invitation" WHERE "tokenHash" = $1`,
+        [hash],
+      );
+      expect(seen.rowCount).toEqual(1);
+
+      // …and untouchable. UPDATE has no policy here, so it matches no row.
+      const updated = await client.query(
+        `UPDATE "Invitation" SET "acceptedAt" = now() WHERE "tokenHash" = $1`,
+        [hash],
+      );
+      expect(updated.rowCount).toEqual(0);
+
+      const deleted = await client.query(
+        `DELETE FROM "Invitation" WHERE "tokenHash" = $1`,
+        [hash],
+      );
+      expect(deleted.rowCount).toEqual(0);
+
+      // Minting one outright is refused rather than silently ignored: the
+      // insert has no tenant to satisfy tenant_isolation's WITH CHECK.
+      await expect(
+        client.query(
+          `INSERT INTO "Invitation"
+             ("buildingId", email, roles, "unitIds", "tokenHash", "expiresAt",
+              "invitedByMembershipId")
+           VALUES ($1, 'forged@example.com', ARRAY['PRESIDENT']::"Role"[],
+                   ARRAY[]::uuid[], $2, now() + interval '14 days', $3)`,
+          [adelaideId, `${hash.slice(0, 60)}ffff`, seen.rows[0]?.["id"]],
+        ),
+      ).rejects.toThrow(/row-level security/i);
+    } finally {
+      await client.query("ROLLBACK");
+    }
+  });
+
   it("does not let the setting survive a transaction", async () => {
     await client.query("BEGIN");
     await client.query(`SET LOCAL app.current_building_id = '${adelaideId}'`);

@@ -86,7 +86,19 @@ const schema = z
     // guards apply to serving traffic only.
     const isBuildStep = process.env["NEXT_PHASE"] === "phase-production-build";
 
-    if (!isBuildStep && env.NODE_ENV === "production" && env.EMAIL_DRIVER === "catcher") {
+    // The smoke test drives a real production build — `next start`, which sets
+    // NODE_ENV=production — and must not mail anyone or require an S3 bucket to
+    // do it. The opt-out is verbose on purpose, and dead on the deploy target:
+    // setting it in a Vercel project's environment does nothing at all, so it
+    // cannot become the reason a co-op's notices quietly stop going out.
+    const onVercel = process.env["VERCEL"] === "1";
+    const devDriversPermitted =
+      !onVercel && process.env["ALLOW_DEV_DRIVERS_IN_PRODUCTION"] === "1";
+
+    const serving =
+      !isBuildStep && !devDriversPermitted && env.NODE_ENV === "production";
+
+    if (serving && env.EMAIL_DRIVER === "catcher") {
       ctx.addIssue({
         code: "custom",
         path: ["EMAIL_DRIVER"],
@@ -95,7 +107,7 @@ const schema = z
       });
     }
 
-    if (!isBuildStep && env.NODE_ENV === "production" && env.STORAGE_DRIVER === "local") {
+    if (serving && env.STORAGE_DRIVER === "local") {
       ctx.addIssue({
         code: "custom",
         path: ["STORAGE_DRIVER"],

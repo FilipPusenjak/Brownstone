@@ -58,6 +58,17 @@ export function toPlainDate(value: Date): PlainDate {
   ) as PlainDate;
 }
 
+/**
+ * The calendar day a timestamp falls on, in a building's timezone.
+ *
+ * `toPlainDate` is for `@db.Date` columns, which are UTC midnight by
+ * construction. A real timestamp is not: 8pm on the 23rd in New York is the
+ * 24th in UTC, and an invitation would appear to expire a day late.
+ */
+export function toPlainDateIn(value: Date, timeZone: string = NYC): PlainDate {
+  return formatInTimeZone(value, timeZone, "yyyy-MM-dd") as PlainDate;
+}
+
 /** Converts a PlainDate to the UTC-midnight Date a `@db.Date` column expects. */
 export function toDbDate(value: PlainDate): Date {
   const [y, m, d] = value.split("-").map(Number) as [number, number, number];

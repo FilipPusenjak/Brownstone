@@ -7,12 +7,35 @@ import { signIn } from "~/lib/auth/config";
  * an OAuth app, and asking them to choose a password produces one shared
  * password taped inside the boiler room door.
  */
-export default function SignInPage() {
+
+/**
+ * An invitation token carried through sign-in.
+ *
+ * The token is minted as base64url, so anything outside that alphabet did not
+ * come from us and is dropped. This is the only user-supplied value that ends
+ * up in a redirect target, and a token that is echoed back unchecked is how a
+ * sign-in page becomes an open redirect.
+ */
+function safeInviteToken(value: string | undefined): string | null {
+  if (!value) return null;
+  return /^[A-Za-z0-9_-]{20,200}$/.test(value) ? value : null;
+}
+
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ invite?: string }>;
+}) {
+  const { invite } = await searchParams;
+  const token = safeInviteToken(invite);
+
   async function requestLink(formData: FormData): Promise<void> {
     "use server";
     const email = String(formData.get("email") ?? "").trim();
     if (!email) return;
-    await signIn("email", { email, redirectTo: "/" });
+    // Land back on the invitation rather than the building list, which the
+    // invited person is not yet a member of.
+    await signIn("email", { email, redirectTo: token ? `/invite/${token}` : "/" });
   }
 
   return (
@@ -23,8 +46,9 @@ export default function SignInPage() {
           Sign in
         </h1>
         <p className="mt-3 text-sm text-ironwork-soft">
-          We&rsquo;ll email you a link. No password to remember, and nothing to
-          set up.
+          {token
+            ? "Use the address your invitation was sent to — it only works for that one. We’ll email you a link, and you’ll come straight back here."
+            : "We’ll email you a link. No password to remember, and nothing to set up."}
         </p>
 
         <form action={requestLink} className="mt-6">

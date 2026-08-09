@@ -164,7 +164,25 @@ CREATE POLICY job_building_scan ON "Building"
 DROP POLICY IF EXISTS job_notification_scan ON "Notification";
 CREATE POLICY job_notification_scan ON "Notification"
   FOR SELECT
-  USING (current_setting('app.job_scope', true) = 'all_buildings');`;
+  USING (current_setting('app.job_scope', true) = 'all_buildings');
+
+-- Invitation redemption.
+--
+-- Someone following an invitation link has, by definition, no membership yet,
+-- so there is no tenant to resolve and tenant_isolation would hide the row that
+-- is about to grant them one.
+--
+-- The scope is one row wide: the policy matches on the token hash the caller
+-- has already presented, so even a session that sets this setting sees only the
+-- invitation it can already produce a token for. Enumerating invitations is not
+-- possible, and neither is reading anything else in the building — the rest of
+-- redemption happens inside withBuildingTx once the row names its building.
+DROP POLICY IF EXISTS invitation_by_token ON "Invitation";
+CREATE POLICY invitation_by_token ON "Invitation"
+  FOR SELECT
+  USING (
+    "tokenHash" = NULLIF(current_setting('app.invitation_token_hash', true), '')
+  );`;
 }
 
 export function buildSql(tables: string[]): string {
