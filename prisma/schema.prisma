@@ -1031,10 +1031,18 @@ model Meeting {
   type       MeetingType @default(ANNUAL)
   scheduledFor DateTime
   location   String?
-  /// Quorum threshold in basis points of total shares — 5000 is 50%. Co-op
-  /// bylaws routinely say two-thirds, which is not expressible in whole
-  /// percent without rounding someone out of a vote.
-  quorumBasisPoints Int  @default(5000)
+  /// Quorum threshold as an exact fraction of total shares, because bylaws are
+  /// written in fractions. Two-thirds has no exact representation in basis
+  /// points: 6667 demands 801 of 1200 shares where two-thirds is exactly 800,
+  /// so a meeting with precisely two-thirds present would be recorded as
+  /// inquorate over a rounding artefact.
+  ///
+  /// `quorumStrict` separates "more than half" from "at least half". A majority
+  /// is strict, a two-thirds requirement usually is not, and the difference
+  /// decides every tied vote.
+  quorumNumerator   Int     @default(1)
+  quorumDenominator Int     @default(2)
+  quorumStrict      Boolean @default(true)
   minutesDocumentId String? @db.Uuid
   heldAt     DateTime?
   createdAt  DateTime    @default(now())

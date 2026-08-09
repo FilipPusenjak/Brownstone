@@ -179,10 +179,19 @@ export function occurrenceAfterCompletion(
 ): RecurrenceResult {
   if (spec.recurrenceType === "NONE") return { kind: "complete" };
 
+  // The search starts after *the deadline just satisfied*, not after the day
+  // the work was done. Filing on 20 August against a 1 September deadline would
+  // otherwise regenerate that same 1 September occurrence, and the building
+  // would be told it still owes a filing it has already made.
+  const dayAfterCompletion = addDay(completedOn);
+  const dayAfterDeadline = addDay(completedDueOn);
+  const from =
+    compareDates(dayAfterDeadline, dayAfterCompletion) > 0
+      ? dayAfterDeadline
+      : dayAfterCompletion;
+
   return nextDueDate(spec, {
-    // Start the search the day after the one just completed, so a filing
-    // submitted early does not immediately regenerate the same occurrence.
-    from: addDay(completedOn),
+    from,
     lastCompletedOn: completedOn,
     previousDueOn: completedDueOn,
   });

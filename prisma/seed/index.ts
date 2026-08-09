@@ -751,7 +751,10 @@ async function seedBuildingExtras(
       type: "ANNUAL",
       scheduledFor: new Date(Date.UTC(year, 10, 12, 0, 30)),
       location: spec.slug === "adelaide" ? "Parlor floor, 1F" : "Lobby",
-      quorumBasisPoints: 6667,
+      // Two-thirds, exactly — the most common co-op bylaw threshold.
+      quorumNumerator: 2,
+      quorumDenominator: 3,
+      quorumStrict: false,
     },
     select: { id: true },
   });
