@@ -50,16 +50,18 @@ export default async function BuildingOverview({
 
       <section className="mt-8">
         <div className="mb-3 flex items-baseline justify-between gap-4">
-          <h2 className="text-lg font-semibold tracking-tight">What&rsquo;s coming up</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            What&rsquo;s coming up
+          </h2>
           <Link
             href={`/b/${buildingSlug}/compliance`}
-            className="font-mono text-xs text-verdigris underline underline-offset-4"
+            className="text-verdigris font-mono text-xs underline underline-offset-4"
           >
             All {counts.open} obligations
           </Link>
         </div>
 
-        <ul className="sheet divide-y divide-limestone">
+        <ul className="sheet divide-limestone divide-y">
           {next.map((obligation) => {
             const status = dueStatus(
               { state: obligation.state, dueOn: obligation.due },
@@ -75,14 +77,14 @@ export default async function BuildingOverview({
                 key={obligation.id}
                 className="px-4 py-3 sm:flex sm:items-baseline sm:gap-x-4"
               >
-                <span className="block text-sm font-medium text-ironwork sm:min-w-0 sm:flex-1">
+                <span className="text-ironwork block text-sm font-medium sm:min-w-0 sm:flex-1">
                   {obligation.title}
                 </span>
                 <span className="mt-1.5 flex items-baseline gap-x-4 sm:mt-0 sm:contents">
-                  <span className="font-mono text-xs whitespace-nowrap text-ironwork-soft">
+                  <span className="text-ironwork-soft font-mono text-xs whitespace-nowrap">
                     {formatDate(obligation.due)}
                   </span>
-                  <span className="flex-1 text-xs whitespace-nowrap text-ironwork-faint sm:w-28 sm:flex-none sm:text-right">
+                  <span className="text-ironwork-faint flex-1 text-xs whitespace-nowrap sm:w-28 sm:flex-none sm:text-right">
                     {relativeDays(now, obligation.due)}
                   </span>
                   <StatusChip status={status} />

@@ -95,7 +95,9 @@ describe("tenancy coverage", () => {
        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`,
     );
     const all = rows.map((r) => r.table_name);
-    const untenanted = all.filter((t) => !tables.includes(t) && t !== "_prisma_migrations");
+    const untenanted = all.filter(
+      (t) => !tables.includes(t) && t !== "_prisma_migrations",
+    );
 
     // A person is not owned by a building, and the compliance ruleset is the
     // same law for every co-op in the city. Anything else appearing here is an

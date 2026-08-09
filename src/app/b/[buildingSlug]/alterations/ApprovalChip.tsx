@@ -44,7 +44,7 @@ export function ApprovalChip({ status }: { status: string }) {
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-chip border px-1.5 py-0.5 font-mono text-[0.6875rem] uppercase tracking-wider ${style.className}`}
+      className={`rounded-chip inline-flex shrink-0 items-center gap-1 border px-1.5 py-0.5 font-mono text-[0.6875rem] tracking-wider uppercase ${style.className}`}
     >
       {status === "APPROVED" || status === "APPROVED_WITH_CONDITIONS" ? (
         <svg width="9" height="9" viewBox="0 0 10 10" aria-hidden fill="none">

@@ -14,7 +14,13 @@ import next from "eslint-config-next";
  */
 const prismaImportBoundary = {
   files: ["**/*.ts", "**/*.tsx"],
-  ignores: ["src/lib/db/**", "src/lib/auth/config.ts", "prisma/**", "scripts/**", "tests/**"],
+  ignores: [
+    "src/lib/db/**",
+    "src/lib/auth/config.ts",
+    "prisma/**",
+    "scripts/**",
+    "tests/**",
+  ],
   rules: {
     "no-restricted-imports": [
       "error",

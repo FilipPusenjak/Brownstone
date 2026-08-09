@@ -44,7 +44,7 @@ export default async function RulesPage({
         lede={`${rules.length} rules, each traceable to the law it comes from. ${unverified} are marked unverified — the requirement is real, but some detail of the deadline or the exemption could not be confirmed. Check those with the agency.`}
       />
 
-      <ul className="divide-y divide-limestone border-t border-limestone">
+      <ul className="divide-limestone border-limestone divide-y border-t">
         {rules.map((rule) => {
           const assessment = byCode.get(rule.code);
           const applies = assessment?.engineVerdict ?? null;
@@ -53,17 +53,19 @@ export default async function RulesPage({
             <li key={rule.code} className="py-4">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                 <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <span className="text-sm font-medium text-ironwork">{rule.title}</span>
+                  <span className="text-ironwork text-sm font-medium">
+                    {rule.title}
+                  </span>
                   {rule.needsVerification ? <UnverifiedChip /> : null}
                 </div>
-                <span className="font-mono text-[0.6875rem] whitespace-nowrap text-ironwork-faint">
+                <span className="text-ironwork-faint font-mono text-[0.6875rem] whitespace-nowrap">
                   {rule.authority} · {rule.code}
                 </span>
               </div>
 
-              <p className="mt-1.5 text-sm text-ironwork-soft">{rule.requirement}</p>
+              <p className="text-ironwork-soft mt-1.5 text-sm">{rule.requirement}</p>
 
-              <p className="mt-1.5 font-mono text-[0.6875rem] text-ironwork-faint">
+              <p className="text-ironwork-faint mt-1.5 font-mono text-[0.6875rem]">
                 {rule.citation}
                 {rule.sourceUrl ? (
                   <>
@@ -99,7 +101,7 @@ export default async function RulesPage({
               ) : null}
 
               {rule.needsVerification && rule.verificationNote ? (
-                <p className="mt-2 border-l-2 border-brass pl-3 text-xs text-ironwork-soft">
+                <p className="border-brass text-ironwork-soft mt-2 border-l-2 pl-3 text-xs">
                   {rule.verificationNote}
                 </p>
               ) : null}
@@ -108,10 +110,10 @@ export default async function RulesPage({
         })}
       </ul>
 
-      <p className="mt-8 max-w-2xl text-xs leading-relaxed text-ironwork-faint">
+      <p className="text-ironwork-faint mt-8 max-w-2xl text-xs leading-relaxed">
         This list is a starting point for a conversation with the building&rsquo;s
-        attorney, not a substitute for one. Requirements change, and Co-operator
-        seeds only rules it can cite.
+        attorney, not a substitute for one. Requirements change, and Co-operator seeds
+        only rules it can cite.
       </p>
     </>
   );

@@ -167,9 +167,9 @@ describe("resolutionPassed", () => {
 
   it("can measure against all outstanding shares", () => {
     expect(resolutionPassed(tally, MAJORITY, "outstanding", 1200)).toBe(false);
-    expect(resolutionPassed({ ...tally, sharesFor: 900 }, MAJORITY, "outstanding", 1200)).toBe(
-      true,
-    );
+    expect(
+      resolutionPassed({ ...tally, sharesFor: 900 }, MAJORITY, "outstanding", 1200),
+    ).toBe(true);
   });
 
   it("fails rather than throwing when nobody voted", () => {

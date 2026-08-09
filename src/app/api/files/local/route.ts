@@ -92,16 +92,13 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const stream = createReadStream(path);
-  return new Response(
-    Readable.toWeb(stream) as unknown as ReadableStream,
-    {
-      headers: {
-        // Always an attachment. A PDF rendering inline from the storage origin
-        // is a script-execution surface nobody needs.
-        "content-disposition": `attachment; filename="${filename.replace(/"/g, "")}"`,
-        "content-type": "application/octet-stream",
-        "cache-control": "private, no-store",
-      },
+  return new Response(Readable.toWeb(stream) as unknown as ReadableStream, {
+    headers: {
+      // Always an attachment. A PDF rendering inline from the storage origin
+      // is a script-execution surface nobody needs.
+      "content-disposition": `attachment; filename="${filename.replace(/"/g, "")}"`,
+      "content-type": "application/octet-stream",
+      "cache-control": "private, no-store",
     },
-  );
+  });
 }

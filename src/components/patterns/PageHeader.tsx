@@ -18,12 +18,12 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-limestone pb-4">
+    <header className="border-limestone mb-6 flex flex-wrap items-end justify-between gap-4 border-b pb-4">
       <div className="min-w-0">
         {eyebrow ? <p className="eyebrow mb-1">{eyebrow}</p> : null}
-        <h1 className="text-2xl font-semibold tracking-tight text-ironwork">{title}</h1>
+        <h1 className="text-ironwork text-2xl font-semibold tracking-tight">{title}</h1>
         {lede ? (
-          <p className="mt-1.5 max-w-2xl text-sm text-ironwork-soft">{lede}</p>
+          <p className="text-ironwork-soft mt-1.5 max-w-2xl text-sm">{lede}</p>
         ) : null}
       </div>
       {actions ? <div className="flex shrink-0 gap-2">{actions}</div> : null}
@@ -44,9 +44,11 @@ export function EmptyState({
 }) {
   return (
     <div className="sheet px-6 py-10 text-center">
-      <p className="text-sm font-medium text-ironwork">{title}</p>
+      <p className="text-ironwork text-sm font-medium">{title}</p>
       {children ? (
-        <div className="mx-auto mt-2 max-w-md text-sm text-ironwork-soft">{children}</div>
+        <div className="text-ironwork-soft mx-auto mt-2 max-w-md text-sm">
+          {children}
+        </div>
       ) : null}
     </div>
   );

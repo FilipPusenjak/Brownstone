@@ -34,8 +34,7 @@ export const COLORS = {
   started: "#8a6a00",
 } as const;
 
-const FONT =
-  "ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+const FONT = "ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
 
 export function EmailLayout({
   preview,

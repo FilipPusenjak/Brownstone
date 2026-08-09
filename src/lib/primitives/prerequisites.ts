@@ -16,10 +16,7 @@ import { compareDates } from "~/lib/time";
  */
 
 export type PrerequisiteType =
-  | "DEPOSIT_PAID"
-  | "VALID_COI"
-  | "NO_ARREARS"
-  | "APPROVED_ALTERATION";
+  "DEPOSIT_PAID" | "VALID_COI" | "NO_ARREARS" | "APPROVED_ALTERATION";
 
 export interface PrerequisiteFacts {
   /** Deposits recorded against this booking, in cents. */

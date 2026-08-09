@@ -4,12 +4,7 @@ import { capabilitiesFor } from "~/lib/auth/capabilities";
 import { unitFilter, visibility } from "~/lib/db/visibility";
 import { dollars, formatMoney, money, parseMoney } from "~/lib/money";
 import { floorTag, stackByFloor } from "~/lib/building/floors";
-import {
-  keyBelongsTo,
-  safeFilename,
-  storageKey,
-  validateUpload,
-} from "~/lib/storage";
+import { keyBelongsTo, safeFilename, storageKey, validateUpload } from "~/lib/storage";
 import { reminderDedupeKey } from "~/lib/email/send";
 import {
   addMonths,
@@ -155,7 +150,8 @@ describe("compliance applicability", () => {
     ).toBe(false);
 
     expect(
-      evaluate({ not: { attr: "hasElevator", op: "eq", value: true } }, brownstone).applies,
+      evaluate({ not: { attr: "hasElevator", op: "eq", value: true } }, brownstone)
+        .applies,
     ).toBe(true);
   });
 
@@ -250,7 +246,9 @@ describe("unit visibility", () => {
   });
 
   it("matches nothing for a shareholder who holds no unit", () => {
-    expect(unitFilter(ctx(["SHAREHOLDER"], []), "arrears")).toEqual({ unitId: { in: [] } });
+    expect(unitFilter(ctx(["SHAREHOLDER"], []), "arrears")).toEqual({
+      unitId: { in: [] },
+    });
   });
 });
 
@@ -313,7 +311,11 @@ describe("storage keys", () => {
 });
 
 describe("upload validation", () => {
-  const valid = { filename: "coi.pdf", contentType: "application/pdf", sizeBytes: 1024 };
+  const valid = {
+    filename: "coi.pdf",
+    contentType: "application/pdf",
+    sizeBytes: 1024,
+  };
 
   it("accepts a PDF and a photo", () => {
     expect(validateUpload(valid).ok).toBe(true);

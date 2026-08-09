@@ -105,20 +105,20 @@ export function UploadField({
             const file = event.target.files?.[0];
             if (file) upload(file);
           }}
-          className="block w-full text-sm text-ironwork-soft file:mr-3 file:rounded-sheet file:border file:border-limestone-deep file:bg-paper file:px-3 file:py-1.5 file:text-sm file:text-ironwork hover:file:bg-paper-sunk"
+          className="text-ironwork-soft file:rounded-sheet file:border-limestone-deep file:bg-paper file:text-ironwork hover:file:bg-paper-sunk block w-full text-sm file:mr-3 file:border file:px-3 file:py-1.5 file:text-sm"
         />
         {pending ? (
-          <span className="font-mono text-xs text-ironwork-faint">Uploading…</span>
+          <span className="text-ironwork-faint font-mono text-xs">Uploading…</span>
         ) : null}
       </div>
 
       {error ? (
-        <p role="alert" className="mt-1.5 text-xs text-stamp">
+        <p role="alert" className="text-stamp mt-1.5 text-xs">
           {error}
         </p>
       ) : null}
       {done ? (
-        <p className="mt-1.5 text-xs text-ironwork-soft">{done} uploaded.</p>
+        <p className="text-ironwork-soft mt-1.5 text-xs">{done} uploaded.</p>
       ) : null}
     </div>
   );

@@ -46,7 +46,7 @@ export function ReassessButton({ buildingSlug }: { buildingSlug: string }) {
         {pending ? "Checking…" : "Check what applies"}
       </Button>
       {message ? (
-        <p className="mt-1.5 max-w-xs text-xs text-ironwork-soft">{message}</p>
+        <p className="text-ironwork-soft mt-1.5 max-w-xs text-xs">{message}</p>
       ) : null}
     </div>
   );

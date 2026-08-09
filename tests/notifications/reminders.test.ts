@@ -262,9 +262,9 @@ describe("the reminder email", () => {
 
   it("says so when the deadline is unverified", () => {
     expect(obligationReminderText(props)).toMatch(/could not confirm this exact/i);
-    expect(
-      obligationReminderText({ ...props, needsVerification: false }),
-    ).not.toMatch(/could not confirm/i);
+    expect(obligationReminderText({ ...props, needsVerification: false })).not.toMatch(
+      /could not confirm/i,
+    );
   });
 
   it("says nobody is assigned rather than leaving a blank", () => {

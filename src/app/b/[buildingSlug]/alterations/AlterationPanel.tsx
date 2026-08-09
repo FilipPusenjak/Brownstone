@@ -54,7 +54,7 @@ export function AlterationPanel({
   return (
     <div className={actions.length === 0 ? "" : "mb-8"}>
       {error ? (
-        <p role="alert" className="mb-3 text-sm text-stamp">
+        <p role="alert" className="text-stamp mb-3 text-sm">
           {error}
         </p>
       ) : null}
@@ -72,9 +72,7 @@ export function AlterationPanel({
                     : "secondary"
               }
               disabled={pending}
-              onClick={() =>
-                action === "startReview" ? run(action) : setOpen(action)
-              }
+              onClick={() => (action === "startReview" ? run(action) : setOpen(action))}
             >
               {ACTION_LABEL[action]}
             </Button>
@@ -82,9 +80,7 @@ export function AlterationPanel({
         </div>
       ) : (
         <div className="sheet px-4 py-3">
-          <p className="mb-3 text-sm font-medium text-ironwork">
-            {ACTION_LABEL[open]}
-          </p>
+          <p className="text-ironwork mb-3 text-sm font-medium">{ACTION_LABEL[open]}</p>
 
           {open === "approveWithConditions" ? (
             <Field
@@ -131,7 +127,6 @@ export function AlterationPanel({
           </div>
         </div>
       )}
-
     </div>
   );
 }
@@ -191,7 +186,7 @@ export function CommentBox({
         </Button>
 
         {canCommentInternally ? (
-          <label className="flex items-center gap-2 text-sm text-ironwork-soft">
+          <label className="text-ironwork-soft flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={boardOnly}
@@ -206,7 +201,7 @@ export function CommentBox({
       </div>
 
       {error ? (
-        <p role="alert" className="mt-1.5 text-xs text-stamp">
+        <p role="alert" className="text-stamp mt-1.5 text-xs">
           {error}
         </p>
       ) : null}

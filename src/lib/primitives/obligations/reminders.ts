@@ -8,7 +8,14 @@ import {
 import { reminderDedupeKey, sendNotice } from "~/lib/email/send";
 import { withBuildingTx, withJobTx, withUntenantedTx } from "~/lib/db/tx";
 import { env } from "~/lib/env";
-import { formatDate, relativeDays, toDbDate, toPlainDate, today, type PlainDate } from "~/lib/time";
+import {
+  formatDate,
+  relativeDays,
+  toDbDate,
+  toPlainDate,
+  today,
+  type PlainDate,
+} from "~/lib/time";
 
 /**
  * The daily reminder run.

@@ -27,7 +27,7 @@ export default async function InvitePage({
   if (!lookup.ok) {
     return (
       <Shell title="This invitation isn't usable">
-        <p className="text-sm text-ironwork-soft">{lookup.reason}</p>
+        <p className="text-ironwork-soft text-sm">{lookup.reason}</p>
         <p className="mt-4 text-sm">
           <Link href="/sign-in" className="text-verdigris underline underline-offset-4">
             Sign in
@@ -53,30 +53,28 @@ export default async function InvitePage({
     redirect(`/sign-in?invite=${encodeURIComponent(token)}`);
   }
 
-  const matches =
-    signedInAs.email.toLowerCase() === invitation.email.toLowerCase();
+  const matches = signedInAs.email.toLowerCase() === invitation.email.toLowerCase();
 
   return (
     <Shell title={`Join ${invitation.buildingName}`}>
-      <p className="text-sm text-ironwork-soft">
+      <p className="text-ironwork-soft text-sm">
         {invitation.invitedBy} invited{" "}
-        <span className="font-mono text-ironwork">{invitation.email}</span> to
-        keep the building&rsquo;s records on Co-operator.
+        <span className="text-ironwork font-mono">{invitation.email}</span> to keep the
+        building&rsquo;s records on Co-operator.
       </p>
 
       {matches ? (
         <AcceptForm token={token} buildingName={invitation.buildingName} />
       ) : (
-        <div className="mt-5 border-l-2 border-stamp bg-stamp-soft px-3 py-2">
-          <p className="text-sm text-ironwork">
+        <div className="border-stamp bg-stamp-soft mt-5 border-l-2 px-3 py-2">
+          <p className="text-ironwork text-sm">
             You&rsquo;re signed in as{" "}
-            <span className="font-mono">{signedInAs.email}</span>, and this
-            invitation was sent to{" "}
-            <span className="font-mono">{invitation.email}</span>.
+            <span className="font-mono">{signedInAs.email}</span>, and this invitation
+            was sent to <span className="font-mono">{invitation.email}</span>.
           </p>
-          <p className="mt-2 text-sm text-ironwork-soft">
-            Sign in with the invited address, or ask {invitation.invitedBy} to
-            send one to this address instead.
+          <p className="text-ironwork-soft mt-2 text-sm">
+            Sign in with the invited address, or ask {invitation.invitedBy} to send one
+            to this address instead.
           </p>
           <p className="mt-3 text-sm">
             <Link
@@ -97,14 +95,14 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-16">
       <div className="sheet px-6 py-7">
         <p className="eyebrow">Co-operator</p>
-        <h1 className="mt-2 font-display text-3xl leading-tight text-brownstone">
+        <h1 className="font-display text-brownstone mt-2 text-3xl leading-tight">
           {title}
         </h1>
         <div className="mt-4">{children}</div>
       </div>
-      <p className="mt-6 text-xs leading-relaxed text-ironwork-faint">
-        Co-operator is a tracking tool, not legal advice. The board remains
-        responsible for the building&rsquo;s filings.
+      <p className="text-ironwork-faint mt-6 text-xs leading-relaxed">
+        Co-operator is a tracking tool, not legal advice. The board remains responsible
+        for the building&rsquo;s filings.
       </p>
     </main>
   );

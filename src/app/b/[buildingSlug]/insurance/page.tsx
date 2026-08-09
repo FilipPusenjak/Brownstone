@@ -27,9 +27,7 @@ export default async function InsurancePage({
   const now = today(ctx.building.timezone);
 
   const certificates = await listCertificates(ctx);
-  const expired = certificates.filter(
-    (c) => toPlainDate(c.expiresOn) < now,
-  ).length;
+  const expired = certificates.filter((c) => toPlainDate(c.expiresOn) < now).length;
   const unnamed = certificates.filter((c) => !c.additionalInsuredVerified).length;
 
   return (
@@ -57,21 +55,37 @@ export default async function InsurancePage({
 
       {certificates.length === 0 ? (
         <EmptyState title="No certificates on file">
-          Certificates are recorded against a contractor, a mover or a
-          shareholder. Their expiry goes on the compliance calendar
-          automatically, with reminders before it lapses.
+          Certificates are recorded against a contractor, a mover or a shareholder.
+          Their expiry goes on the compliance calendar automatically, with reminders
+          before it lapses.
         </EmptyState>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <caption className="sr-only">Certificates of insurance</caption>
             <thead>
-              <tr className="border-b border-limestone-deep">
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Insured</th>
-                <th scope="col" className="eyebrow hidden pb-2 pr-4 font-normal md:table-cell">Policy</th>
-                <th scope="col" className="eyebrow hidden pb-2 pr-4 text-right font-normal sm:table-cell">Coverage</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 text-right font-normal">Expires</th>
-                <th scope="col" className="eyebrow pb-2 text-right font-normal">Status</th>
+              <tr className="border-limestone-deep border-b">
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  Insured
+                </th>
+                <th
+                  scope="col"
+                  className="eyebrow hidden pr-4 pb-2 font-normal md:table-cell"
+                >
+                  Policy
+                </th>
+                <th
+                  scope="col"
+                  className="eyebrow hidden pr-4 pb-2 text-right font-normal sm:table-cell"
+                >
+                  Coverage
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 text-right font-normal">
+                  Expires
+                </th>
+                <th scope="col" className="eyebrow pb-2 text-right font-normal">
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -82,31 +96,33 @@ export default async function InsurancePage({
                 return (
                   <tr key={certificate.id} className="ledger-row align-baseline">
                     <td className="py-3 pr-4">
-                      <span className="block text-sm font-medium text-ironwork">
+                      <span className="text-ironwork block text-sm font-medium">
                         {certificate.holderName}
                       </span>
-                      <span className="mt-0.5 flex flex-wrap gap-x-2 font-mono text-[0.6875rem] text-ironwork-faint">
+                      <span className="text-ironwork-faint mt-0.5 flex flex-wrap gap-x-2 font-mono text-[0.6875rem]">
                         <span>{certificate.holderKind.toLowerCase()}</span>
-                        {certificate.unit ? <span>{certificate.unit.label}</span> : null}
+                        {certificate.unit ? (
+                          <span>{certificate.unit.label}</span>
+                        ) : null}
                         {certificate.additionalInsuredVerified ? null : (
                           <span className="text-stamp">corporation not named</span>
                         )}
                       </span>
                     </td>
-                    <td className="hidden py-3 pr-4 font-mono text-xs text-ironwork-soft md:table-cell">
+                    <td className="text-ironwork-soft hidden py-3 pr-4 font-mono text-xs md:table-cell">
                       {certificate.carrier}
-                      <span className="block text-ironwork-faint">
+                      <span className="text-ironwork-faint block">
                         {certificate.policyNumber}
                       </span>
                     </td>
-                    <td className="hidden py-3 pr-4 text-right font-mono text-xs whitespace-nowrap text-ironwork sm:table-cell">
+                    <td className="text-ironwork hidden py-3 pr-4 text-right font-mono text-xs whitespace-nowrap sm:table-cell">
                       {certificate.coverageCents
                         ? formatMoney(money(certificate.coverageCents))
                         : "—"}
                     </td>
-                    <td className="py-3 pr-4 text-right font-mono text-xs whitespace-nowrap text-ironwork">
+                    <td className="text-ironwork py-3 pr-4 text-right font-mono text-xs whitespace-nowrap">
                       {formatDate(expiresOn)}
-                      <span className="block text-ironwork-faint">
+                      <span className="text-ironwork-faint block">
                         {relativeDays(now, expiresOn)}
                       </span>
                     </td>
@@ -121,7 +137,7 @@ export default async function InsurancePage({
         </div>
       )}
 
-      <p className="mt-6 text-xs text-ironwork-faint">
+      <p className="text-ironwork-faint mt-6 text-xs">
         Every expiry here also appears on the{" "}
         <Link
           href={`/b/${buildingSlug}/compliance`}

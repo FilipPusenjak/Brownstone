@@ -16,11 +16,15 @@ describe("approval transitions", () => {
       ok: true,
       next: "SUBMITTED",
     });
-    expect(transition({ status: "SUBMITTED", action: "startReview", ...officer })).toEqual({
+    expect(
+      transition({ status: "SUBMITTED", action: "startReview", ...officer }),
+    ).toEqual({
       ok: true,
       next: "UNDER_REVIEW",
     });
-    expect(transition({ status: "UNDER_REVIEW", action: "approve", ...officer })).toEqual({
+    expect(
+      transition({ status: "UNDER_REVIEW", action: "approve", ...officer }),
+    ).toEqual({
       ok: true,
       next: "APPROVED",
     });
@@ -29,18 +33,30 @@ describe("approval transitions", () => {
   it("lets a board decide straight from submitted", () => {
     // A three-person board that meets in the hallway does not always click
     // "start review" first.
-    expect(transition({ status: "SUBMITTED", action: "approve", ...officer }).ok).toBe(true);
-    expect(transition({ status: "SUBMITTED", action: "deny", ...officer }).ok).toBe(true);
+    expect(transition({ status: "SUBMITTED", action: "approve", ...officer }).ok).toBe(
+      true,
+    );
+    expect(transition({ status: "SUBMITTED", action: "deny", ...officer }).ok).toBe(
+      true,
+    );
   });
 
   it("supports approval with conditions", () => {
     expect(
-      transition({ status: "UNDER_REVIEW", action: "approveWithConditions", ...officer }),
+      transition({
+        status: "UNDER_REVIEW",
+        action: "approveWithConditions",
+        ...officer,
+      }),
     ).toEqual({ ok: true, next: "APPROVED_WITH_CONDITIONS" });
   });
 
   describe("decided requests are final", () => {
-    const decided: ApprovalStatus[] = ["APPROVED", "APPROVED_WITH_CONDITIONS", "DENIED"];
+    const decided: ApprovalStatus[] = [
+      "APPROVED",
+      "APPROVED_WITH_CONDITIONS",
+      "DENIED",
+    ];
 
     it.each(decided)("%s cannot be decided again", (status) => {
       const result = transition({ status, action: "approve", ...officer });
@@ -54,21 +70,33 @@ describe("approval transitions", () => {
     });
 
     it("a denial cannot be quietly flipped to an approval", () => {
-      expect(transition({ status: "DENIED", action: "approve", ...officer }).ok).toBe(false);
+      expect(transition({ status: "DENIED", action: "approve", ...officer }).ok).toBe(
+        false,
+      );
     });
   });
 
   describe("who may act", () => {
     it("lets only the submitter withdraw", () => {
-      expect(transition({ status: "SUBMITTED", action: "withdraw", ...submitter }).ok).toBe(true);
+      expect(
+        transition({ status: "SUBMITTED", action: "withdraw", ...submitter }).ok,
+      ).toBe(true);
 
-      const byOfficer = transition({ status: "SUBMITTED", action: "withdraw", ...officer });
+      const byOfficer = transition({
+        status: "SUBMITTED",
+        action: "withdraw",
+        ...officer,
+      });
       expect(byOfficer.ok).toBe(false);
       if (!byOfficer.ok) expect(byOfficer.reason).toMatch(/person who filed/i);
     });
 
     it("refuses a decision from someone without the capability", () => {
-      const result = transition({ status: "SUBMITTED", action: "approve", ...submitter });
+      const result = transition({
+        status: "SUBMITTED",
+        action: "approve",
+        ...submitter,
+      });
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.reason).toMatch(/permission/i);
     });
@@ -81,8 +109,12 @@ describe("approval transitions", () => {
       // The submitter flag must never imply the deciding capability, or every
       // shareholder approves their own renovation.
       expect(
-        transition({ status: "SUBMITTED", action: "approve", isSubmitter: true, canDecide: false })
-          .ok,
+        transition({
+          status: "SUBMITTED",
+          action: "approve",
+          isSubmitter: true,
+          canDecide: false,
+        }).ok,
       ).toBe(false);
     });
 
@@ -91,15 +123,23 @@ describe("approval transitions", () => {
       // is a governance question for the board's minutes, not something the
       // state machine can resolve, so it is permitted and recorded.
       expect(
-        transition({ status: "SUBMITTED", action: "approve", isSubmitter: true, canDecide: true })
-          .ok,
+        transition({
+          status: "SUBMITTED",
+          action: "approve",
+          isSubmitter: true,
+          canDecide: true,
+        }).ok,
       ).toBe(true);
     });
   });
 
   describe("withdrawn requests", () => {
     it("say to start a new one", () => {
-      const result = transition({ status: "WITHDRAWN", action: "submit", ...submitter });
+      const result = transition({
+        status: "WITHDRAWN",
+        action: "submit",
+        ...submitter,
+      });
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.reason).toMatch(/withdrawn/i);
     });
@@ -117,7 +157,9 @@ describe("approval transitions", () => {
 
   it("offers no action at all on a terminal request", () => {
     for (const status of ["APPROVED", "DENIED", "WITHDRAWN"] as ApprovalStatus[]) {
-      expect(availableActions({ status, isSubmitter: true, canDecide: true })).toEqual([]);
+      expect(availableActions({ status, isSubmitter: true, canDecide: true })).toEqual(
+        [],
+      );
     }
   });
 });

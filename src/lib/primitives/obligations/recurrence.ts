@@ -1,5 +1,12 @@
 import type { PlainDate } from "~/lib/time";
-import { addMonths, addYears, compareDates, daysBetween, makeDate, yearOf } from "~/lib/time";
+import {
+  addMonths,
+  addYears,
+  compareDates,
+  daysBetween,
+  makeDate,
+  yearOf,
+} from "~/lib/time";
 
 /**
  * When is it due next?
@@ -24,10 +31,7 @@ import { addMonths, addYears, compareDates, daysBetween, makeDate, yearOf } from
  */
 
 export type RecurrenceType =
-  | "NONE"
-  | "FIXED_INTERVAL"
-  | "CYCLICAL_BY_YEAR"
-  | "ANCHORED_TO_COMPLETION";
+  "NONE" | "FIXED_INTERVAL" | "CYCLICAL_BY_YEAR" | "ANCHORED_TO_COMPLETION";
 
 export interface RecurrenceSpec {
   readonly recurrenceType: RecurrenceType;
@@ -86,7 +90,10 @@ export function nextDueDate(
     case "NONE": {
       if (lastCompletedOn) return { kind: "complete" };
       if (spec.dueMonth && spec.dueDay) {
-        return { kind: "due", dueOn: nextAnniversary(from, spec.dueMonth, spec.dueDay) };
+        return {
+          kind: "due",
+          dueOn: nextAnniversary(from, spec.dueMonth, spec.dueDay),
+        };
       }
       return {
         kind: "indeterminate",
@@ -98,10 +105,14 @@ export function nextDueDate(
       // A named calendar date wins: "by 1 September every year" means the first
       // of September, not twelve months after whenever it was last filed.
       if (spec.dueMonth && spec.dueDay) {
-        const base = lastCompletedOn && compareDates(lastCompletedOn, from) > 0
-          ? lastCompletedOn
-          : from;
-        return { kind: "due", dueOn: nextAnniversary(base, spec.dueMonth, spec.dueDay) };
+        const base =
+          lastCompletedOn && compareDates(lastCompletedOn, from) > 0
+            ? lastCompletedOn
+            : from;
+        return {
+          kind: "due",
+          dueOn: nextAnniversary(base, spec.dueMonth, spec.dueDay),
+        };
       }
 
       const interval = spec.intervalMonths;
@@ -205,7 +216,8 @@ function addDay(date: PlainDate): PlainDate {
 
 // --- Status ----------------------------------------------------------------
 
-export type DueStatus = "COMPLETED" | "WAIVED" | "NOT_APPLICABLE" | "OVERDUE" | "DUE_SOON" | "UPCOMING";
+export type DueStatus =
+  "COMPLETED" | "WAIVED" | "NOT_APPLICABLE" | "OVERDUE" | "DUE_SOON" | "UPCOMING";
 
 /** Inside this many days an open obligation reads as needing attention. */
 export const DUE_SOON_DAYS = 30;

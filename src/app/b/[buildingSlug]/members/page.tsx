@@ -44,9 +44,7 @@ export default async function MembersPage({
     }))
     .filter(
       (invitation) =>
-        !invitation.acceptedAt &&
-        !invitation.revokedAt &&
-        invitation.expiresOn >= now,
+        !invitation.acceptedAt && !invitation.revokedAt && invitation.expiresOn >= now,
     );
 
   return (
@@ -79,11 +77,14 @@ export default async function MembersPage({
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">Members of {ctx.building.name}</caption>
           <thead>
-            <tr className="border-b border-limestone-deep">
-              <th scope="col" className="eyebrow pb-2 pr-4 font-normal">
+            <tr className="border-limestone-deep border-b">
+              <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
                 Name
               </th>
-              <th scope="col" className="eyebrow hidden pb-2 pr-4 font-normal sm:table-cell">
+              <th
+                scope="col"
+                className="eyebrow hidden pr-4 pb-2 font-normal sm:table-cell"
+              >
                 Role
               </th>
               <th scope="col" className="eyebrow pb-2 text-right font-normal">
@@ -95,30 +96,30 @@ export default async function MembersPage({
             {members.map((member) => (
               <tr key={member.id} className="ledger-row align-baseline">
                 <td className="py-3 pr-4">
-                  <span className="block text-sm font-medium text-ironwork">
+                  <span className="text-ironwork block text-sm font-medium">
                     {member.user.name ?? member.user.email}
                     {member.user.id === ctx.user.id ? (
-                      <span className="ml-2 font-mono text-[0.6875rem] font-normal text-ironwork-faint">
+                      <span className="text-ironwork-faint ml-2 font-mono text-[0.6875rem] font-normal">
                         you
                       </span>
                     ) : null}
                   </span>
-                  <span className="mt-0.5 block font-mono text-[0.6875rem] text-ironwork-faint">
+                  <span className="text-ironwork-faint mt-0.5 block font-mono text-[0.6875rem]">
                     {member.user.email}
                   </span>
-                  <span className="mt-0.5 block font-mono text-[0.6875rem] text-ironwork-soft sm:hidden">
+                  <span className="text-ironwork-soft mt-0.5 block font-mono text-[0.6875rem] sm:hidden">
                     {member.title ?? primaryRole(member.roles)}
                   </span>
                 </td>
-                <td className="hidden py-3 pr-4 align-top text-sm text-ironwork-soft sm:table-cell">
+                <td className="text-ironwork-soft hidden py-3 pr-4 align-top text-sm sm:table-cell">
                   {member.title ?? primaryRole(member.roles)}
                   {member.roles.length > 1 ? (
-                    <span className="mt-0.5 block font-mono text-[0.6875rem] text-ironwork-faint">
+                    <span className="text-ironwork-faint mt-0.5 block font-mono text-[0.6875rem]">
                       {member.roles.map(roleLabel).join(" · ")}
                     </span>
                   ) : null}
                 </td>
-                <td className="py-3 text-right align-top font-mono text-xs whitespace-nowrap text-ironwork">
+                <td className="text-ironwork py-3 text-right align-top font-mono text-xs whitespace-nowrap">
                   {member.units.length === 0
                     ? "—"
                     : member.units
@@ -133,27 +134,27 @@ export default async function MembersPage({
 
       {mayInvite ? (
         <section className="mt-10">
-          <h2 className="eyebrow mb-3 border-b border-limestone pb-2">
+          <h2 className="eyebrow border-limestone mb-3 border-b pb-2">
             Invitations outstanding
           </h2>
 
           {outstanding.length === 0 ? (
             <EmptyState title="No invitations are open">
-              Nobody outside the list above can get in. An invitation link works
-              for fourteen days and only for the address it was sent to.
+              Nobody outside the list above can get in. An invitation link works for
+              fourteen days and only for the address it was sent to.
             </EmptyState>
           ) : (
-            <ul className="divide-y divide-limestone">
+            <ul className="divide-limestone divide-y">
               {outstanding.map((invitation) => (
                 <li
                   key={invitation.id}
                   className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3"
                 >
                   <div className="min-w-0">
-                    <span className="block font-mono text-sm break-all text-ironwork">
+                    <span className="text-ironwork block font-mono text-sm break-all">
                       {invitation.email}
                     </span>
-                    <span className="mt-0.5 block text-xs text-ironwork-faint">
+                    <span className="text-ironwork-faint mt-0.5 block text-xs">
                       {primaryRole(invitation.roles)}
                       {invitation.unitIds.length > 0
                         ? ` · ${invitation.unitIds
@@ -177,10 +178,10 @@ export default async function MembersPage({
             </ul>
           )}
 
-          <p className="mt-4 text-xs leading-relaxed text-ironwork-faint">
-            Withdrawing an invitation kills the link immediately, even if it has
-            already been opened. Links that expire or are used stop working on
-            their own; they are not listed here.
+          <p className="text-ironwork-faint mt-4 text-xs leading-relaxed">
+            Withdrawing an invitation kills the link immediately, even if it has already
+            been opened. Links that expire or are used stop working on their own; they
+            are not listed here.
           </p>
         </section>
       ) : null}

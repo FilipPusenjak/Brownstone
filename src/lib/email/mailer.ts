@@ -39,7 +39,10 @@ export interface EmailDriver {
 const MAIL_DIR = ".mail";
 
 function slug(value: string): string {
-  return value.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 60);
+  return value
+    .replace(/[^a-z0-9]+/gi, "-")
+    .toLowerCase()
+    .slice(0, 60);
 }
 
 /** Writes a readable .eml to disk. No network, ever. */
@@ -49,7 +52,10 @@ export const catcherDriver: EmailDriver = {
 
     const id = `catcher-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const boundary = `----cooperator-${id}`;
-    const file = join(MAIL_DIR, `${Date.now()}-${slug(email.to)}-${slug(email.subject)}.eml`);
+    const file = join(
+      MAIL_DIR,
+      `${Date.now()}-${slug(email.to)}-${slug(email.subject)}.eml`,
+    );
 
     const eml = [
       `From: ${email.from ?? env().EMAIL_FROM}`,

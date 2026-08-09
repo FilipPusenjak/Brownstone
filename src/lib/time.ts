@@ -51,9 +51,7 @@ export function today(timeZone: string = NYC): PlainDate {
  */
 export function toPlainDate(value: Date): PlainDate {
   return format(
-    new Date(
-      Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()),
-    ),
+    new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate())),
     "yyyy-MM-dd",
   ) as PlainDate;
 }
@@ -165,11 +163,7 @@ export function pluralDays(count: number): string {
 }
 
 /** An instant from a wall-clock time in the building's timezone. */
-export function instantAt(
-  date: PlainDate,
-  time: string,
-  timeZone: string = NYC,
-): Date {
+export function instantAt(date: PlainDate, time: string, timeZone: string = NYC): Date {
   return fromZonedTime(`${date}T${time}`, timeZone);
 }
 

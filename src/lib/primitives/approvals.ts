@@ -28,12 +28,7 @@ export type ApprovalStatus =
   | "WITHDRAWN";
 
 export type ApprovalAction =
-  | "submit"
-  | "startReview"
-  | "approve"
-  | "approveWithConditions"
-  | "deny"
-  | "withdraw";
+  "submit" | "startReview" | "approve" | "approveWithConditions" | "deny" | "withdraw";
 
 export const TERMINAL: readonly ApprovalStatus[] = [
   "APPROVED",
@@ -46,12 +41,15 @@ export function isTerminal(status: ApprovalStatus): boolean {
   return TERMINAL.includes(status);
 }
 
-const TRANSITIONS: Record<ApprovalAction, {
-  from: readonly ApprovalStatus[];
-  to: ApprovalStatus;
-  /** Who may do it: an officer capability, or the submitter. */
-  actor: "submitter" | "decider";
-}> = {
+const TRANSITIONS: Record<
+  ApprovalAction,
+  {
+    from: readonly ApprovalStatus[];
+    to: ApprovalStatus;
+    /** Who may do it: an officer capability, or the submitter. */
+    actor: "submitter" | "decider";
+  }
+> = {
   submit: { from: ["DRAFT"], to: "SUBMITTED", actor: "submitter" },
   startReview: { from: ["SUBMITTED"], to: "UNDER_REVIEW", actor: "decider" },
   approve: { from: ["SUBMITTED", "UNDER_REVIEW"], to: "APPROVED", actor: "decider" },

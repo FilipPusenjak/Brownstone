@@ -29,9 +29,9 @@ export function CertificateForm({
 }) {
   const [open, setOpen] = useState(false);
   const [holderName, setHolderName] = useState(defaultHolderName ?? "");
-  const [holderKind, setHolderKind] = useState<"CONTRACTOR" | "MOVER" | "SHAREHOLDER" | "VENDOR">(
-    "CONTRACTOR",
-  );
+  const [holderKind, setHolderKind] = useState<
+    "CONTRACTOR" | "MOVER" | "SHAREHOLDER" | "VENDOR"
+  >("CONTRACTOR");
   const [carrier, setCarrier] = useState("");
   const [policyNumber, setPolicyNumber] = useState("");
   const [coverage, setCoverage] = useState("");
@@ -96,7 +96,7 @@ export function CertificateForm({
   return (
     <div className="sheet px-4 py-4">
       {error ? (
-        <p role="alert" className="mb-3 text-sm text-stamp">
+        <p role="alert" className="text-stamp mb-3 text-sm">
           {error}
         </p>
       ) : null}
@@ -114,9 +114,7 @@ export function CertificateForm({
         <Field label="Who they are">
           <select
             value={holderKind}
-            onChange={(event) =>
-              setHolderKind(event.target.value as typeof holderKind)
-            }
+            onChange={(event) => setHolderKind(event.target.value as typeof holderKind)}
             className={inputClass}
           >
             <option value="CONTRACTOR">Contractor</option>
@@ -174,7 +172,7 @@ export function CertificateForm({
         </Field>
       </div>
 
-      <label className="mt-4 flex items-start gap-2 text-sm text-ironwork-soft">
+      <label className="text-ironwork-soft mt-4 flex items-start gap-2 text-sm">
         <input
           type="checkbox"
           checked={verified}
@@ -183,7 +181,7 @@ export function CertificateForm({
         />
         <span>
           I&rsquo;ve checked the corporation is named as an additional insured.
-          <span className="mt-0.5 block text-xs text-ironwork-faint">
+          <span className="text-ironwork-faint mt-0.5 block text-xs">
             A certificate without this is valid but does nothing for the building.
           </span>
         </span>
@@ -198,9 +196,9 @@ export function CertificateForm({
         </Button>
       </div>
 
-      <p className="mt-3 text-xs text-ironwork-faint">
-        The expiry goes on the compliance calendar, with reminders 45, 14 and 3
-        days before.
+      <p className="text-ironwork-faint mt-3 text-xs">
+        The expiry goes on the compliance calendar, with reminders 45, 14 and 3 days
+        before.
       </p>
     </div>
   );

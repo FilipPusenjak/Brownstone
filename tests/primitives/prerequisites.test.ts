@@ -88,9 +88,9 @@ describe("certificate of insurance", () => {
       effectiveOn: BOOKING_DATE,
       expiresOn: BOOKING_DATE,
     };
-    expect(evaluatePrerequisites(coiOnly, facts({ certificates: [exact] })).satisfied).toBe(
-      true,
-    );
+    expect(
+      evaluatePrerequisites(coiOnly, facts({ certificates: [exact] })).satisfied,
+    ).toBe(true);
   });
 
   it("rejects coverage below the building's minimum", () => {
@@ -120,9 +120,9 @@ describe("certificate of insurance", () => {
       },
     ];
     const notNamed = { ...goodCoi, additionalInsuredVerified: false };
-    expect(evaluatePrerequisites(relaxed, facts({ certificates: [notNamed] })).satisfied).toBe(
-      true,
-    );
+    expect(
+      evaluatePrerequisites(relaxed, facts({ certificates: [notNamed] })).satisfied,
+    ).toBe(true);
   });
 
   it("picks the qualifying certificate when several are on file", () => {
@@ -196,6 +196,9 @@ describe("evaluatePrerequisites", () => {
 
   it("keeps each outcome tied to its prerequisite row", () => {
     const result = evaluatePrerequisites(FREIGHT_ELEVATOR, facts());
-    expect(result.outcomes.map((o) => o.prerequisiteId)).toEqual(["p-deposit", "p-coi"]);
+    expect(result.outcomes.map((o) => o.prerequisiteId)).toEqual([
+      "p-deposit",
+      "p-coi",
+    ]);
   });
 });

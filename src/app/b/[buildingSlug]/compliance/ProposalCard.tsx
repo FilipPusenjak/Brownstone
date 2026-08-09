@@ -84,26 +84,26 @@ export function ProposalCard({
   return (
     <li className="sheet px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="text-sm font-medium text-ironwork">{proposal.title}</span>
-        <span className="font-mono text-[0.6875rem] text-ironwork-faint">
+        <span className="text-ironwork text-sm font-medium">{proposal.title}</span>
+        <span className="text-ironwork-faint font-mono text-[0.6875rem]">
           {proposal.citation}
         </span>
       </div>
 
-      <p className="mt-1.5 text-sm text-ironwork-soft">{proposal.requirement}</p>
-      <p className="mt-1.5 font-mono text-[0.6875rem] text-verdigris">
+      <p className="text-ironwork-soft mt-1.5 text-sm">{proposal.requirement}</p>
+      <p className="text-verdigris mt-1.5 font-mono text-[0.6875rem]">
         {proposal.engineReason}
       </p>
 
       {proposal.needsVerification ? (
-        <p className="mt-2 flex flex-wrap items-baseline gap-2 text-xs text-ironwork-faint">
+        <p className="text-ironwork-faint mt-2 flex flex-wrap items-baseline gap-2 text-xs">
           <UnverifiedChip />
           <span className="min-w-0 flex-1">{proposal.verificationNote}</span>
         </p>
       ) : null}
 
       {error ? (
-        <p role="alert" className="mt-2 text-xs text-stamp">
+        <p role="alert" className="text-stamp mt-2 text-xs">
           {error}
         </p>
       ) : null}
@@ -114,7 +114,9 @@ export function ProposalCard({
             intent="primary"
             size="sm"
             disabled={pending}
-            onClick={() => (proposal.needsDateReason ? setMode("confirming") : confirm())}
+            onClick={() =>
+              proposal.needsDateReason ? setMode("confirming") : confirm()
+            }
           >
             {pending ? "Adding…" : "Add to the calendar"}
           </Button>
@@ -126,7 +128,7 @@ export function ProposalCard({
               href={proposal.sourceUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center px-2 py-1 text-xs text-ironwork-soft underline underline-offset-4 hover:text-ironwork"
+              className="text-ironwork-soft hover:text-ironwork inline-flex items-center px-2 py-1 text-xs underline underline-offset-4"
             >
               Read the rule
             </a>
@@ -135,9 +137,11 @@ export function ProposalCard({
       ) : null}
 
       {mode === "confirming" ? (
-        <div className="mt-3 border-t border-limestone pt-3">
+        <div className="border-limestone mt-3 border-t pt-3">
           {proposal.needsDateReason ? (
-            <p className="mb-2 text-xs text-ironwork-soft">{proposal.needsDateReason}</p>
+            <p className="text-ironwork-soft mb-2 text-xs">
+              {proposal.needsDateReason}
+            </p>
           ) : null}
           <Field label="Due date" error={fieldError["dueOn"]}>
             <input
@@ -159,7 +163,7 @@ export function ProposalCard({
       ) : null}
 
       {mode === "dismissing" ? (
-        <div className="mt-3 border-t border-limestone pt-3">
+        <div className="border-limestone mt-3 border-t pt-3">
           <Field
             label="Why doesn't this apply?"
             hint="A future board will read this. A sentence is enough."

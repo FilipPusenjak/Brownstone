@@ -1,7 +1,7 @@
 # Architecture
 
 How Co-operator fits together, in the order it matters. `DECISIONS.md` records
-*why* each of these is the way it is, including what was rejected.
+_why_ each of these is the way it is, including what was rejected.
 
 ---
 
@@ -63,11 +63,11 @@ blocks the import path.
 
 **Three layers, one of them the real defence.**
 
-| Layer | What it does |
-| --- | --- |
-| The path | The tenant is explicit and visible |
-| The application | `scoped/*` is the only code that queries; context first |
-| Postgres RLS | A policy on all 37 tenant tables, plus `FORCE ROW LEVEL SECURITY` |
+| Layer           | What it does                                                      |
+| --------------- | ----------------------------------------------------------------- |
+| The path        | The tenant is explicit and visible                                |
+| The application | `scoped/*` is the only code that queries; context first           |
+| Postgres RLS    | A policy on all 37 tenant tables, plus `FORCE ROW LEVEL SECURITY` |
 
 The application layer is the defence. RLS is what catches the mistake. A team
 that believes RLS is the defence writes sloppier queries.
@@ -86,13 +86,13 @@ All of them live in `src/lib/db/tx.ts`, and they are the only code that sets a
 Postgres GUC. Everything uses `SET LOCAL`, so a setting dies with its
 transaction and cannot ride a pooled connection into the next request.
 
-| Wrapper | Setting | What it can see |
-| --- | --- | --- |
-| `withBuildingTx(id)` | `app.current_building_id` | One building. The workhorse. |
+| Wrapper                         | Setting                                               | What it can see                                                                          |
+| ------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `withBuildingTx(id)`            | `app.current_building_id`                             | One building. The workhorse.                                                             |
 | `withMemberBootstrapTx(userId)` | `app.current_user_id`, then `app.member_building_ids` | This user's own memberships, then the buildings they proved membership in. Sign-in only. |
-| `withJobTx()` | `app.job_scope='all_buildings'` | SELECT on `Building` and `Notification`. Nothing else. |
-| `withInvitationTokenTx(hash)` | `app.invitation_token_hash` | Exactly one invitation: the one whose token the caller can present. |
-| `withUntenantedTx()` | none | Auth.js user/session/token tables and the shared ruleset — tables with no tenant at all. |
+| `withJobTx()`                   | `app.job_scope='all_buildings'`                       | SELECT on `Building` and `Notification`. Nothing else.                                   |
+| `withInvitationTokenTx(hash)`   | `app.invitation_token_hash`                           | Exactly one invitation: the one whose token the caller can present.                      |
+| `withUntenantedTx()`            | none                                                  | Auth.js user/session/token tables and the shared ruleset — tables with no tenant at all. |
 
 Everything fails closed. A query issued outside a wrapper compares against NULL,
 matches nothing, and returns an empty result. The failure mode of forgetting the
@@ -124,8 +124,8 @@ role name. `can(ctx, "…")` for rendering, `assertCan(ctx, "…")` for writes.
 where-fragments rather than booleans, so the distinction is enforced in the
 query rather than remembered at each call site:
 
-- *Building-wide* — compliance, insurance, the calendar. Everyone sees it.
-- *Unit-scoped* — arrears, alterations, sublets, tickets. A shareholder sees
+- _Building-wide_ — compliance, insurance, the calendar. Everyone sees it.
+- _Unit-scoped_ — arrears, alterations, sublets, tickets. A shareholder sees
   their own; an officer with the matching capability sees all.
 
 `arrears.viewAll` belongs to the treasurer and the president only. In a
@@ -140,7 +140,7 @@ Seven, built before any module, each with tests that found real bugs.
 
 1. **Obligations** (`primitives/obligations/recurrence.ts`) — four explicit
    recurrence types (`NONE`, `FIXED_INTERVAL`, `CYCLICAL_BY_YEAR`,
-   `ANCHORED_TO_COMPLETION`), never cron strings. Status is *derived* from due
+   `ANCHORED_TO_COMPLETION`), never cron strings. Status is _derived_ from due
    date and state, never stored, so nothing can go stale. An unanswerable
    question returns `indeterminate` rather than a guess.
 2. **Documents** — expiry is a first-class field, and an expiring document
@@ -159,7 +159,7 @@ Seven, built before any module, each with tests that found real bugs.
 5. **Bookable resources** (`primitives/prerequisites.ts`) — a checker registry,
    so "deposit paid, valid COI, no arrears" is data rather than an `if`. A COI
    is checked against the booking date, not today.
-6. **Notification log** (`email/send.ts`) — the record is written *before*
+6. **Notification log** (`email/send.ts`) — the record is written _before_
    dispatch, with the rendered text stored verbatim. It is evidence that a
    legally required notice was sent, so it must survive the provider being down.
    `dedupeKey` carries idempotency.
@@ -181,7 +181,7 @@ Seventeen rules, each with a citation and a source URL; thirteen are flagged
 no hardcoded conditionals like `if (units > 6)` anywhere.
 
 Applicability is a small predicate DSL (`compliance/applicability.ts`) evaluated
-against the building's attributes, returning a decision *with its reasoning* —
+against the building's attributes, returning a decision _with its reasoning_ —
 which inputs it read, and what it concluded. A null attribute never satisfies a
 threshold: an unknown boiler type is not a boiler exemption.
 
@@ -218,15 +218,15 @@ The persistent disclaimer is on every page and is not dismissible.
 
 ## Testing
 
-| Suite | What it proves |
-| --- | --- |
-| `tests/tenancy/isolation.test.ts` | The scoped query layer never crosses buildings |
-| `tests/tenancy/rls.test.ts` | The database refuses too, via raw SQL as the app role |
-| `tests/tenancy/coverage.test.ts` | Every tenant table has a policy |
-| `tests/arch/*` | Nothing imports Prisma directly; scaffolds admit what they are |
-| `tests/primitives/*` | Recurrence, shares, ledger, approvals, prerequisites |
-| `tests/compliance`, `tests/alterations`, `tests/auth` | Module lifecycles against a real database |
-| `tests/e2e/smoke.spec.ts` | Invite → accept → calendar → file, in a real browser |
+| Suite                                                 | What it proves                                                 |
+| ----------------------------------------------------- | -------------------------------------------------------------- |
+| `tests/tenancy/isolation.test.ts`                     | The scoped query layer never crosses buildings                 |
+| `tests/tenancy/rls.test.ts`                           | The database refuses too, via raw SQL as the app role          |
+| `tests/tenancy/coverage.test.ts`                      | Every tenant table has a policy                                |
+| `tests/arch/*`                                        | Nothing imports Prisma directly; scaffolds admit what they are |
+| `tests/primitives/*`                                  | Recurrence, shares, ledger, approvals, prerequisites           |
+| `tests/compliance`, `tests/alterations`, `tests/auth` | Module lifecycles against a real database                      |
+| `tests/e2e/smoke.spec.ts`                             | Invite → accept → calendar → file, in a real browser           |
 
 The tenancy suite has been mutation-tested: breaking unit scoping fails eight
 tests, removing the tenant setting fails the seed and the suite, and adding a
@@ -240,6 +240,6 @@ exercises row-level security, and RLS is half of the guarantee.
 ## What is deliberately not here
 
 Purchase and board-package applications. Payment processing — payments are
-*recorded*, never collected, and there is no Stripe, ACH or card field anywhere
+_recorded_, never collected, and there is no Stripe, ACH or card field anywhere
 in the schema. Accounting or a general ledger. A native mobile app. Real-time
 anything: no websockets, no live cursors. And no AI features.

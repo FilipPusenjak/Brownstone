@@ -1,6 +1,10 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { BuildingContext } from "~/lib/db/context";
-import { NoSuchBuildingError, memberBuildings, resolveBuildingContext } from "~/lib/db/context";
+import {
+  NoSuchBuildingError,
+  memberBuildings,
+  resolveBuildingContext,
+} from "~/lib/db/context";
 import * as alterations from "~/lib/db/scoped/alterations";
 import * as audit from "~/lib/db/scoped/audit";
 import * as compliance from "~/lib/db/scoped/compliance";
@@ -46,46 +50,154 @@ type Reader = (ctx: BuildingContext) => Promise<unknown>;
 const READERS: Array<{ name: string; tables: string[]; read: Reader }> = [
   { name: "units.listUnits", tables: ["Unit"], read: units.listUnits },
   { name: "units.listUnitsWithShares", tables: [], read: units.listUnitsWithShares },
-  { name: "units.listShareAllocations", tables: ["ShareAllocation"], read: units.listShareAllocations },
-  { name: "units.listUnitHoldings", tables: ["UnitHolding"], read: units.listUnitHoldings },
+  {
+    name: "units.listShareAllocations",
+    tables: ["ShareAllocation"],
+    read: units.listShareAllocations,
+  },
+  {
+    name: "units.listUnitHoldings",
+    tables: ["UnitHolding"],
+    read: units.listUnitHoldings,
+  },
   { name: "units.listMembers", tables: ["Membership"], read: units.listMembers },
-  { name: "units.listMembershipUnits", tables: ["MembershipUnit"], read: units.listMembershipUnits },
-  { name: "units.listInvitationsForTenancyCheck", tables: ["Invitation"], read: units.listInvitationsForTenancyCheck },
+  {
+    name: "units.listMembershipUnits",
+    tables: ["MembershipUnit"],
+    read: units.listMembershipUnits,
+  },
+  {
+    name: "units.listInvitationsForTenancyCheck",
+    tables: ["Invitation"],
+    read: units.listInvitationsForTenancyCheck,
+  },
 
-  { name: "compliance.listObligations", tables: ["Obligation"], read: compliance.listObligations },
-  { name: "compliance.listAssessmentsForTenancyCheck", tables: ["BuildingRuleAssessment"], read: compliance.listAssessmentsForTenancyCheck },
-  { name: "compliance.listReminders", tables: ["ObligationReminder"], read: compliance.listReminders },
+  {
+    name: "compliance.listObligations",
+    tables: ["Obligation"],
+    read: compliance.listObligations,
+  },
+  {
+    name: "compliance.listAssessmentsForTenancyCheck",
+    tables: ["BuildingRuleAssessment"],
+    read: compliance.listAssessmentsForTenancyCheck,
+  },
+  {
+    name: "compliance.listReminders",
+    tables: ["ObligationReminder"],
+    read: compliance.listReminders,
+  },
 
-  { name: "documents.listDocumentsForTenancyCheck", tables: ["Document"], read: documents.listDocumentsForTenancyCheck },
-  { name: "documents.listDocumentLinks", tables: ["DocumentLink"], read: documents.listDocumentLinks },
-  { name: "documents.listCertificatesForTenancyCheck", tables: ["CertificateOfInsurance"], read: documents.listCertificatesForTenancyCheck },
+  {
+    name: "documents.listDocumentsForTenancyCheck",
+    tables: ["Document"],
+    read: documents.listDocumentsForTenancyCheck,
+  },
+  {
+    name: "documents.listDocumentLinks",
+    tables: ["DocumentLink"],
+    read: documents.listDocumentLinks,
+  },
+  {
+    name: "documents.listCertificatesForTenancyCheck",
+    tables: ["CertificateOfInsurance"],
+    read: documents.listCertificatesForTenancyCheck,
+  },
 
-  { name: "alterations.listAlterationsForTenancyCheck", tables: ["AlterationRequest"], read: alterations.listAlterationsForTenancyCheck },
-  { name: "alterations.listApprovalRequestsForTenancyCheck", tables: ["ApprovalRequest"], read: alterations.listApprovalRequestsForTenancyCheck },
-  { name: "alterations.listApprovalComments", tables: ["ApprovalComment"], read: alterations.listApprovalComments },
+  {
+    name: "alterations.listAlterationsForTenancyCheck",
+    tables: ["AlterationRequest"],
+    read: alterations.listAlterationsForTenancyCheck,
+  },
+  {
+    name: "alterations.listApprovalRequestsForTenancyCheck",
+    tables: ["ApprovalRequest"],
+    read: alterations.listApprovalRequestsForTenancyCheck,
+  },
+  {
+    name: "alterations.listApprovalComments",
+    tables: ["ApprovalComment"],
+    read: alterations.listApprovalComments,
+  },
 
-  { name: "ledger.listChargesForTenancyCheck", tables: ["Charge"], read: ledger.listChargesForTenancyCheck },
-  { name: "ledger.listPaymentsForTenancyCheck", tables: ["Payment"], read: ledger.listPaymentsForTenancyCheck },
-  { name: "ledger.listPaymentPlans", tables: ["PaymentPlan"], read: ledger.listPaymentPlans },
+  {
+    name: "ledger.listChargesForTenancyCheck",
+    tables: ["Charge"],
+    read: ledger.listChargesForTenancyCheck,
+  },
+  {
+    name: "ledger.listPaymentsForTenancyCheck",
+    tables: ["Payment"],
+    read: ledger.listPaymentsForTenancyCheck,
+  },
+  {
+    name: "ledger.listPaymentPlans",
+    tables: ["PaymentPlan"],
+    read: ledger.listPaymentPlans,
+  },
 
-  { name: "audit.listAuditForTenancyCheck", tables: ["AuditLog"], read: audit.listAuditForTenancyCheck },
-  { name: "notifications.listNotifications", tables: ["Notification"], read: notifications.listNotifications },
+  {
+    name: "audit.listAuditForTenancyCheck",
+    tables: ["AuditLog"],
+    read: audit.listAuditForTenancyCheck,
+  },
+  {
+    name: "notifications.listNotifications",
+    tables: ["Notification"],
+    read: notifications.listNotifications,
+  },
 
   { name: "modules.listMeetings", tables: ["Meeting"], read: modules.listMeetings },
-  { name: "modules.listMeetingAttendance", tables: ["MeetingAttendance"], read: modules.listMeetingAttendance },
+  {
+    name: "modules.listMeetingAttendance",
+    tables: ["MeetingAttendance"],
+    read: modules.listMeetingAttendance,
+  },
   { name: "modules.listProxies", tables: ["Proxy"], read: modules.listProxies },
-  { name: "modules.listResolutions", tables: ["Resolution"], read: modules.listResolutions },
-  { name: "modules.listSublets", tables: ["SubletRegistration"], read: modules.listSublets },
+  {
+    name: "modules.listResolutions",
+    tables: ["Resolution"],
+    read: modules.listResolutions,
+  },
+  {
+    name: "modules.listSublets",
+    tables: ["SubletRegistration"],
+    read: modules.listSublets,
+  },
   { name: "modules.listResources", tables: ["Resource"], read: modules.listResources },
-  { name: "modules.listResourcePrerequisites", tables: ["ResourcePrerequisite"], read: modules.listResourcePrerequisites },
+  {
+    name: "modules.listResourcePrerequisites",
+    tables: ["ResourcePrerequisite"],
+    read: modules.listResourcePrerequisites,
+  },
   { name: "modules.listBookings", tables: ["Booking"], read: modules.listBookings },
-  { name: "modules.listBookingChecks", tables: ["BookingPrerequisiteCheck"], read: modules.listBookingChecks },
+  {
+    name: "modules.listBookingChecks",
+    tables: ["BookingPrerequisiteCheck"],
+    read: modules.listBookingChecks,
+  },
   { name: "modules.listTickets", tables: ["Ticket"], read: modules.listTickets },
-  { name: "modules.listDutyRotations", tables: ["DutyRotation"], read: modules.listDutyRotations },
-  { name: "modules.listDutyAssignments", tables: ["DutyAssignment"], read: modules.listDutyAssignments },
+  {
+    name: "modules.listDutyRotations",
+    tables: ["DutyRotation"],
+    read: modules.listDutyRotations,
+  },
+  {
+    name: "modules.listDutyAssignments",
+    tables: ["DutyAssignment"],
+    read: modules.listDutyAssignments,
+  },
   { name: "modules.listDsnyFines", tables: ["DsnyFine"], read: modules.listDsnyFines },
-  { name: "modules.listNoticeCampaigns", tables: ["NoticeCampaign"], read: modules.listNoticeCampaigns },
-  { name: "modules.listNoticeDeliveries", tables: ["NoticeDelivery"], read: modules.listNoticeDeliveries },
+  {
+    name: "modules.listNoticeCampaigns",
+    tables: ["NoticeCampaign"],
+    read: modules.listNoticeCampaigns,
+  },
+  {
+    name: "modules.listNoticeDeliveries",
+    tables: ["NoticeDelivery"],
+    read: modules.listNoticeDeliveries,
+  },
 ];
 
 export const COVERED_TABLES = new Set(READERS.flatMap((r) => r.tables));
@@ -132,14 +244,17 @@ describe("tenant isolation", () => {
     { who: "a plain shareholder", email: PEOPLE.halShareholder },
     { who: "a member of both buildings", email: PEOPLE.martaBoth },
   ])("as $who in The Adelaide", ({ email }) => {
-    it.each(READERS)("$name returns nothing from the other building", async ({ read }) => {
-      const ctx = await contextFor(email, ADELAIDE);
-      const rows = await read(ctx);
+    it.each(READERS)(
+      "$name returns nothing from the other building",
+      async ({ read }) => {
+        const ctx = await contextFor(email, ADELAIDE);
+        const rows = await read(ctx);
 
-      const ids = buildingIdsIn(rows);
-      expect(ids).not.toContain(lispenardId);
-      for (const id of ids) expect(id).toEqual(adelaideId);
-    });
+        const ids = buildingIdsIn(rows);
+        expect(ids).not.toContain(lispenardId);
+        for (const id of ids) expect(id).toEqual(adelaideId);
+      },
+    );
   });
 
   describe("as a member of Lispenard House", () => {
@@ -177,7 +292,9 @@ describe("tenant isolation", () => {
 
       // She owns 2R in one building and 3R in the other. Neither context may
       // carry the other's unit, or unit scoping would leak across buildings.
-      const overlap = inAdelaide.unitIds.filter((id) => inLispenard.unitIds.includes(id));
+      const overlap = inAdelaide.unitIds.filter((id) =>
+        inLispenard.unitIds.includes(id),
+      );
       expect(overlap).toEqual([]);
     });
 

@@ -73,11 +73,7 @@ export async function reassessBuilding(
     });
     if (!building) return fail("not_found", "This building could not be loaded.");
 
-    const summary = await assessBuilding(
-      tx,
-      ctx.building.id,
-      attributesOf(building),
-    );
+    const summary = await assessBuilding(tx, ctx.building.id, attributesOf(building));
 
     await recordAudit(tx, ctx, {
       action: "compliance.assess",
@@ -480,7 +476,13 @@ export async function reopenObligation(
   return withBuildingTx(ctx.building.id, async (tx) => {
     const obligation = await tx.obligation.findUnique({
       where: { id: input.obligationId },
-      select: { id: true, title: true, state: true, dueOn: true, reminderOffsets: true },
+      select: {
+        id: true,
+        title: true,
+        state: true,
+        dueOn: true,
+        reminderOffsets: true,
+      },
     });
     if (!obligation) return fail("not_found", "That obligation could not be found.");
     if (obligation.state === "OPEN") {

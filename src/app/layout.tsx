@@ -46,7 +46,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${abril.variable} ${archivo.variable} ${plexMono.variable}`}>
+    <html
+      lang="en"
+      className={`${abril.variable} ${archivo.variable} ${plexMono.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

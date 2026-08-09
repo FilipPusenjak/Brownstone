@@ -36,18 +36,18 @@ export default async function BookingsPage({
 
       {resources.length === 0 ? (
         <EmptyState title="Nothing bookable yet">
-          The freight elevator, the roof deck, the common room — anything the
-          building schedules.
+          The freight elevator, the roof deck, the common room — anything the building
+          schedules.
         </EmptyState>
       ) : (
         <ul className="space-y-4">
           {resources.map((resource) => (
             <li key={resource.id} className="sheet px-4 py-3">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <span className="text-sm font-medium text-ironwork">
+                <span className="text-ironwork text-sm font-medium">
                   {resource.name}
                 </span>
-                <span className="font-mono text-[0.6875rem] text-ironwork-faint">
+                <span className="text-ironwork-faint font-mono text-[0.6875rem]">
                   {resource.slotMinutes / 60}-hour slots
                 </span>
               </div>
@@ -59,7 +59,7 @@ export default async function BookingsPage({
                     {resource.prerequisites.map((prerequisite) => (
                       <li
                         key={prerequisite.id}
-                        className="font-mono text-[0.6875rem] text-ironwork-soft"
+                        className="text-ironwork-soft font-mono text-[0.6875rem]"
                       >
                         — {describePrerequisite(prerequisite.type, prerequisite.config)}
                       </li>
@@ -67,7 +67,7 @@ export default async function BookingsPage({
                   </ul>
                 </>
               ) : (
-                <p className="mt-2 text-sm text-ironwork-soft">
+                <p className="text-ironwork-soft mt-2 text-sm">
                   No conditions — book it and it&rsquo;s yours.
                 </p>
               )}
@@ -79,18 +79,18 @@ export default async function BookingsPage({
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold tracking-tight">Bookings</h2>
         {bookings.length === 0 ? (
-          <p className="text-sm text-ironwork-soft">Nothing booked yet.</p>
+          <p className="text-ironwork-soft text-sm">Nothing booked yet.</p>
         ) : (
-          <ul className="divide-y divide-limestone border-t border-limestone">
+          <ul className="divide-limestone border-limestone divide-y border-t">
             {bookings.map((booking) => (
               <li
                 key={booking.id}
                 className="flex flex-wrap items-baseline justify-between gap-x-4 py-3"
               >
-                <span className="text-sm text-ironwork">
+                <span className="text-ironwork text-sm">
                   {booking.resource.name} — {booking.unit.label}
                 </span>
-                <span className="font-mono text-xs text-ironwork-soft">
+                <span className="text-ironwork-soft font-mono text-xs">
                   {formatInstant(booking.startsAt, ctx.building.timezone)}
                 </span>
               </li>

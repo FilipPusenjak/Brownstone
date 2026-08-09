@@ -67,8 +67,14 @@ export function balance(
   charges: readonly LedgerCharge[],
   payments: readonly LedgerPayment[],
 ): Money {
-  const charged = liveCharges(charges).reduce<number>((sum, c) => sum + c.amountCents, 0);
-  const paid = livePayments(payments).reduce<number>((sum, p) => sum + p.amountCents, 0);
+  const charged = liveCharges(charges).reduce<number>(
+    (sum, c) => sum + c.amountCents,
+    0,
+  );
+  const paid = livePayments(payments).reduce<number>(
+    (sum, p) => sum + p.amountCents,
+    0,
+  );
   return money(charged - paid);
 }
 

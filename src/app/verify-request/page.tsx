@@ -19,32 +19,32 @@ export default function VerifyRequestPage() {
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-16">
       <div className="sheet px-6 py-7">
         <p className="eyebrow">Co-operator</p>
-        <h1 className="mt-2 font-display text-3xl leading-tight text-brownstone">
+        <h1 className="font-display text-brownstone mt-2 text-3xl leading-tight">
           Check your email
         </h1>
-        <p className="mt-4 text-sm text-ironwork-soft">
-          If that address belongs to a member of a building here, a sign-in link
-          is on its way. It works once, and it expires in fifteen minutes.
+        <p className="text-ironwork-soft mt-4 text-sm">
+          If that address belongs to a member of a building here, a sign-in link is on
+          its way. It works once, and it expires in fifteen minutes.
         </p>
-        <p className="mt-3 text-sm text-ironwork-soft">
+        <p className="text-ironwork-soft mt-3 text-sm">
           Nothing yet? Look in spam, then{" "}
           <Link href="/sign-in" className="text-verdigris underline underline-offset-4">
             ask for another
           </Link>
-          . If it still doesn&rsquo;t arrive, a board member can check the
-          address they have for you.
+          . If it still doesn&rsquo;t arrive, a board member can check the address they
+          have for you.
         </p>
 
         {catching ? (
-          <p className="mt-5 border-l-2 border-limestone-deep bg-paper-sunk px-3 py-2 font-mono text-xs text-ironwork-soft">
-            This installation is running the development mail catcher: nothing
-            was sent. The link is in <span className="text-ironwork">./.mail</span>.
+          <p className="border-limestone-deep bg-paper-sunk text-ironwork-soft mt-5 border-l-2 px-3 py-2 font-mono text-xs">
+            This installation is running the development mail catcher: nothing was sent.
+            The link is in <span className="text-ironwork">./.mail</span>.
           </p>
         ) : null}
       </div>
-      <p className="mt-6 text-xs leading-relaxed text-ironwork-faint">
-        Co-operator is a tracking tool, not legal advice. The board remains
-        responsible for the building&rsquo;s filings.
+      <p className="text-ironwork-faint mt-6 text-xs leading-relaxed">
+        Co-operator is a tracking tool, not legal advice. The board remains responsible
+        for the building&rsquo;s filings.
       </p>
     </main>
   );

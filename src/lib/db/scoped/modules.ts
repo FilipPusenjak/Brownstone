@@ -154,7 +154,13 @@ export async function listBookings(ctx: BuildingContext) {
 export async function listResourcePrerequisites(ctx: BuildingContext) {
   return withBuildingTx(ctx.building.id, (tx) =>
     tx.resourcePrerequisite.findMany({
-      select: { id: true, buildingId: true, resourceId: true, type: true, config: true },
+      select: {
+        id: true,
+        buildingId: true,
+        resourceId: true,
+        type: true,
+        config: true,
+      },
     }),
   );
 }

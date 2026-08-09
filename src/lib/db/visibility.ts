@@ -41,7 +41,10 @@ const DOMAINS = {
 export type VisibilityDomain = keyof typeof DOMAINS;
 
 /** What this member may see in a domain: everything, their own units, or nothing. */
-export function visibility(ctx: VisibilityContext, domain: VisibilityDomain): Visibility {
+export function visibility(
+  ctx: VisibilityContext,
+  domain: VisibilityDomain,
+): Visibility {
   const [viewAll, viewOwn] = DOMAINS[domain];
 
   if (can(ctx, viewAll)) return { scope: "all" };

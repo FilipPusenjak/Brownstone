@@ -48,7 +48,10 @@ describe("nextDueDate", () => {
   });
 
   describe("fixed interval with no calendar date", () => {
-    const spec: RecurrenceSpec = { recurrenceType: "FIXED_INTERVAL", intervalMonths: 12 };
+    const spec: RecurrenceSpec = {
+      recurrenceType: "FIXED_INTERVAL",
+      intervalMonths: 12,
+    };
 
     it("counts from the previous due date, not the completion date", () => {
       const result = nextDueDate(spec, {
@@ -68,7 +71,10 @@ describe("nextDueDate", () => {
     });
 
     it("reports indeterminate when no interval is recorded", () => {
-      const result = nextDueDate({ recurrenceType: "FIXED_INTERVAL" }, { from: d("2026-01-01") });
+      const result = nextDueDate(
+        { recurrenceType: "FIXED_INTERVAL" },
+        { from: d("2026-01-01") },
+      );
       expect(result.kind).toEqual("indeterminate");
     });
   });
@@ -154,9 +160,9 @@ describe("nextDueDate", () => {
     });
 
     it("asks for a date when it has none", () => {
-      expect(nextDueDate({ recurrenceType: "NONE" }, { from: d("2026-01-01") }).kind).toEqual(
-        "indeterminate",
-      );
+      expect(
+        nextDueDate({ recurrenceType: "NONE" }, { from: d("2026-01-01") }).kind,
+      ).toEqual("indeterminate");
     });
   });
 
@@ -179,7 +185,10 @@ describe("nextDueDate", () => {
     });
 
     it("does not roll 31 January into March when adding a month", () => {
-      const monthly: RecurrenceSpec = { recurrenceType: "FIXED_INTERVAL", intervalMonths: 1 };
+      const monthly: RecurrenceSpec = {
+        recurrenceType: "FIXED_INTERVAL",
+        intervalMonths: 1,
+      };
       const result = nextDueDate(monthly, {
         from: d("2026-02-01"),
         previousDueOn: d("2026-01-31"),
@@ -226,7 +235,11 @@ describe("occurrenceAfterCompletion", () => {
 
   it("stops after a one-off", () => {
     expect(
-      occurrenceAfterCompletion({ recurrenceType: "NONE" }, d("2026-01-01"), d("2026-01-01")),
+      occurrenceAfterCompletion(
+        { recurrenceType: "NONE" },
+        d("2026-01-01"),
+        d("2026-01-01"),
+      ),
     ).toEqual({ kind: "complete" });
   });
 
@@ -244,7 +257,9 @@ describe("dueStatus", () => {
   const today = d("2026-06-15");
 
   it("is overdue the day after the deadline", () => {
-    expect(dueStatus({ state: "OPEN", dueOn: d("2026-06-14") }, today)).toEqual("OVERDUE");
+    expect(dueStatus({ state: "OPEN", dueOn: d("2026-06-14") }, today)).toEqual(
+      "OVERDUE",
+    );
   });
 
   it("is not overdue on the day itself", () => {
@@ -260,7 +275,9 @@ describe("dueStatus", () => {
 
   it("never calls a settled obligation overdue", () => {
     const longPast = d("2020-01-01");
-    expect(dueStatus({ state: "COMPLETED", dueOn: longPast }, today)).toEqual("COMPLETED");
+    expect(dueStatus({ state: "COMPLETED", dueOn: longPast }, today)).toEqual(
+      "COMPLETED",
+    );
     expect(dueStatus({ state: "WAIVED", dueOn: longPast }, today)).toEqual("WAIVED");
     expect(dueStatus({ state: "NOT_APPLICABLE", dueOn: longPast }, today)).toEqual(
       "NOT_APPLICABLE",

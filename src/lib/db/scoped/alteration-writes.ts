@@ -181,11 +181,9 @@ export async function actOnAlteration(
 
     if (!check.ok) return fail("conflict", check.reason);
 
-    const decided = [
-      "APPROVED",
-      "APPROVED_WITH_CONDITIONS",
-      "DENIED",
-    ].includes(check.next);
+    const decided = ["APPROVED", "APPROVED_WITH_CONDITIONS", "DENIED"].includes(
+      check.next,
+    );
 
     if (input.action === "approveWithConditions" && !input.conditions?.trim()) {
       return fail("invalid", "Say what the conditions are.", {
@@ -296,7 +294,8 @@ export async function recordCertificate(
   const holderName = input.holderName.trim();
   if (holderName.length < 2) {
     return fail("invalid", "Who is insured?", {
-      holderName: "The name on the certificate — the contractor, the mover, the shareholder.",
+      holderName:
+        "The name on the certificate — the contractor, the mover, the shareholder.",
     });
   }
 

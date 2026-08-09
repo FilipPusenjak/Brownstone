@@ -38,7 +38,7 @@ export function AcceptForm({
   return (
     <div className="mt-5">
       {error ? (
-        <p role="alert" className="mb-3 text-sm text-stamp">
+        <p role="alert" className="text-stamp mb-3 text-sm">
           {error}
         </p>
       ) : null}

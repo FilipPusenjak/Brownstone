@@ -39,7 +39,7 @@ export default async function AlterationsPage({
         actions={
           <Link
             href={`/b/${buildingSlug}/alterations/new`}
-            className="inline-flex items-center rounded-sheet border border-verdigris bg-verdigris px-3.5 py-2 text-sm font-medium text-white hover:bg-verdigris/90"
+            className="rounded-sheet border-verdigris bg-verdigris hover:bg-verdigris/90 inline-flex items-center border px-3.5 py-2 text-sm font-medium text-white"
           >
             File a request
           </Link>
@@ -48,8 +48,8 @@ export default async function AlterationsPage({
 
       {alterations.length === 0 ? (
         <EmptyState title="No alteration requests yet">
-          Anything that changes plumbing, walls or the riser needs the
-          board&rsquo;s approval before work starts.{" "}
+          Anything that changes plumbing, walls or the riser needs the board&rsquo;s
+          approval before work starts.{" "}
           <Link
             href={`/b/${buildingSlug}/alterations/new`}
             className="text-verdigris underline underline-offset-4"
@@ -63,12 +63,28 @@ export default async function AlterationsPage({
           <table className="w-full border-collapse text-left">
             <caption className="sr-only">Alteration requests</caption>
             <thead>
-              <tr className="border-b border-limestone-deep">
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Work</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Unit</th>
-                <th scope="col" className="eyebrow hidden pb-2 pr-4 font-normal md:table-cell">Contractor</th>
-                <th scope="col" className="eyebrow hidden pb-2 pr-4 text-right font-normal sm:table-cell">Filed</th>
-                <th scope="col" className="eyebrow pb-2 text-right font-normal">Status</th>
+              <tr className="border-limestone-deep border-b">
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  Work
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  Unit
+                </th>
+                <th
+                  scope="col"
+                  className="eyebrow hidden pr-4 pb-2 font-normal md:table-cell"
+                >
+                  Contractor
+                </th>
+                <th
+                  scope="col"
+                  className="eyebrow hidden pr-4 pb-2 text-right font-normal sm:table-cell"
+                >
+                  Filed
+                </th>
+                <th scope="col" className="eyebrow pb-2 text-right font-normal">
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -82,11 +98,11 @@ export default async function AlterationsPage({
                     <td className="py-3 pr-4">
                       <Link
                         href={`/b/${buildingSlug}/alterations/${alteration.id}`}
-                        className="text-sm font-medium text-ironwork underline decoration-limestone-deep underline-offset-4 hover:decoration-verdigris"
+                        className="text-ironwork decoration-limestone-deep hover:decoration-verdigris text-sm font-medium underline underline-offset-4"
                       >
                         {alteration.title}
                       </Link>
-                      <span className="mt-0.5 flex flex-wrap gap-x-2 font-mono text-[0.6875rem] text-ironwork-faint">
+                      <span className="text-ironwork-faint mt-0.5 flex flex-wrap gap-x-2 font-mono text-[0.6875rem]">
                         {alteration.wetOverDry ? <span>wet over dry</span> : null}
                         {alteration.affectsRiser ? <span>riser</span> : null}
                         {alteration.requiresDobPermit ? <span>DOB permit</span> : null}
@@ -99,13 +115,13 @@ export default async function AlterationsPage({
                         ) : null}
                       </span>
                     </td>
-                    <td className="py-3 pr-4 font-mono text-xs text-ironwork">
+                    <td className="text-ironwork py-3 pr-4 font-mono text-xs">
                       {alteration.unit.label}
                     </td>
-                    <td className="hidden py-3 pr-4 text-sm text-ironwork-soft md:table-cell">
+                    <td className="text-ironwork-soft hidden py-3 pr-4 text-sm md:table-cell">
                       {alteration.contractorName ?? "—"}
                     </td>
-                    <td className="hidden py-3 pr-4 text-right font-mono text-xs whitespace-nowrap text-ironwork-soft sm:table-cell">
+                    <td className="text-ironwork-soft hidden py-3 pr-4 text-right font-mono text-xs whitespace-nowrap sm:table-cell">
                       {alteration.approval.submittedAt
                         ? formatDate(toPlainDate(alteration.approval.submittedAt))
                         : "draft"}

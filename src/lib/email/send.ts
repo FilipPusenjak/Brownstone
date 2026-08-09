@@ -1,10 +1,6 @@
 import type { EntityType } from "~/generated/prisma/enums";
 import { withBuildingTx } from "~/lib/db/tx";
-import {
-  markFailed,
-  markSent,
-  queueNotification,
-} from "~/lib/db/scoped/notifications";
+import { markFailed, markSent, queueNotification } from "~/lib/db/scoped/notifications";
 import { mailer } from "./mailer";
 
 /**
@@ -46,7 +42,11 @@ export interface SendRequest {
 export type SendOutcome =
   | { readonly status: "sent"; readonly notificationId: string }
   | { readonly status: "duplicate" }
-  | { readonly status: "failed"; readonly notificationId: string; readonly error: string };
+  | {
+      readonly status: "failed";
+      readonly notificationId: string;
+      readonly error: string;
+    };
 
 export async function sendNotice(request: SendRequest): Promise<SendOutcome> {
   const queued = await withBuildingTx(request.buildingId, (tx) =>

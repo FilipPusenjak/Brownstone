@@ -58,10 +58,8 @@ export default async function AlterationPage({
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <ApprovalChip status={approval.status} />
-        <span className="font-mono text-sm text-ironwork">
-          {alteration.unit.label}
-        </span>
-        <span className="text-sm text-ironwork-soft">
+        <span className="text-ironwork font-mono text-sm">{alteration.unit.label}</span>
+        <span className="text-ironwork-soft text-sm">
           filed by {approval.submittedBy.user.name ?? approval.submittedBy.user.email}
           {approval.submittedAt
             ? ` on ${formatDate(toPlainDate(approval.submittedAt))}`
@@ -74,7 +72,7 @@ export default async function AlterationPage({
           {flags.map((flag) => (
             <li
               key={flag}
-              className="rounded-chip border border-limestone-deep px-2 py-0.5 font-mono text-[0.6875rem] uppercase tracking-wider text-ironwork-soft"
+              className="rounded-chip border-limestone-deep text-ironwork-soft border px-2 py-0.5 font-mono text-[0.6875rem] tracking-wider uppercase"
             >
               {flag}
             </li>
@@ -83,20 +81,20 @@ export default async function AlterationPage({
       ) : null}
 
       {approval.decidedAt ? (
-        <section className="mb-8 border-l-2 border-limestone-deep bg-paper px-4 py-3">
+        <section className="border-limestone-deep bg-paper mb-8 border-l-2 px-4 py-3">
           <p className="eyebrow mb-1">The decision</p>
-          <p className="text-sm text-ironwork">
+          <p className="text-ironwork text-sm">
             {approval.status === "DENIED" ? "Denied" : "Approved"} by{" "}
             {approval.decidedBy?.user.name ?? approval.decidedBy?.user.email ?? "—"} on{" "}
             {formatInstant(approval.decidedAt, ctx.building.timezone)}.
           </p>
           {approval.conditions ? (
-            <p className="mt-2 text-sm text-ironwork">
+            <p className="text-ironwork mt-2 text-sm">
               <strong className="font-medium">Conditions:</strong> {approval.conditions}
             </p>
           ) : null}
           {approval.decisionNote ? (
-            <p className="mt-2 text-sm text-ironwork-soft">{approval.decisionNote}</p>
+            <p className="text-ironwork-soft mt-2 text-sm">{approval.decisionNote}</p>
           ) : null}
         </section>
       ) : null}
@@ -107,13 +105,9 @@ export default async function AlterationPage({
         actions={actions}
       />
 
-      <dl className="grid gap-x-8 gap-y-4 border-t border-limestone pt-6 sm:grid-cols-2">
+      <dl className="border-limestone grid gap-x-8 gap-y-4 border-t pt-6 sm:grid-cols-2">
         <Row label="Contractor" value={alteration.contractorName ?? "Not named yet"} />
-        <Row
-          label="Licence"
-          value={alteration.contractorLicense ?? "—"}
-          mono
-        />
+        <Row label="Licence" value={alteration.contractorLicense ?? "—"} mono />
         <Row
           label="Planned"
           value={
@@ -130,7 +124,7 @@ export default async function AlterationPage({
         <Row label="DOB job number" value={alteration.dobJobNumber ?? "—"} mono />
       </dl>
 
-      <section className="mt-8 border-t border-limestone pt-6">
+      <section className="border-limestone mt-8 border-t pt-6">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="text-lg font-semibold tracking-tight">Insurance</h2>
           {can(ctx, "coi.manage") ? (
@@ -144,34 +138,34 @@ export default async function AlterationPage({
         </div>
 
         {alteration.certificates.length === 0 ? (
-          <p className="text-sm text-ironwork-soft">
+          <p className="text-ironwork-soft text-sm">
             No certificate on file. Work should not start until the contractor&rsquo;s
             insurer names the corporation as an additional insured.
           </p>
         ) : (
-          <ul className="divide-y divide-limestone border-t border-limestone">
+          <ul className="divide-limestone border-limestone divide-y border-t">
             {alteration.certificates.map((certificate) => (
               <li key={certificate.id} className="py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <span className="text-sm font-medium text-ironwork">
+                  <span className="text-ironwork text-sm font-medium">
                     {certificate.holderName}
                   </span>
-                  <span className="font-mono text-xs text-ironwork-soft">
+                  <span className="text-ironwork-soft font-mono text-xs">
                     expires {formatDate(toPlainDate(certificate.expiresOn))}
                   </span>
                 </div>
-                <p className="mt-0.5 font-mono text-[0.6875rem] text-ironwork-faint">
+                <p className="text-ironwork-faint mt-0.5 font-mono text-[0.6875rem]">
                   {certificate.carrier} · {certificate.policyNumber}
                   {certificate.coverageCents
                     ? ` · ${formatMoney(money(certificate.coverageCents))}`
                     : ""}
                 </p>
                 {certificate.additionalInsuredVerified ? (
-                  <p className="mt-1 text-xs text-ironwork-soft">
+                  <p className="text-ironwork-soft mt-1 text-xs">
                     Corporation named as additional insured.
                   </p>
                 ) : (
-                  <p className="mt-1 text-xs text-stamp">
+                  <p className="text-stamp mt-1 text-xs">
                     The corporation is not named as an additional insured. Ask the
                     broker to reissue it.
                   </p>
@@ -182,8 +176,10 @@ export default async function AlterationPage({
         )}
       </section>
 
-      <section className="mt-8 border-t border-limestone pt-6">
-        <h2 className="mb-3 text-lg font-semibold tracking-tight">Plans and documents</h2>
+      <section className="border-limestone mt-8 border-t pt-6">
+        <h2 className="mb-3 text-lg font-semibold tracking-tight">
+          Plans and documents
+        </h2>
         <UploadField
           buildingSlug={buildingSlug}
           entityType="ALTERATION_REQUEST"
@@ -193,10 +189,10 @@ export default async function AlterationPage({
         />
       </section>
 
-      <section className="mt-8 border-t border-limestone pt-6">
+      <section className="border-limestone mt-8 border-t pt-6">
         <h2 className="mb-3 text-lg font-semibold tracking-tight">Discussion</h2>
         {approval.comments.length === 0 ? (
-          <p className="text-sm text-ironwork-soft">Nothing said yet.</p>
+          <p className="text-ironwork-soft text-sm">Nothing said yet.</p>
         ) : (
           <ul className="space-y-4">
             {approval.comments.map((comment) => (
@@ -209,19 +205,19 @@ export default async function AlterationPage({
                 }`}
               >
                 <div className="flex flex-wrap items-baseline gap-x-3">
-                  <span className="text-sm font-medium text-ironwork">
+                  <span className="text-ironwork text-sm font-medium">
                     {comment.author.user.name ?? comment.author.user.email}
                   </span>
-                  <span className="font-mono text-[0.6875rem] text-ironwork-faint">
+                  <span className="text-ironwork-faint font-mono text-[0.6875rem]">
                     {formatInstant(comment.createdAt, ctx.building.timezone)}
                   </span>
                   {comment.visibility === "BOARD_ONLY" ? (
-                    <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-brass">
+                    <span className="text-brass font-mono text-[0.6875rem] tracking-wider uppercase">
                       Board only
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-sm text-ironwork-soft">{comment.body}</p>
+                <p className="text-ironwork-soft mt-1 text-sm">{comment.body}</p>
               </li>
             ))}
           </ul>
@@ -243,7 +239,7 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
   return (
     <div>
       <dt className="eyebrow mb-0.5">{label}</dt>
-      <dd className={`text-sm text-ironwork ${mono ? "font-mono" : ""}`}>{value}</dd>
+      <dd className={`text-ironwork text-sm ${mono ? "font-mono" : ""}`}>{value}</dd>
     </div>
   );
 }

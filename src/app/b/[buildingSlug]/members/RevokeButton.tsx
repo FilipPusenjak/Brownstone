@@ -36,7 +36,7 @@ export function RevokeButton({
   }
 
   if (error) {
-    return <span className="text-xs text-stamp">{error}</span>;
+    return <span className="text-stamp text-xs">{error}</span>;
   }
 
   if (!confirming) {

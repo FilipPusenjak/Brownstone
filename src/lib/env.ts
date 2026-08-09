@@ -10,13 +10,12 @@ import { z } from "zod";
  * schema rather than a runtime check at the call site.
  */
 
-const nonEmpty = (label: string) => z.string().trim().min(1, `${label} must not be empty`);
+const nonEmpty = (label: string) =>
+  z.string().trim().min(1, `${label} must not be empty`);
 
 const schema = z
   .object({
-    NODE_ENV: z
-      .enum(["development", "test", "production"])
-      .default("development"),
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
     DATABASE_URL: nonEmpty("DATABASE_URL").startsWith(
       "postgres",

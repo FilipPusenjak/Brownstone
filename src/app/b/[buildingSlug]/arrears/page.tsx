@@ -98,20 +98,34 @@ export default async function ArrearsPage({
           <table className="w-full border-collapse text-left">
             <caption className="sr-only">Aged arrears by unit</caption>
             <thead>
-              <tr className="border-b border-limestone-deep">
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Unit</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 text-right font-normal">Current</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 text-right font-normal">1–30</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 text-right font-normal">31–60</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 text-right font-normal">61–90</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 text-right font-normal">90+</th>
-                <th scope="col" className="eyebrow pb-2 text-right font-normal">Owed</th>
+              <tr className="border-limestone-deep border-b">
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  Unit
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 text-right font-normal">
+                  Current
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 text-right font-normal">
+                  1–30
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 text-right font-normal">
+                  31–60
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 text-right font-normal">
+                  61–90
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 text-right font-normal">
+                  90+
+                </th>
+                <th scope="col" className="eyebrow pb-2 text-right font-normal">
+                  Owed
+                </th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
                 <tr key={row.unitId} className="ledger-row align-baseline">
-                  <td className="py-3 pr-4 font-mono text-xs text-ironwork">
+                  <td className="text-ironwork py-3 pr-4 font-mono text-xs">
                     {labels.get(row.unitId) ?? "—"}
                   </td>
                   <Amount cents={row.current} />
@@ -121,7 +135,9 @@ export default async function ArrearsPage({
                   <Amount cents={row.over90} overdue />
                   <td
                     className={`py-3 text-right font-mono text-xs ${
-                      row.total > 0 ? "font-medium text-ironwork" : "text-ironwork-faint"
+                      row.total > 0
+                        ? "text-ironwork font-medium"
+                        : "text-ironwork-faint"
                     }`}
                   >
                     {formatAmount(money(row.total))}
@@ -130,14 +146,14 @@ export default async function ArrearsPage({
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-limestone-deep">
-                <td className="py-3 pr-4 eyebrow">Total</td>
+              <tr className="border-limestone-deep border-t-2">
+                <td className="eyebrow py-3 pr-4">Total</td>
                 <Amount cents={totals.current} />
                 <Amount cents={totals.days30} />
                 <Amount cents={totals.days60} />
                 <Amount cents={totals.days90} />
                 <Amount cents={totals.over90} overdue />
-                <td className="py-3 text-right font-mono text-xs font-medium text-ironwork">
+                <td className="text-ironwork py-3 text-right font-mono text-xs font-medium">
                   {formatAmount(money(totals.total))}
                 </td>
               </tr>

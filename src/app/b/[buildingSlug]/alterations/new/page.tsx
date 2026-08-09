@@ -39,8 +39,8 @@ export default async function NewAlterationPage({
 
       {units.length === 0 ? (
         <EmptyState title="No apartment on your membership">
-          Alteration requests are filed against an apartment. Ask the board to
-          link your membership to yours.
+          Alteration requests are filed against an apartment. Ask the board to link your
+          membership to yours.
         </EmptyState>
       ) : (
         <NewAlterationForm

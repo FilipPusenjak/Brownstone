@@ -5,7 +5,7 @@ brownstones and walk-ups of roughly 4 to 20 units, where the board is three or
 four neighbours who volunteer and meet a few times a year.
 
 These buildings don't fail at management because the work is hard. They fail
-because nobody knows what the work *is*, and there's no continuity when the
+because nobody knows what the work _is_, and there's no continuity when the
 board turns over. Co-operator makes the obligations visible and the record
 durable.
 
@@ -17,17 +17,17 @@ durable.
 Foundation build in progress. See `ARCHITECTURE.md` for how the system fits
 together and `DECISIONS.md` for what was chosen and what was rejected.
 
-| Module | State |
-| --- | --- |
-| Compliance Calendar | built |
-| Alterations & COIs | built |
-| Annual Notices | scaffold |
-| Meetings & Proxies | scaffold |
-| Sublet Register | scaffold |
-| Arrears | scaffold |
-| Bookings | scaffold |
-| Repair Tickets | scaffold |
-| Duty Rotation | scaffold |
+| Module              | State    |
+| ------------------- | -------- |
+| Compliance Calendar | built    |
+| Alterations & COIs  | built    |
+| Annual Notices      | scaffold |
+| Meetings & Proxies  | scaffold |
+| Sublet Register     | scaffold |
+| Arrears             | scaffold |
+| Bookings            | scaffold |
+| Repair Tickets      | scaffold |
+| Duty Rotation       | scaffold |
 
 A scaffold has real tables, real scoped queries and a list view over real
 seeded data, and writes nothing. Each one carries a `TODO.md` saying exactly
@@ -69,15 +69,15 @@ than decoration — a role that owns the tables ignores them by default.
 
 ## Commands
 
-| Command | What it does |
-| --- | --- |
-| `pnpm dev` | Development server |
-| `pnpm verify` | Typecheck, lint and unit tests — run this before committing |
-| `pnpm test` | Vitest, including the tenancy isolation suite |
-| `pnpm test:e2e` | Playwright smoke path — builds, starts, drives a browser |
-| `pnpm db:migrate` | Apply migrations to the development database |
-| `pnpm db:seed` | Reseed the two fictional buildings |
-| `pnpm rules:sync` | Upsert the compliance ruleset without reseeding |
+| Command           | What it does                                                |
+| ----------------- | ----------------------------------------------------------- |
+| `pnpm dev`        | Development server                                          |
+| `pnpm verify`     | Typecheck, lint and unit tests — run this before committing |
+| `pnpm test`       | Vitest, including the tenancy isolation suite               |
+| `pnpm test:e2e`   | Playwright smoke path — builds, starts, drives a browser    |
+| `pnpm db:migrate` | Apply migrations to the development database                |
+| `pnpm db:seed`    | Reseed the two fictional buildings                          |
+| `pnpm rules:sync` | Upsert the compliance ruleset without reseeding             |
 
 ### The smoke test
 

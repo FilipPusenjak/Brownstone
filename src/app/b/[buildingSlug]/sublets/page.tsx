@@ -48,29 +48,37 @@ export default async function SubletsPage({
           <table className="w-full border-collapse text-left">
             <caption className="sr-only">Sublet register</caption>
             <thead>
-              <tr className="border-b border-limestone-deep">
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Unit</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Subtenant</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 text-right font-normal">Term ends</th>
-                <th scope="col" className="eyebrow pb-2 text-right font-normal">Fee</th>
+              <tr className="border-limestone-deep border-b">
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  Unit
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  Subtenant
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 text-right font-normal">
+                  Term ends
+                </th>
+                <th scope="col" className="eyebrow pb-2 text-right font-normal">
+                  Fee
+                </th>
               </tr>
             </thead>
             <tbody>
               {sublets.map((sublet) => (
                 <tr key={sublet.id} className="ledger-row align-baseline">
-                  <td className="py-3 pr-4 font-mono text-xs text-ironwork">
+                  <td className="text-ironwork py-3 pr-4 font-mono text-xs">
                     {sublet.unit.label}
                   </td>
-                  <td className="py-3 pr-4 text-sm text-ironwork">
+                  <td className="text-ironwork py-3 pr-4 text-sm">
                     {sublet.subtenantName}
                   </td>
-                  <td className="py-3 pr-4 text-right font-mono text-xs whitespace-nowrap text-ironwork">
+                  <td className="text-ironwork py-3 pr-4 text-right font-mono text-xs whitespace-nowrap">
                     {formatDate(toPlainDate(sublet.termEnd))}
-                    <span className="block text-ironwork-faint">
+                    <span className="text-ironwork-faint block">
                       {relativeDays(now, toPlainDate(sublet.termEnd))}
                     </span>
                   </td>
-                  <td className="py-3 text-right font-mono text-xs text-ironwork-soft">
+                  <td className="text-ironwork-soft py-3 text-right font-mono text-xs">
                     {formatAmount(money(sublet.feeCents))}
                   </td>
                 </tr>

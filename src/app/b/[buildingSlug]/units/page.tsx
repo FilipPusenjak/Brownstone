@@ -66,13 +66,22 @@ export default async function UnitsPage({
             Apartments and share allocations for {ctx.building.name}
           </caption>
           <thead>
-            <tr className="border-b border-limestone-deep">
-              <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Apartment</th>
-              <th scope="col" className="eyebrow hidden pb-2 pr-4 font-normal sm:table-cell">
+            <tr className="border-limestone-deep border-b">
+              <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                Apartment
+              </th>
+              <th
+                scope="col"
+                className="eyebrow hidden pr-4 pb-2 font-normal sm:table-cell"
+              >
                 Holder of record
               </th>
-              <th scope="col" className="eyebrow pb-2 pr-4 text-right font-normal">Shares</th>
-              <th scope="col" className="eyebrow pb-2 text-right font-normal">Share</th>
+              <th scope="col" className="eyebrow pr-4 pb-2 text-right font-normal">
+                Shares
+              </th>
+              <th scope="col" className="eyebrow pb-2 text-right font-normal">
+                Share
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -81,12 +90,16 @@ export default async function UnitsPage({
               const share = totalShares > 0 ? (unit.shares / totalShares) * 100 : 0;
 
               return (
-                <tr key={unit.id} id={unit.label} className="ledger-row align-baseline scroll-mt-8">
+                <tr
+                  key={unit.id}
+                  id={unit.label}
+                  className="ledger-row scroll-mt-8 align-baseline"
+                >
                   <td className="py-3 pr-4">
-                    <span className="block text-sm font-medium text-ironwork">
+                    <span className="text-ironwork block text-sm font-medium">
                       {unit.label}
                     </span>
-                    <span className="mt-0.5 block font-mono text-[0.6875rem] text-ironwork-faint">
+                    <span className="text-ironwork-faint mt-0.5 block font-mono text-[0.6875rem]">
                       {floorLabel(unit.floorIndex, ctx.building.floorNaming)}
                       {unit.line ? ` · line ${unit.line}` : ""}
                       {unit.unitType === "RESIDENTIAL"
@@ -94,20 +107,20 @@ export default async function UnitsPage({
                         : ` · ${unit.unitType.toLowerCase().replaceAll("_", " ")}`}
                     </span>
                   </td>
-                  <td className="hidden py-3 pr-4 align-top text-sm text-ironwork-soft sm:table-cell">
+                  <td className="text-ironwork-soft hidden py-3 pr-4 align-top text-sm sm:table-cell">
                     {unit.holderName ?? "—"}
                     {occupants.length > 0 ? (
-                      <span className="mt-0.5 block font-mono text-[0.6875rem] text-ironwork-faint">
+                      <span className="text-ironwork-faint mt-0.5 block font-mono text-[0.6875rem]">
                         {occupants
                           .map((occupant) => `${occupant.name} (${occupant.role})`)
                           .join(" · ")}
                       </span>
                     ) : null}
                   </td>
-                  <td className="py-3 pr-4 text-right align-top font-mono text-xs whitespace-nowrap text-ironwork">
+                  <td className="text-ironwork py-3 pr-4 text-right align-top font-mono text-xs whitespace-nowrap">
                     {unit.shares.toLocaleString("en-US")}
                   </td>
-                  <td className="py-3 text-right align-top font-mono text-xs whitespace-nowrap text-ironwork-soft">
+                  <td className="text-ironwork-soft py-3 text-right align-top font-mono text-xs whitespace-nowrap">
                     {share.toFixed(1)}%
                   </td>
                 </tr>
@@ -115,13 +128,13 @@ export default async function UnitsPage({
             })}
           </tbody>
           <tfoot>
-            <tr className="border-t border-limestone-deep">
-              <td className="py-3 pr-4 text-sm font-medium text-ironwork">Total</td>
+            <tr className="border-limestone-deep border-t">
+              <td className="text-ironwork py-3 pr-4 text-sm font-medium">Total</td>
               <td className="hidden sm:table-cell" />
-              <td className="py-3 pr-4 text-right font-mono text-xs text-ironwork">
+              <td className="text-ironwork py-3 pr-4 text-right font-mono text-xs">
                 {totalShares.toLocaleString("en-US")}
               </td>
-              <td className="py-3 text-right font-mono text-xs text-ironwork-soft">
+              <td className="text-ironwork-soft py-3 text-right font-mono text-xs">
                 100.0%
               </td>
             </tr>
@@ -129,10 +142,10 @@ export default async function UnitsPage({
         </table>
       </div>
 
-      <p className="mt-6 max-w-2xl text-xs leading-relaxed text-ironwork-faint">
-        Percentages are rounded for display and may not add to exactly 100.
-        Anything that depends on shares — quorum, a share-weighted vote, an
-        assessment split — is computed from the whole numbers, never from these.
+      <p className="text-ironwork-faint mt-6 max-w-2xl text-xs leading-relaxed">
+        Percentages are rounded for display and may not add to exactly 100. Anything
+        that depends on shares — quorum, a share-weighted vote, an assessment split — is
+        computed from the whole numbers, never from these.
       </p>
     </>
   );

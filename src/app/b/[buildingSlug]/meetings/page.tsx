@@ -55,11 +55,22 @@ export default async function MeetingsPage({
           <table className="w-full border-collapse text-left">
             <caption className="sr-only">Meetings</caption>
             <thead>
-              <tr className="border-b border-limestone-deep">
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Meeting</th>
-                <th scope="col" className="eyebrow hidden pb-2 pr-4 font-normal sm:table-cell">When</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 text-right font-normal">Quorum needs</th>
-                <th scope="col" className="eyebrow pb-2 text-right font-normal">Recorded</th>
+              <tr className="border-limestone-deep border-b">
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  Meeting
+                </th>
+                <th
+                  scope="col"
+                  className="eyebrow hidden pr-4 pb-2 font-normal sm:table-cell"
+                >
+                  When
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 text-right font-normal">
+                  Quorum needs
+                </th>
+                <th scope="col" className="eyebrow pb-2 text-right font-normal">
+                  Recorded
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -72,24 +83,24 @@ export default async function MeetingsPage({
                 return (
                   <tr key={meeting.id} className="ledger-row align-baseline">
                     <td className="py-3 pr-4">
-                      <span className="block text-sm font-medium text-ironwork">
+                      <span className="text-ironwork block text-sm font-medium">
                         {meeting.title}
                       </span>
-                      <span className="font-mono text-[0.6875rem] text-ironwork-faint">
+                      <span className="text-ironwork-faint font-mono text-[0.6875rem]">
                         {meeting.type.toLowerCase()}
                         {meeting.location ? ` · ${meeting.location}` : ""}
                       </span>
                     </td>
-                    <td className="hidden py-3 pr-4 font-mono text-xs whitespace-nowrap text-ironwork-soft sm:table-cell">
+                    <td className="text-ironwork-soft hidden py-3 pr-4 font-mono text-xs whitespace-nowrap sm:table-cell">
                       {formatInstant(meeting.scheduledFor, ctx.building.timezone)}
                     </td>
-                    <td className="py-3 pr-4 text-right font-mono text-xs whitespace-nowrap text-ironwork">
+                    <td className="text-ironwork py-3 pr-4 text-right font-mono text-xs whitespace-nowrap">
                       {needed.toLocaleString("en-US")} sh
-                      <span className="block text-ironwork-faint">
+                      <span className="text-ironwork-faint block">
                         {formatBasisPoints(weightOf(needed, total))}
                       </span>
                     </td>
-                    <td className="py-3 text-right font-mono text-xs text-ironwork-soft">
+                    <td className="text-ironwork-soft py-3 text-right font-mono text-xs">
                       {present === 0 ? "—" : `${present} units`}
                     </td>
                   </tr>

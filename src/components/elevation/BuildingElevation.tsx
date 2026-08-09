@@ -74,12 +74,12 @@ export function BuildingElevation({
     >
       {/* The cornice: a heavy band capping the stack, the way the real one caps
           the facade. It is the component header and does no other work. */}
-      <header className="flex items-baseline justify-between gap-4 border-b-4 border-brownstone bg-paper-sunk px-4 py-3">
+      <header className="border-brownstone bg-paper-sunk flex items-baseline justify-between gap-4 border-b-4 px-4 py-3">
         <div className="flex items-baseline gap-3">
-          <span className="font-display text-3xl leading-none text-brownstone">
+          <span className="font-display text-brownstone text-3xl leading-none">
             {houseNumber}
           </span>
-          <span className="font-display text-lg leading-none text-ironwork">
+          <span className="font-display text-ironwork text-lg leading-none">
             {buildingName}
           </span>
         </div>
@@ -96,7 +96,7 @@ export function BuildingElevation({
             <div key={floorIndex} className="flex items-stretch gap-3 py-1.5">
               {/* Floor gutter — the vernacular, not a row number. */}
               <div className="flex w-12 shrink-0 items-center justify-end">
-                <span className="font-mono text-[0.6875rem] tracking-widest text-ironwork-faint">
+                <span className="text-ironwork-faint font-mono text-[0.6875rem] tracking-widest">
                   {floorTag(floorIndex, floorNaming)}
                 </span>
               </div>
@@ -127,9 +127,9 @@ export function BuildingElevation({
       </div>
 
       {/* The areaway: the strip below the stoop, carrying building-wide totals. */}
-      <footer className="flex items-center justify-between gap-4 border-t border-limestone bg-paper-sunk px-4 py-2">
+      <footer className="border-limestone bg-paper-sunk flex items-center justify-between gap-4 border-t px-4 py-2">
         <span className="eyebrow">Areaway</span>
-        <span className="font-mono text-xs text-ironwork-soft">
+        <span className="text-ironwork-soft font-mono text-xs">
           {units.filter((u) => u.flag !== "none").length} units need attention
         </span>
       </footer>
@@ -159,13 +159,13 @@ function UnitCell({
         aria-hidden
         className={`absolute inset-x-0 top-0 h-1 ${FLAG_EDGE[unit.flag]}`}
       />
-      <span className="block truncate font-mono text-sm font-medium text-ironwork">
+      <span className="text-ironwork block truncate font-mono text-sm font-medium">
         {unit.label}
       </span>
-      <span className="block truncate text-xs text-ironwork-faint">
+      <span className="text-ironwork-faint block truncate text-xs">
         {unit.holderName ?? "Vacant"}
       </span>
-      <span className="mt-1 block font-mono text-[0.6875rem] text-ironwork-faint">
+      <span className="text-ironwork-faint mt-1 block font-mono text-[0.6875rem]">
         {unit.shares.toLocaleString("en-US")} sh
       </span>
     </>

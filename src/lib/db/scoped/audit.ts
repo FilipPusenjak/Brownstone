@@ -39,8 +39,12 @@ export async function recordAudit(
       action: entry.action,
       entityType: entry.entityType,
       entityId: entry.entityId,
-      before: entry.before === undefined ? undefined : JSON.parse(JSON.stringify(entry.before)),
-      after: entry.after === undefined ? undefined : JSON.parse(JSON.stringify(entry.after)),
+      before:
+        entry.before === undefined
+          ? undefined
+          : JSON.parse(JSON.stringify(entry.before)),
+      after:
+        entry.after === undefined ? undefined : JSON.parse(JSON.stringify(entry.after)),
       summary: entry.summary ?? null,
     },
   });
@@ -62,7 +66,11 @@ export async function listAudit(
       take: options.limit ?? 100,
       include: {
         actorMembership: {
-          select: { id: true, title: true, user: { select: { name: true, email: true } } },
+          select: {
+            id: true,
+            title: true,
+            user: { select: { name: true, email: true } },
+          },
         },
       },
     }),

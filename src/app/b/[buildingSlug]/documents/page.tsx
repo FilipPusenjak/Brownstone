@@ -61,23 +61,35 @@ export default async function DocumentsPage({
 
       {documents.length === 0 ? (
         <EmptyState title="Nothing on file yet">
-          Files arrive here by being attached to something: plans on an
-          alteration request, a certificate of insurance, a receipt on a filing.
+          Files arrive here by being attached to something: plans on an alteration
+          request, a certificate of insurance, a receipt on a filing.
         </EmptyState>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
-            <caption className="sr-only">Documents held for {ctx.building.name}</caption>
+            <caption className="sr-only">
+              Documents held for {ctx.building.name}
+            </caption>
             <thead>
-              <tr className="border-b border-limestone-deep">
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Document</th>
-                <th scope="col" className="eyebrow hidden pb-2 pr-4 font-normal md:table-cell">
+              <tr className="border-limestone-deep border-b">
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  Document
+                </th>
+                <th
+                  scope="col"
+                  className="eyebrow hidden pr-4 pb-2 font-normal md:table-cell"
+                >
                   Added by
                 </th>
-                <th scope="col" className="eyebrow hidden pb-2 pr-4 text-right font-normal sm:table-cell">
+                <th
+                  scope="col"
+                  className="eyebrow hidden pr-4 pb-2 text-right font-normal sm:table-cell"
+                >
                   Size
                 </th>
-                <th scope="col" className="eyebrow pb-2 text-right font-normal">Added</th>
+                <th scope="col" className="eyebrow pb-2 text-right font-normal">
+                  Added
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -91,28 +103,29 @@ export default async function DocumentsPage({
                     <td className="py-3 pr-4">
                       <a
                         href={`/api/files/${document.id}?building=${buildingSlug}`}
-                        className="text-sm font-medium text-ironwork underline decoration-limestone-deep underline-offset-4 hover:decoration-verdigris"
+                        className="text-ironwork decoration-limestone-deep hover:decoration-verdigris text-sm font-medium underline underline-offset-4"
                       >
                         {document.title}
                       </a>
-                      <span className="mt-0.5 flex flex-wrap gap-x-2 font-mono text-[0.6875rem] text-ironwork-faint">
+                      <span className="text-ironwork-faint mt-0.5 flex flex-wrap gap-x-2 font-mono text-[0.6875rem]">
                         <span>{TYPE_LABELS[document.type] ?? document.type}</span>
                         {expiresOn ? (
                           <span className={expiresOn < now ? "text-stamp" : undefined}>
-                            {expiresOn < now ? "expired" : "expires"} {formatDate(expiresOn)}
+                            {expiresOn < now ? "expired" : "expires"}{" "}
+                            {formatDate(expiresOn)}
                           </span>
                         ) : null}
                       </span>
                     </td>
-                    <td className="hidden py-3 pr-4 align-top text-sm text-ironwork-soft md:table-cell">
+                    <td className="text-ironwork-soft hidden py-3 pr-4 align-top text-sm md:table-cell">
                       {document.uploadedBy?.user.name ??
                         document.uploadedBy?.user.email ??
                         "—"}
                     </td>
-                    <td className="hidden py-3 pr-4 text-right align-top font-mono text-xs whitespace-nowrap text-ironwork-soft sm:table-cell">
+                    <td className="text-ironwork-soft hidden py-3 pr-4 text-right align-top font-mono text-xs whitespace-nowrap sm:table-cell">
                       {sizeOf(document.sizeBytes)}
                     </td>
-                    <td className="py-3 text-right align-top font-mono text-xs whitespace-nowrap text-ironwork">
+                    <td className="text-ironwork py-3 text-right align-top font-mono text-xs whitespace-nowrap">
                       {formatDate(toPlainDate(document.createdAt))}
                     </td>
                   </tr>

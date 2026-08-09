@@ -93,10 +93,7 @@ BEGIN
   EXECUTE 'GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${APP_ROLE}';
 
 ${appendOnly
-  .map(
-    (t) =>
-      `  EXECUTE 'REVOKE UPDATE, DELETE ON "${t}" FROM ${APP_ROLE}';`,
-  )
+  .map((t) => `  EXECUTE 'REVOKE UPDATE, DELETE ON "${t}" FROM ${APP_ROLE}';`)
   .join("\n")}
 
   EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${APP_ROLE}';
@@ -230,10 +227,7 @@ async function main(): Promise<void> {
     const sql = buildSql(tables);
 
     if (process.argv.includes("--write")) {
-      const stamp = new Date()
-        .toISOString()
-        .replace(/[-:T]/g, "")
-        .slice(0, 14);
+      const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
       const dir = join("prisma", "migrations", `${stamp}_row_level_security`);
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "migration.sql"), sql);

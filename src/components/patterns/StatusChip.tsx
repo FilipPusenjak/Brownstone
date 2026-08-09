@@ -1,6 +1,5 @@
 import type { DueStatus } from "~/lib/primitives/obligations/recurrence";
 
-
 /**
  * Status, in the four-state progression: started is yellow, in progress is
  * blue, complete is green, overdue is the red of a stamped notice.
@@ -43,7 +42,7 @@ export function StatusChip({ status }: { status: DueStatus }) {
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-chip border px-1.5 py-0.5 font-mono text-[0.6875rem] uppercase tracking-wider ${style.className}`}
+      className={`rounded-chip inline-flex shrink-0 items-center gap-1 border px-1.5 py-0.5 font-mono text-[0.6875rem] tracking-wider uppercase ${style.className}`}
     >
       {status === "COMPLETED" ? <CheckMark /> : null}
       {style.label}
@@ -74,7 +73,7 @@ export function UnverifiedChip({ title }: { title?: string }) {
   return (
     <span
       title={title ?? "Some detail of this requirement could not be verified."}
-      className="inline-flex shrink-0 items-center gap-1 rounded-chip border border-brass px-1.5 py-0.5 font-mono text-[0.6875rem] uppercase tracking-wider text-brass"
+      className="rounded-chip border-brass text-brass inline-flex shrink-0 items-center gap-1 border px-1.5 py-0.5 font-mono text-[0.6875rem] tracking-wider uppercase"
     >
       Unverified
     </span>

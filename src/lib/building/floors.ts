@@ -35,8 +35,7 @@ function ordinal(n: number): string {
   const suffixes = ["th", "st", "nd", "rd"] as const;
   const remainder = n % 100;
   // 11th, 12th and 13th are the exceptions to the last-digit rule.
-  const suffix =
-    remainder >= 11 && remainder <= 13 ? "th" : (suffixes[n % 10] ?? "th");
+  const suffix = remainder >= 11 && remainder <= 13 ? "th" : (suffixes[n % 10] ?? "th");
   return `${n}${suffix}`;
 }
 

@@ -124,7 +124,9 @@
 
   /* Every number in the product is tabular. */
   :where(.font-mono, code, kbd, samp) {
-    font-feature-settings: "tnum" 1, "zero" 1;
+    font-feature-settings:
+      "tnum" 1,
+      "zero" 1;
   }
 
   /* Visible, and in the system accent rather than the browser's blue. */

@@ -47,7 +47,8 @@ export async function requestUpload(
   assertCan(ctx, "document.upload");
 
   const validation = validateUpload(input);
-  if (!validation.ok) return fail("invalid", validation.message, { file: validation.message });
+  if (!validation.ok)
+    return fail("invalid", validation.message, { file: validation.message });
 
   const allowed = await canAttachTo(ctx, input.entityType, input.entityId);
   if (!allowed) {

@@ -58,26 +58,26 @@ export default async function AuditPage({
 
       {entries.length === 0 ? (
         <EmptyState title="Nothing recorded yet">
-          Filing an obligation, deciding an alteration, inviting a neighbour —
-          each of those writes a line here as it happens.
+          Filing an obligation, deciding an alteration, inviting a neighbour — each of
+          those writes a line here as it happens.
         </EmptyState>
       ) : (
-        <ol className="divide-y divide-limestone">
+        <ol className="divide-limestone divide-y">
           {entries.map((entry) => (
             <li key={entry.id} className="py-3 sm:flex sm:items-baseline sm:gap-x-4">
-              <span className="block font-mono text-[0.6875rem] whitespace-nowrap text-ironwork-faint sm:w-40 sm:shrink-0">
+              <span className="text-ironwork-faint block font-mono text-[0.6875rem] whitespace-nowrap sm:w-40 sm:shrink-0">
                 {formatInstant(entry.createdAt, ctx.building.timezone)}
               </span>
               <span className="mt-1 block min-w-0 flex-1 sm:mt-0">
-                <span className="block text-sm text-ironwork">
+                <span className="text-ironwork block text-sm">
                   {entry.summary ?? `${entry.action} on ${entry.entityType}`}
                 </span>
-                <span className="mt-0.5 flex flex-wrap gap-x-2 font-mono text-[0.6875rem] text-ironwork-faint">
+                <span className="text-ironwork-faint mt-0.5 flex flex-wrap gap-x-2 font-mono text-[0.6875rem]">
                   <span>{entry.action}</span>
                   <span>{ENTITY_LABELS[entry.entityType] ?? entry.entityType}</span>
                 </span>
               </span>
-              <span className="mt-1 block text-xs whitespace-nowrap text-ironwork-soft sm:mt-0 sm:text-right">
+              <span className="text-ironwork-soft mt-1 block text-xs whitespace-nowrap sm:mt-0 sm:text-right">
                 {entry.actorMembership?.user.name ??
                   entry.actorMembership?.user.email ??
                   "the system"}
@@ -87,10 +87,9 @@ export default async function AuditPage({
         </ol>
       )}
 
-      <p className="mt-6 max-w-2xl text-xs leading-relaxed text-ironwork-faint">
-        The most recent {entries.length} entries. Anything the daily reminder run
-        does is recorded as the system rather than a person, because nobody
-        pressed anything.
+      <p className="text-ironwork-faint mt-6 max-w-2xl text-xs leading-relaxed">
+        The most recent {entries.length} entries. Anything the daily reminder run does
+        is recorded as the system rather than a person, because nobody pressed anything.
       </p>
     </>
   );

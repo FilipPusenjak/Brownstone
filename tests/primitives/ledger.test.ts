@@ -35,13 +35,19 @@ function payment(
 describe("balance", () => {
   it("is charges minus payments", () => {
     expect(
-      balance([charge("c1", "2026-05-01", 90_000)], [payment("p1", "2026-05-03", 30_000)]),
+      balance(
+        [charge("c1", "2026-05-01", 90_000)],
+        [payment("p1", "2026-05-03", 30_000)],
+      ),
     ).toEqual(60_000);
   });
 
   it("is zero when settled", () => {
     expect(
-      balance([charge("c1", "2026-05-01", 90_000)], [payment("p1", "2026-05-03", 90_000)]),
+      balance(
+        [charge("c1", "2026-05-01", 90_000)],
+        [payment("p1", "2026-05-03", 90_000)],
+      ),
     ).toEqual(0);
   });
 

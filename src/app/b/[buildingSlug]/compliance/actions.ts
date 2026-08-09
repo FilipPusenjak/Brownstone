@@ -113,7 +113,9 @@ export async function waiveObligationAction(input: {
     waiveObligation(ctx, {
       obligationId: input.obligationId,
       reason: input.reason,
-      ...(input.notApplicable === undefined ? {} : { notApplicable: input.notApplicable }),
+      ...(input.notApplicable === undefined
+        ? {}
+        : { notApplicable: input.notApplicable }),
     }),
   );
   if (result.ok) {

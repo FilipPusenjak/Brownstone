@@ -198,9 +198,7 @@ describe("compliance lifecycle", () => {
 
       const { listReminders } = await import("~/lib/db/scoped/compliance");
       const reminders = await listReminders(president);
-      const stale = reminders.filter(
-        (r) => r.obligationId === closed.id && !r.sentAt,
-      );
+      const stale = reminders.filter((r) => r.obligationId === closed.id && !r.sentAt);
       expect(stale).toEqual([]);
     });
 

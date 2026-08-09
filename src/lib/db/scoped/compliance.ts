@@ -58,7 +58,9 @@ export async function getObligation(ctx: BuildingContext, obligationId: string) 
     tx.obligation.findUnique({
       where: { id: obligationId },
       include: {
-        assignee: { select: { id: true, user: { select: { name: true, email: true } } } },
+        assignee: {
+          select: { id: true, user: { select: { name: true, email: true } } },
+        },
         completedBy: {
           select: { id: true, user: { select: { name: true, email: true } } },
         },

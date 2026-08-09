@@ -96,9 +96,7 @@ export async function withMemberBootstrapTx<T>(
       },
       async enterBuilding(buildingId: string): Promise<void> {
         const checked = assertUuid(buildingId, "buildingId");
-        await tx.$executeRawUnsafe(
-          `SET LOCAL app.current_building_id = '${checked}'`,
-        );
+        await tx.$executeRawUnsafe(`SET LOCAL app.current_building_id = '${checked}'`);
       },
     };
 
@@ -116,7 +114,9 @@ export async function withMemberBootstrapTx<T>(
  * table read in here returns nothing, which is the fail-closed default working
  * as designed.
  */
-export async function withUntenantedTx<T>(fn: (tx: ScopedTx) => Promise<T>): Promise<T> {
+export async function withUntenantedTx<T>(
+  fn: (tx: ScopedTx) => Promise<T>,
+): Promise<T> {
   return prisma.$transaction(async (tx) => fn(tx), TX_OPTIONS);
 }
 
@@ -173,9 +173,7 @@ export async function withInvitationTokenTx<T>(
   }
 
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(
-      `SET LOCAL app.invitation_token_hash = '${tokenHash}'`,
-    );
+    await tx.$executeRawUnsafe(`SET LOCAL app.invitation_token_hash = '${tokenHash}'`);
     return fn(tx);
   }, TX_OPTIONS);
 }

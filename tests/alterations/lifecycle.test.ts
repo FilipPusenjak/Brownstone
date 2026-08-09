@@ -320,7 +320,9 @@ describe("certificates of insurance", () => {
     const reminders = (await listReminders(president)).filter(
       (r) => r.obligationId === coi.id,
     );
-    expect(reminders.map((r) => r.offsetDays).sort((a, b) => b - a)).toEqual([45, 14, 3]);
+    expect(reminders.map((r) => r.offsetDays).sort((a, b) => b - a)).toEqual([
+      45, 14, 3,
+    ]);
   });
 
   it("refuses a certificate that expires before it takes effect", async () => {

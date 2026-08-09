@@ -69,7 +69,7 @@ export function NewAlterationForm({
   return (
     <div className="max-w-2xl">
       {error ? (
-        <p role="alert" className="mb-4 text-sm text-stamp">
+        <p role="alert" className="text-stamp mb-4 text-sm">
           {error}
         </p>
       ) : null}
@@ -112,7 +112,7 @@ export function NewAlterationForm({
           />
         </Field>
 
-        <fieldset className="rounded-sheet border border-limestone bg-paper px-4 py-3">
+        <fieldset className="rounded-sheet border-limestone bg-paper border px-4 py-3">
           <legend className="eyebrow px-1">The questions the board will ask</legend>
           <div className="space-y-2.5">
             <Check
@@ -184,9 +184,9 @@ export function NewAlterationForm({
         </Button>
       </div>
 
-      <p className="mt-3 text-xs text-ironwork-faint">
-        You can add plans and your contractor&rsquo;s insurance certificate on the
-        next screen.
+      <p className="text-ironwork-faint mt-3 text-xs">
+        You can add plans and your contractor&rsquo;s insurance certificate on the next
+        screen.
       </p>
     </div>
   );
@@ -204,7 +204,7 @@ function Check({
   hint: string;
 }) {
   return (
-    <label className="flex items-start gap-2.5 text-sm text-ironwork">
+    <label className="text-ironwork flex items-start gap-2.5 text-sm">
       <input
         type="checkbox"
         checked={checked}
@@ -213,7 +213,7 @@ function Check({
       />
       <span>
         {label}
-        <span className="mt-0.5 block text-xs text-ironwork-faint">{hint}</span>
+        <span className="text-ironwork-faint mt-0.5 block text-xs">{hint}</span>
       </span>
     </label>
   );

@@ -45,7 +45,9 @@ export default async function CompliancePage({
   const proposals: Proposal[] = assessments
     .filter((a) => a.decision === "PROPOSED" && a.engineVerdict)
     .map((assessment) => {
-      const draft = draftObligation(assessment.rule as unknown as RuleRow, { today: now });
+      const draft = draftObligation(assessment.rule as unknown as RuleRow, {
+        today: now,
+      });
       return {
         ruleCode: assessment.ruleCode,
         title: assessment.rule.title,
@@ -73,10 +75,10 @@ export default async function CompliancePage({
 
       {rows.length === 0 ? (
         <div className="sheet px-6 py-10 text-center">
-          <p className="text-sm font-medium text-ironwork">
+          <p className="text-ironwork text-sm font-medium">
             Nothing on the calendar yet
           </p>
-          <p className="mx-auto mt-2 max-w-md text-sm text-ironwork-soft">
+          <p className="text-ironwork-soft mx-auto mt-2 max-w-md text-sm">
             {proposals.length > 0
               ? `${proposals.length} requirements below look like they apply to this building. Confirm the ones that do.`
               : "Check what applies to this building to get started."}
@@ -89,12 +91,28 @@ export default async function CompliancePage({
               Compliance obligations for {ctx.building.name}
             </caption>
             <thead>
-              <tr className="border-b border-limestone-deep">
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Requirement</th>
-                <th scope="col" className="eyebrow hidden pb-2 pr-4 font-normal sm:table-cell">Authority</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 text-right font-normal">Due</th>
-                <th scope="col" className="eyebrow hidden pb-2 pr-4 text-right font-normal md:table-cell">When</th>
-                <th scope="col" className="eyebrow pb-2 text-right font-normal">Status</th>
+              <tr className="border-limestone-deep border-b">
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  Requirement
+                </th>
+                <th
+                  scope="col"
+                  className="eyebrow hidden pr-4 pb-2 font-normal sm:table-cell"
+                >
+                  Authority
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 text-right font-normal">
+                  Due
+                </th>
+                <th
+                  scope="col"
+                  className="eyebrow hidden pr-4 pb-2 text-right font-normal md:table-cell"
+                >
+                  When
+                </th>
+                <th scope="col" className="eyebrow pb-2 text-right font-normal">
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -104,25 +122,25 @@ export default async function CompliancePage({
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                       <Link
                         href={`/b/${buildingSlug}/compliance/${row.id}`}
-                        className="text-sm font-medium text-ironwork underline decoration-limestone-deep underline-offset-4 hover:decoration-verdigris"
+                        className="text-ironwork decoration-limestone-deep hover:decoration-verdigris text-sm font-medium underline underline-offset-4"
                       >
                         {row.title}
                       </Link>
                       {row.needsVerification ? <UnverifiedChip /> : null}
                     </div>
                     {row.ruleCode ? (
-                      <span className="mt-0.5 block font-mono text-[0.6875rem] text-ironwork-faint">
+                      <span className="text-ironwork-faint mt-0.5 block font-mono text-[0.6875rem]">
                         {row.ruleCode}
                       </span>
                     ) : null}
                   </td>
-                  <td className="hidden py-3 pr-4 font-mono text-xs text-ironwork-soft sm:table-cell">
+                  <td className="text-ironwork-soft hidden py-3 pr-4 font-mono text-xs sm:table-cell">
                     {authorityOf(row.ruleCode)}
                   </td>
-                  <td className="py-3 pr-4 text-right font-mono text-xs whitespace-nowrap text-ironwork">
+                  <td className="text-ironwork py-3 pr-4 text-right font-mono text-xs whitespace-nowrap">
                     {formatDate(row.due)}
                   </td>
-                  <td className="hidden py-3 pr-4 text-right text-xs whitespace-nowrap text-ironwork-faint md:table-cell">
+                  <td className="text-ironwork-faint hidden py-3 pr-4 text-right text-xs whitespace-nowrap md:table-cell">
                     {row.state === "OPEN" ? relativeDays(now, row.due) : "—"}
                   </td>
                   <td className="py-3 text-right">
@@ -137,8 +155,10 @@ export default async function CompliancePage({
 
       {proposals.length > 0 ? (
         <section className="mt-10">
-          <h2 className="text-lg font-semibold tracking-tight">Waiting for the board</h2>
-          <p className="mt-1 max-w-2xl text-sm text-ironwork-soft">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Waiting for the board
+          </h2>
+          <p className="text-ironwork-soft mt-1 max-w-2xl text-sm">
             {canAssess
               ? "These look like they apply to this building. Nothing goes on the calendar until someone confirms it, and a dismissal keeps its reason."
               : "These look like they apply to this building. An officer needs to confirm them before they join the calendar."}
@@ -155,14 +175,16 @@ export default async function CompliancePage({
               ) : (
                 <li key={proposal.ruleCode} className="sheet px-4 py-3">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                    <span className="text-sm font-medium text-ironwork">
+                    <span className="text-ironwork text-sm font-medium">
                       {proposal.title}
                     </span>
-                    <span className="font-mono text-[0.6875rem] text-ironwork-faint">
+                    <span className="text-ironwork-faint font-mono text-[0.6875rem]">
                       {proposal.citation}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-sm text-ironwork-soft">{proposal.requirement}</p>
+                  <p className="text-ironwork-soft mt-1.5 text-sm">
+                    {proposal.requirement}
+                  </p>
                 </li>
               ),
             )}
@@ -172,19 +194,17 @@ export default async function CompliancePage({
 
       {dismissed.length > 0 ? (
         <section className="mt-10">
-          <h2 className="text-lg font-semibold tracking-tight">
-            Decided not to apply
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm text-ironwork-soft">
+          <h2 className="text-lg font-semibold tracking-tight">Decided not to apply</h2>
+          <p className="text-ironwork-soft mt-1 max-w-2xl text-sm">
             Kept so the next board can see what was decided, by whom, and why.
           </p>
 
-          <ul className="mt-4 divide-y divide-limestone border-t border-limestone">
+          <ul className="divide-limestone border-limestone mt-4 divide-y border-t">
             {dismissed.map((assessment) => (
               <li key={assessment.id} className="py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-                  <span className="text-sm text-ironwork">{assessment.rule.title}</span>
-                  <span className="font-mono text-[0.6875rem] text-ironwork-faint">
+                  <span className="text-ironwork text-sm">{assessment.rule.title}</span>
+                  <span className="text-ironwork-faint font-mono text-[0.6875rem]">
                     {assessment.decidedBy?.user.name ?? "—"}
                     {assessment.decidedAt
                       ? ` · ${formatDate(toPlainDate(assessment.decidedAt))}`
@@ -192,7 +212,7 @@ export default async function CompliancePage({
                   </span>
                 </div>
                 {assessment.decisionNote ? (
-                  <p className="mt-1 text-sm text-ironwork-soft">
+                  <p className="text-ironwork-soft mt-1 text-sm">
                     {assessment.decisionNote}
                   </p>
                 ) : null}

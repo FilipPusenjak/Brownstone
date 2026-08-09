@@ -19,7 +19,10 @@
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
-import { evaluate, type BuildingAttributes } from "../../src/lib/compliance/applicability";
+import {
+  evaluate,
+  type BuildingAttributes,
+} from "../../src/lib/compliance/applicability";
 import { withBuildingTx, withUntenantedTx } from "../../src/lib/db/tx";
 import {
   nextDueDate,
@@ -46,7 +49,13 @@ interface PersonSpec {
   email: string;
   name: string;
   roles: Array<
-    "SHAREHOLDER" | "PRESIDENT" | "TREASURER" | "SECRETARY" | "BOARD_MEMBER" | "SUPER" | "OBSERVER"
+    | "SHAREHOLDER"
+    | "PRESIDENT"
+    | "TREASURER"
+    | "SECRETARY"
+    | "BOARD_MEMBER"
+    | "SUPER"
+    | "OBSERVER"
   >;
   units: string[];
   title?: string;
@@ -126,16 +135,32 @@ const ADELAIDE: BuildingSpec = {
       units: ["3R"],
       title: "Secretary",
     },
-    { email: "hal.brenner@example.com", name: "Hal Brenner", roles: ["SHAREHOLDER"], units: ["GARDEN"] },
+    {
+      email: "hal.brenner@example.com",
+      name: "Hal Brenner",
+      roles: ["SHAREHOLDER"],
+      units: ["GARDEN"],
+    },
     // The shared user. Also a member of Lispenard House, below.
-    { email: "marta.oyelaran@example.com", name: "Marta Oyelaran", roles: ["SHAREHOLDER"], units: ["2R"] },
+    {
+      email: "marta.oyelaran@example.com",
+      name: "Marta Oyelaran",
+      roles: ["SHAREHOLDER"],
+      units: ["2R"],
+    },
     {
       email: "owen.castellanos@example.com",
       name: "Owen Castellanos",
       roles: ["SHAREHOLDER"],
       units: ["4F"],
     },
-    { email: "sal.ferrante@example.com", name: "Sal Ferrante", roles: ["SUPER"], units: [], title: "Superintendent" },
+    {
+      email: "sal.ferrante@example.com",
+      name: "Sal Ferrante",
+      roles: ["SUPER"],
+      units: [],
+      title: "Superintendent",
+    },
   ],
   confirmedRules: [
     "hpd-property-registration",
@@ -207,9 +232,25 @@ const LISPENARD: BuildingSpec = {
       units: ["3F"],
     },
     // The same person as in The Adelaide, by email.
-    { email: "marta.oyelaran@example.com", name: "Marta Oyelaran", roles: ["SHAREHOLDER"], units: ["3R"] },
-    { email: "gideon.marsh@example.com", name: "Gideon Marsh", roles: ["SHAREHOLDER"], units: ["4F"] },
-    { email: "rosalind.hyde@example.com", name: "Rosalind Hyde", roles: ["OBSERVER"], units: [], title: "Managing agent (advisory)" },
+    {
+      email: "marta.oyelaran@example.com",
+      name: "Marta Oyelaran",
+      roles: ["SHAREHOLDER"],
+      units: ["3R"],
+    },
+    {
+      email: "gideon.marsh@example.com",
+      name: "Gideon Marsh",
+      roles: ["SHAREHOLDER"],
+      units: ["4F"],
+    },
+    {
+      email: "rosalind.hyde@example.com",
+      name: "Rosalind Hyde",
+      roles: ["OBSERVER"],
+      units: [],
+      title: "Managing agent (advisory)",
+    },
   ],
   confirmedRules: [
     "hpd-property-registration",
@@ -485,9 +526,7 @@ async function seedBuilding(
           rule.recurrenceType === "ANCHORED_TO_COMPLETION"
             ? makeDate(Number(TODAY.slice(0, 4)) - 3, 6, 12)
             : null,
-        ...(rule.recurrenceType === "CYCLICAL_BY_YEAR"
-          ? {}
-          : {}),
+        ...(rule.recurrenceType === "CYCLICAL_BY_YEAR" ? {} : {}),
       });
 
       if (result.kind !== "due") continue;
@@ -781,8 +820,18 @@ async function seedBuildingExtras(
 
   await tx.resourcePrerequisite.createMany({
     data: [
-      { buildingId, resourceId: resource.id, type: "DEPOSIT_PAID", config: { amountCents: 50_000 } },
-      { buildingId, resourceId: resource.id, type: "VALID_COI", config: { minimumCoverageCents: 100_000_000, requireAdditionalInsured: true } },
+      {
+        buildingId,
+        resourceId: resource.id,
+        type: "DEPOSIT_PAID",
+        config: { amountCents: 50_000 },
+      },
+      {
+        buildingId,
+        resourceId: resource.id,
+        type: "VALID_COI",
+        config: { minimumCoverageCents: 100_000_000, requireAdditionalInsured: true },
+      },
     ],
   });
 
@@ -835,7 +884,8 @@ async function seedBuildingExtras(
         unitId: null,
         reportedById: submitter,
         title: "Front door latch not catching",
-        detail: "The door bounces back unless you pull it hard. Getting worse in the damp.",
+        detail:
+          "The door bounces back unless you pull it hard. Getting worse in the damp.",
         area: "Entry",
         status: "TRIAGED",
         priority: "URGENT",
@@ -874,7 +924,9 @@ async function seedBuildingExtras(
       rotationId: rotation.id,
       unitId: firstUnit,
       periodStart: toDbDate(TODAY),
-      periodEnd: toDbDate(makeDate(Number(TODAY.slice(0, 4)), Number(TODAY.slice(5, 7)), 28)),
+      periodEnd: toDbDate(
+        makeDate(Number(TODAY.slice(0, 4)), Number(TODAY.slice(5, 7)), 28),
+      ),
     },
   });
 

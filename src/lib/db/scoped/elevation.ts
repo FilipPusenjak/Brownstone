@@ -73,7 +73,7 @@ export async function buildingElevation(
             select: { unitId: true, amountCents: true },
           })
         : Promise.resolve([]),
-      ]);
+    ]);
 
     const paid = seesArrears
       ? await tx.payment.findMany({ select: { unitId: true, amountCents: true } })
@@ -81,7 +81,10 @@ export async function buildingElevation(
 
     const balances = new Map<string, number>();
     for (const charge of arrears) {
-      balances.set(charge.unitId, (balances.get(charge.unitId) ?? 0) + charge.amountCents);
+      balances.set(
+        charge.unitId,
+        (balances.get(charge.unitId) ?? 0) + charge.amountCents,
+      );
     }
     for (const payment of paid) {
       balances.set(
@@ -109,7 +112,10 @@ export async function buildingElevation(
       if (coi) {
         const days = daysBetween(now, toPlainDate(coi.expiresOn));
         if (days < 0) {
-          signals.push({ flag: "overdue", note: `${coi.holderName} insurance expired` });
+          signals.push({
+            flag: "overdue",
+            note: `${coi.holderName} insurance expired`,
+          });
         } else if (days <= COI_WARNING_DAYS) {
           signals.push({
             flag: "attention",
@@ -154,7 +160,9 @@ export async function overviewCounts(ctx: BuildingContext) {
         tx.obligation.count({ where: { state: "OPEN", dueOn: { lt: now } } }),
         tx.buildingRuleAssessment.count({ where: { decision: "PROPOSED" } }),
         tx.certificateOfInsurance.count({
-          where: { expiresOn: { lte: new Date(Date.now() + COI_WARNING_DAYS * 86_400_000) } },
+          where: {
+            expiresOn: { lte: new Date(Date.now() + COI_WARNING_DAYS * 86_400_000) },
+          },
         }),
         tx.alterationRequest.count({
           where: {

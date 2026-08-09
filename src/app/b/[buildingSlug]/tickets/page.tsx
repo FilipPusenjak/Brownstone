@@ -50,31 +50,43 @@ export default async function TicketsPage({
 
       {tickets.length === 0 ? (
         <EmptyState title="No open repairs">
-          Anything broken in the building — the front door, a radiator, the
-          stoop — gets reported here.
+          Anything broken in the building — the front door, a radiator, the stoop — gets
+          reported here.
         </EmptyState>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <caption className="sr-only">Repair tickets</caption>
             <thead>
-              <tr className="border-b border-limestone-deep">
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">What&rsquo;s wrong</th>
-                <th scope="col" className="eyebrow pb-2 pr-4 font-normal">Where</th>
-                <th scope="col" className="eyebrow hidden pb-2 pr-4 text-right font-normal sm:table-cell">Reported</th>
-                <th scope="col" className="eyebrow pb-2 text-right font-normal">Who pays</th>
+              <tr className="border-limestone-deep border-b">
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  What&rsquo;s wrong
+                </th>
+                <th scope="col" className="eyebrow pr-4 pb-2 font-normal">
+                  Where
+                </th>
+                <th
+                  scope="col"
+                  className="eyebrow hidden pr-4 pb-2 text-right font-normal sm:table-cell"
+                >
+                  Reported
+                </th>
+                <th scope="col" className="eyebrow pb-2 text-right font-normal">
+                  Who pays
+                </th>
               </tr>
             </thead>
             <tbody>
               {tickets.map((ticket) => (
                 <tr key={ticket.id} className="ledger-row align-baseline">
                   <td className="py-3 pr-4">
-                    <span className="block text-sm font-medium text-ironwork">
+                    <span className="text-ironwork block text-sm font-medium">
                       {ticket.title}
                     </span>
-                    <span className="font-mono text-[0.6875rem] text-ironwork-faint">
+                    <span className="text-ironwork-faint font-mono text-[0.6875rem]">
                       {ticket.status.toLowerCase().replace("_", " ")}
-                      {ticket.priority === "URGENT" || ticket.priority === "EMERGENCY" ? (
+                      {ticket.priority === "URGENT" ||
+                      ticket.priority === "EMERGENCY" ? (
                         <span className="text-stamp">
                           {" · "}
                           {ticket.priority.toLowerCase()}
@@ -82,10 +94,10 @@ export default async function TicketsPage({
                       ) : null}
                     </span>
                   </td>
-                  <td className="py-3 pr-4 font-mono text-xs text-ironwork">
+                  <td className="text-ironwork py-3 pr-4 font-mono text-xs">
                     {ticket.unit?.label ?? ticket.area ?? "Common"}
                   </td>
-                  <td className="hidden py-3 pr-4 text-right font-mono text-xs whitespace-nowrap text-ironwork-soft sm:table-cell">
+                  <td className="text-ironwork-soft hidden py-3 pr-4 text-right font-mono text-xs whitespace-nowrap sm:table-cell">
                     {formatDate(toPlainDate(ticket.createdAt))}
                   </td>
                   <td className="py-3 text-right">
@@ -121,7 +133,7 @@ function ResponsibilityChip({ value }: { value: string }) {
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-chip border px-1.5 py-0.5 font-mono text-[0.6875rem] uppercase tracking-wider ${style?.className ?? ""}`}
+      className={`rounded-chip inline-flex shrink-0 items-center border px-1.5 py-0.5 font-mono text-[0.6875rem] tracking-wider uppercase ${style?.className ?? ""}`}
     >
       {style?.label}
     </span>

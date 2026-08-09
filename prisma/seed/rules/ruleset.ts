@@ -36,7 +36,8 @@ export interface RuleSeed {
   requirement: string;
   appliesWhen: string;
   applicability: Predicate;
-  recurrenceType: "NONE" | "FIXED_INTERVAL" | "CYCLICAL_BY_YEAR" | "ANCHORED_TO_COMPLETION";
+  recurrenceType:
+    "NONE" | "FIXED_INTERVAL" | "CYCLICAL_BY_YEAR" | "ANCHORED_TO_COMPLETION";
   intervalMonths?: number;
   cycleYears?: number;
   cycleAnchorYear?: number;
@@ -63,7 +64,8 @@ export const RULESET: RuleSeed[] = [
     title: "HPD property registration",
     authority: "HPD",
     citation: "NYC Admin Code § 27-2097",
-    sourceUrl: "https://www.nyc.gov/site/hpd/services-and-information/register-your-property.page",
+    sourceUrl:
+      "https://www.nyc.gov/site/hpd/services-and-information/register-your-property.page",
     requirement:
       "Register the building with HPD and renew the registration every year. The registration names the managing agent and an officer who can be reached about emergencies.",
     appliesWhen: "The building has three or more dwelling units.",
@@ -80,7 +82,8 @@ export const RULESET: RuleSeed[] = [
     title: "Window guard annual notice",
     authority: "HPD",
     citation: "NYC Health Code art. 131; NYC Admin Code § 27-2043.1",
-    sourceUrl: "https://www.nyc.gov/site/hpd/services-and-information/window-guards.page",
+    sourceUrl:
+      "https://www.nyc.gov/site/hpd/services-and-information/window-guards.page",
     requirement:
       "Send every household the annual window guard notice, asking whether a child under 11 lives in the apartment, and keep the returned forms. Install guards wherever a child under 11 lives or a resident asks for them.",
     appliesWhen: "The building has three or more dwelling units.",
@@ -101,7 +104,8 @@ export const RULESET: RuleSeed[] = [
     title: "Lead paint annual notice and inspection",
     authority: "HPD",
     citation: "Local Law 1 of 2004; NYC Admin Code § 27-2056.4",
-    sourceUrl: "https://www.nyc.gov/site/hpd/services-and-information/lead-based-paint.page",
+    sourceUrl:
+      "https://www.nyc.gov/site/hpd/services-and-information/lead-based-paint.page",
     requirement:
       "Send the annual notice asking whether a child under six lives in the apartment, inspect any apartment where one does, and keep the records for ten years.",
     appliesWhen:
@@ -143,8 +147,10 @@ export const RULESET: RuleSeed[] = [
     code: "hpd-indoor-allergen-inspection",
     title: "Indoor allergen hazard inspection",
     authority: "HPD",
-    citation: "Local Law 55 of 2018 (Asthma Free Housing Act); NYC Admin Code § 27-2017 et seq.",
-    sourceUrl: "https://www.nyc.gov/site/hpd/services-and-information/indoor-allergen-hazards.page",
+    citation:
+      "Local Law 55 of 2018 (Asthma Free Housing Act); NYC Admin Code § 27-2017 et seq.",
+    sourceUrl:
+      "https://www.nyc.gov/site/hpd/services-and-information/indoor-allergen-hazards.page",
     requirement:
       "Inspect every apartment once a year for mould, pests and the conditions that cause them, fix what you find, and keep the records.",
     appliesWhen: "The building has three or more dwelling units.",
@@ -168,7 +174,11 @@ export const RULESET: RuleSeed[] = [
     applicability: {
       all: [
         MULTIPLE_DWELLING,
-        { attr: "gasService", op: "in", value: ["COOKING_ONLY", "HEATING_AND_COOKING"] },
+        {
+          attr: "gasService",
+          op: "in",
+          value: ["COOKING_ONLY", "HEATING_AND_COOKING"],
+        },
       ],
     },
     recurrenceType: "FIXED_INTERVAL",
@@ -298,8 +308,7 @@ export const RULESET: RuleSeed[] = [
     sourceUrl: "https://www.nyc.gov/site/buildings/safety/gas-piping-inspections.page",
     requirement:
       "Have the exposed gas piping inspected by a licensed master plumber on the city's four-year cycle and file the certification.",
-    appliesWhen:
-      "The building has gas service and three or more dwelling units.",
+    appliesWhen: "The building has gas service and three or more dwelling units.",
     applicability: {
       all: [MULTIPLE_DWELLING, { attr: "gasService", op: "ne", value: "NONE" }],
     },
@@ -317,8 +326,7 @@ export const RULESET: RuleSeed[] = [
     authority: "DOB",
     citation: "Local Law 84 of 2009; NYC Admin Code § 28-309",
     sourceUrl: "https://www.nyc.gov/site/buildings/codes/benchmarking.page",
-    requirement:
-      "Report the building's annual energy and water use to the city.",
+    requirement: "Report the building's annual energy and water use to the city.",
     appliesWhen: "The building is larger than 25,000 square feet.",
     applicability: { attr: "grossSquareFeet", op: "gte", value: 25_000 },
     recurrenceType: "FIXED_INTERVAL",
@@ -356,7 +364,8 @@ export const RULESET: RuleSeed[] = [
     title: "Co-op property tax abatement renewal",
     authority: "DOF",
     citation: "NYC Admin Code § 11-245.1-a",
-    sourceUrl: "https://www.nyc.gov/site/finance/property/landlords-coop-condo-abatement.page",
+    sourceUrl:
+      "https://www.nyc.gov/site/finance/property/landlords-coop-condo-abatement.page",
     requirement:
       "File the annual renewal with the Department of Finance so shareholders keep the co-op and condo property tax abatement, including any changes in which units are primary residences.",
     appliesWhen: "Every co-op.",

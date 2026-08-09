@@ -68,10 +68,10 @@ export function InviteForm({
   return (
     <div>
       {sentTo ? (
-        <div className="mb-4 border-l-2 border-complete-line bg-complete-soft px-3 py-2">
-          <p className="text-sm text-ironwork">Invitation sent to {sentTo}.</p>
+        <div className="border-complete-line bg-complete-soft mb-4 border-l-2 px-3 py-2">
+          <p className="text-ironwork text-sm">Invitation sent to {sentTo}.</p>
           {link ? (
-            <p className="mt-1 text-xs text-ironwork-soft">
+            <p className="text-ironwork-soft mt-1 text-xs">
               If their mail bounces, you can pass this on by hand:{" "}
               <span className="font-mono break-all">{link}</span>
             </p>
@@ -80,7 +80,7 @@ export function InviteForm({
       ) : null}
 
       {error ? (
-        <p role="alert" className="mb-3 text-sm text-stamp">
+        <p role="alert" className="text-stamp mb-3 text-sm">
           {error}
         </p>
       ) : null}

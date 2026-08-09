@@ -47,12 +47,12 @@ export function NavLinks({ base, items }: { base: string; items: readonly NavLin
               className={`flex items-center justify-between gap-2 px-2 py-1.5 text-sm ${
                 active
                   ? "bg-verdigris text-white"
-                  : "text-plaster/80 hover:bg-white/8 hover:text-plaster"
+                  : "text-plaster/80 hover:text-plaster hover:bg-white/8"
               }`}
             >
               <span>{item.label}</span>
               {item.stub ? (
-                <span className="font-mono text-[0.5625rem] uppercase tracking-wider text-plaster/35">
+                <span className="text-plaster/35 font-mono text-[0.5625rem] tracking-wider uppercase">
                   stub
                 </span>
               ) : null}

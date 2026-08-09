@@ -43,8 +43,7 @@ function mailFor(recipient: string, since: number): Mail[] {
     })
     .filter(
       (mail) =>
-        mail.at >= since &&
-        mail.body.includes(`To: ${recipient.toLowerCase()}`),
+        mail.at >= since && mail.body.includes(`To: ${recipient.toLowerCase()}`),
     )
     .sort((a, b) => b.at - a.at);
 }

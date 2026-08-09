@@ -1,10 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Role } from "~/generated/prisma/enums";
-import {
-  withBuildingTx,
-  withInvitationTokenTx,
-  withUntenantedTx,
-} from "~/lib/db/tx";
+import { withBuildingTx, withInvitationTokenTx, withUntenantedTx } from "~/lib/db/tx";
 import { fail, ok, type Result } from "~/lib/result";
 import { toDbDate, today } from "~/lib/time";
 
@@ -115,13 +111,22 @@ export async function lookupInvitation(token: string): Promise<InvitationLookup>
   }
 
   if (invitation.revokedAt) {
-    return { ok: false, reason: "That invitation was withdrawn. Ask the board for a new one." };
+    return {
+      ok: false,
+      reason: "That invitation was withdrawn. Ask the board for a new one.",
+    };
   }
   if (invitation.acceptedAt) {
-    return { ok: false, reason: "That invitation has already been used. Sign in instead." };
+    return {
+      ok: false,
+      reason: "That invitation has already been used. Sign in instead.",
+    };
   }
   if (invitation.expiresAt.getTime() < Date.now()) {
-    return { ok: false, reason: "That invitation has expired. Ask the board for a new one." };
+    return {
+      ok: false,
+      reason: "That invitation has expired. Ask the board for a new one.",
+    };
   }
 
   const context = await withBuildingTx(invitation.buildingId, async (tx) => {
@@ -206,7 +211,10 @@ export async function acceptInvitation(
       data: { acceptedAt: new Date(), acceptedByUserId: user.id },
     });
     if (claimed.count === 0) {
-      return fail("conflict", "That invitation has already been used. Sign in instead.");
+      return fail(
+        "conflict",
+        "That invitation has already been used. Sign in instead.",
+      );
     }
 
     const existing = await tx.membership.findUnique({

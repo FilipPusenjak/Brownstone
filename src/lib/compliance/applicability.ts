@@ -30,9 +30,21 @@ export interface BuildingAttributes {
 export type AttributeKey = keyof BuildingAttributes;
 
 export type Comparison =
-  | { readonly attr: AttributeKey; readonly op: "eq" | "ne"; readonly value: string | number | boolean | null }
-  | { readonly attr: AttributeKey; readonly op: "gt" | "gte" | "lt" | "lte"; readonly value: number }
-  | { readonly attr: AttributeKey; readonly op: "in" | "nin"; readonly value: readonly (string | number | boolean | null)[] };
+  | {
+      readonly attr: AttributeKey;
+      readonly op: "eq" | "ne";
+      readonly value: string | number | boolean | null;
+    }
+  | {
+      readonly attr: AttributeKey;
+      readonly op: "gt" | "gte" | "lt" | "lte";
+      readonly value: number;
+    }
+  | {
+      readonly attr: AttributeKey;
+      readonly op: "in" | "nin";
+      readonly value: readonly (string | number | boolean | null)[];
+    };
 
 export type Predicate =
   | Comparison

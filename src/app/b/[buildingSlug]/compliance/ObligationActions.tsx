@@ -111,9 +111,9 @@ export function ObligationActions({
             {pending ? "Reopening…" : "Reopen"}
           </Button>
         ) : null}
-        {message ? <span className="text-xs text-ironwork-soft">{message}</span> : null}
+        {message ? <span className="text-ironwork-soft text-xs">{message}</span> : null}
         {error ? (
-          <span role="alert" className="text-xs text-stamp">
+          <span role="alert" className="text-stamp text-xs">
             {error}
           </span>
         ) : null}
@@ -124,12 +124,12 @@ export function ObligationActions({
   return (
     <div>
       {message ? (
-        <p className="mb-3 border-l-2 border-complete-line bg-complete-soft px-3 py-2 text-sm text-ironwork">
+        <p className="border-complete-line bg-complete-soft text-ironwork mb-3 border-l-2 px-3 py-2 text-sm">
           {message}
         </p>
       ) : null}
       {error ? (
-        <p role="alert" className="mb-3 text-sm text-stamp">
+        <p role="alert" className="text-stamp mb-3 text-sm">
           {error}
         </p>
       ) : null}

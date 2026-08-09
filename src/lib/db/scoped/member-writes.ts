@@ -45,12 +45,7 @@ export async function inviteMember(
 
   // Only a member who can manage members may hand out officer roles. Otherwise
   // "invite" quietly becomes "promote", and a secretary could mint a president.
-  const officerRoles: Role[] = [
-    "PRESIDENT",
-    "TREASURER",
-    "SECRETARY",
-    "BOARD_MEMBER",
-  ];
+  const officerRoles: Role[] = ["PRESIDENT", "TREASURER", "SECRETARY", "BOARD_MEMBER"];
   if (input.roles.some((role) => officerRoles.includes(role))) {
     assertCan(ctx, "member.manage");
   }

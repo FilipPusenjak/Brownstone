@@ -46,16 +46,19 @@ describe("module scaffolds", () => {
     expect(entries).toContain("TODO.md");
   });
 
-  it.each(SCAFFOLDS)("%s says the same thing on the page and in the repo", async (name) => {
-    const page = await missingFromPage(name);
-    const todo = await missingFromTodo(name);
+  it.each(SCAFFOLDS)(
+    "%s says the same thing on the page and in the repo",
+    async (name) => {
+      const page = await missingFromPage(name);
+      const todo = await missingFromTodo(name);
 
-    expect(page.length).toBeGreaterThan(0);
-    expect(
-      todo,
-      `The TODO.md for ${name} has drifted from its page. Re-run: pnpm tsx scripts/write-module-todos.ts`,
-    ).toEqual(page);
-  });
+      expect(page.length).toBeGreaterThan(0);
+      expect(
+        todo,
+        `The TODO.md for ${name} has drifted from its page. Re-run: pnpm tsx scripts/write-module-todos.ts`,
+      ).toEqual(page);
+    },
+  );
 
   it.each(SCAFFOLDS)("%s writes nothing yet", async (name) => {
     // A clean stub beats a broken feature. A scaffold that quietly discards a
@@ -70,7 +73,15 @@ describe("module scaffolds", () => {
 
   it("marks every scaffold as a stub in the navigation", async () => {
     const shell = await readFile(
-      join(import.meta.dirname, "..", "..", "src", "components", "patterns", "AppShell.tsx"),
+      join(
+        import.meta.dirname,
+        "..",
+        "..",
+        "src",
+        "components",
+        "patterns",
+        "AppShell.tsx",
+      ),
       "utf8",
     );
 

@@ -75,7 +75,10 @@ describe("the Resend driver", () => {
       text: "Plain version.",
     });
 
-    const body = JSON.parse(String(calls[0]?.init.body ?? "{}")) as Record<string, unknown>;
+    const body = JSON.parse(String(calls[0]?.init.body ?? "{}")) as Record<
+      string,
+      unknown
+    >;
 
     expect(body["to"]).toEqual("nora@example.com");
     expect(body["subject"]).toEqual("Subject line");
@@ -101,10 +104,16 @@ describe("the Resend driver", () => {
   it("throws rather than reporting success when Resend refuses", async () => {
     globalThis.fetch = vi.fn(
       async () =>
-        new Response(JSON.stringify({ message: "Domain is not verified", name: "validation_error" }), {
-          status: 403,
-          headers: { "content-type": "application/json" },
-        }),
+        new Response(
+          JSON.stringify({
+            message: "Domain is not verified",
+            name: "validation_error",
+          }),
+          {
+            status: 403,
+            headers: { "content-type": "application/json" },
+          },
+        ),
     ) as typeof fetch;
 
     // A refusal must surface: sendNotice marks the notification FAILED with the

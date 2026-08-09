@@ -32,7 +32,9 @@ export default async function ObligationPage({
 
   const due = toPlainDate(obligation.dueOn);
   const status = dueStatus({ state: obligation.state, dueOn: due }, now);
-  const rule = obligation.ruleCode ? await getComplianceRule(obligation.ruleCode) : null;
+  const rule = obligation.ruleCode
+    ? await getComplianceRule(obligation.ruleCode)
+    : null;
 
   const pendingReminders = obligation.reminders.filter((r) => !r.sentAt);
   const sentReminders = obligation.reminders.filter((r) => r.sentAt);
@@ -60,17 +62,17 @@ export default async function ObligationPage({
         {obligation.needsVerification ? (
           <UnverifiedChip title={rule?.verificationNote ?? undefined} />
         ) : null}
-        <span className="font-mono text-sm text-ironwork">
+        <span className="text-ironwork font-mono text-sm">
           Due {formatDateLong(due)}
         </span>
         {obligation.state === "OPEN" ? (
-          <span className="text-sm text-ironwork-soft">{relativeDays(now, due)}</span>
+          <span className="text-ironwork-soft text-sm">{relativeDays(now, due)}</span>
         ) : null}
       </div>
 
       {obligation.needsVerification && rule?.verificationNote ? (
-        <p className="mb-6 border-l-2 border-brass bg-paper px-3 py-2 text-sm text-ironwork-soft">
-          <strong className="font-medium text-ironwork">Unverified.</strong>{" "}
+        <p className="border-brass bg-paper text-ironwork-soft mb-6 border-l-2 px-3 py-2 text-sm">
+          <strong className="text-ironwork font-medium">Unverified.</strong>{" "}
           {rule.verificationNote}
         </p>
       ) : null}
@@ -84,7 +86,7 @@ export default async function ObligationPage({
         today={now}
       />
 
-      <dl className="mt-8 grid gap-x-8 gap-y-4 border-t border-limestone pt-6 sm:grid-cols-2">
+      <dl className="border-limestone mt-8 grid gap-x-8 gap-y-4 border-t pt-6 sm:grid-cols-2">
         {rule ? (
           <>
             <Row label="Authority" value={rule.authority} mono />
@@ -102,7 +104,11 @@ export default async function ObligationPage({
         <Row label="Repeats" value={describeRecurrence(obligation)} />
         {obligation.completedOn ? (
           <>
-            <Row label="Filed" value={formatDate(toPlainDate(obligation.completedOn))} mono />
+            <Row
+              label="Filed"
+              value={formatDate(toPlainDate(obligation.completedOn))}
+              mono
+            />
             <Row
               label="Filed by"
               value={
@@ -114,29 +120,32 @@ export default async function ObligationPage({
           </>
         ) : null}
         {obligation.waivedAt ? (
-          <Row label="Removed" value={formatInstant(obligation.waivedAt, ctx.building.timezone)} />
+          <Row
+            label="Removed"
+            value={formatInstant(obligation.waivedAt, ctx.building.timezone)}
+          />
         ) : null}
       </dl>
 
       {obligation.completionNote ? (
         <section className="mt-6">
           <h2 className="eyebrow mb-1.5">Note on filing</h2>
-          <p className="text-sm text-ironwork-soft">{obligation.completionNote}</p>
+          <p className="text-ironwork-soft text-sm">{obligation.completionNote}</p>
         </section>
       ) : null}
 
       {obligation.waivedReason ? (
         <section className="mt-6">
           <h2 className="eyebrow mb-1.5">Why it came off the calendar</h2>
-          <p className="text-sm text-ironwork-soft">{obligation.waivedReason}</p>
+          <p className="text-ironwork-soft text-sm">{obligation.waivedReason}</p>
         </section>
       ) : null}
 
       {rule ? (
-        <section className="mt-8 border-t border-limestone pt-6">
+        <section className="border-limestone mt-8 border-t pt-6">
           <h2 className="eyebrow mb-1.5">What the law says</h2>
-          <p className="text-sm text-ironwork-soft">{rule.requirement}</p>
-          <p className="mt-2 font-mono text-xs text-ironwork-faint">
+          <p className="text-ironwork-soft text-sm">{rule.requirement}</p>
+          <p className="text-ironwork-faint mt-2 font-mono text-xs">
             {rule.citation}
             {rule.sourceUrl ? (
               <>
@@ -155,21 +164,21 @@ export default async function ObligationPage({
         </section>
       ) : null}
 
-      <section className="mt-8 border-t border-limestone pt-6">
+      <section className="border-limestone mt-8 border-t pt-6">
         <h2 className="eyebrow mb-2">Reminders</h2>
         {obligation.reminders.length === 0 ? (
-          <p className="text-sm text-ironwork-soft">
+          <p className="text-ironwork-soft text-sm">
             No reminders are scheduled for this one.
           </p>
         ) : (
           <ul className="space-y-1">
             {sentReminders.map((reminder) => (
-              <li key={reminder.id} className="font-mono text-xs text-ironwork-faint">
+              <li key={reminder.id} className="text-ironwork-faint font-mono text-xs">
                 {formatDate(toPlainDate(reminder.scheduledFor))} — sent
               </li>
             ))}
             {pendingReminders.map((reminder) => (
-              <li key={reminder.id} className="font-mono text-xs text-ironwork-soft">
+              <li key={reminder.id} className="text-ironwork-soft font-mono text-xs">
                 {formatDate(toPlainDate(reminder.scheduledFor))} —{" "}
                 {pluralDays(reminder.offsetDays)} before
               </li>
@@ -179,7 +188,7 @@ export default async function ObligationPage({
       </section>
 
       {obligation.children.length > 0 || obligation.parent ? (
-        <section className="mt-8 border-t border-limestone pt-6">
+        <section className="border-limestone mt-8 border-t pt-6">
           <h2 className="eyebrow mb-2">This filing over time</h2>
           <ul className="space-y-1">
             {obligation.parent ? (
@@ -209,19 +218,11 @@ export default async function ObligationPage({
   );
 }
 
-function Row({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
+function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
       <dt className="eyebrow mb-0.5">{label}</dt>
-      <dd className={`text-sm text-ironwork ${mono ? "font-mono" : ""}`}>{value}</dd>
+      <dd className={`text-ironwork text-sm ${mono ? "font-mono" : ""}`}>{value}</dd>
     </div>
   );
 }

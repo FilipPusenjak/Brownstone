@@ -14,6 +14,7 @@ tenant ambient, means two open tabs fight each other, and turns every bug report
 into "which building were you looking at?".
 
 **Three layers, and only one of them is the real defence.**
+
 1. The path — the tenant is explicit in the URL.
 2. The application — `src/lib/db/scoped/*` is the only code that touches Prisma,
    and every function there takes a `BuildingContext` first.
@@ -24,7 +25,7 @@ which is which matters, because a team that believes RLS is the defence writes
 sloppier queries.
 
 **Two database roles, not one.**
-Postgres exempts a table's *owner* from row-level security. An application
+Postgres exempts a table's _owner_ from row-level security. An application
 connecting as the owner has policies that do nothing whatsoever, and the test
 suite would happily pass. So migrations run as `cooperator_owner` and requests
 run as `cooperator_app`, which owns nothing and holds no `BYPASSRLS`. Every
@@ -77,7 +78,7 @@ than a stub that would drift.
 ## Permissions
 
 **Roles are a set on the membership; capabilities are derived.**
-Straight from the brief, and correct: in a twelve-unit co-op the treasurer *is*
+Straight from the brief, and correct: in a twelve-unit co-op the treasurer _is_
 a shareholder. `src/lib/auth/capabilities.ts` is the only file connecting the
 two, and call sites check capabilities.
 
@@ -127,7 +128,7 @@ how a compliance product produces a confident wrong answer.
 data — the same law for every co-op in the city — upserted by `code` via
 `pnpm rules:sync`. Seeding them would mean correcting a citation in production
 required reseeding tenant data. This is a small departure from the brief's
-"lives in seed data"; the ruleset still *lives* in `prisma/seed/rules/ruleset.ts`
+"lives in seed data"; the ruleset still _lives_ in `prisma/seed/rules/ruleset.ts`
 and is still seeded in development, it simply also has a deploy path.
 
 **Ledger and audit log are append-only below the application.** The runtime
@@ -156,7 +157,7 @@ a table where every row is coloured is a table where colour means nothing.
 Two consequences worth knowing. The hues are darkened — the yellow is a dark
 ochre `#8A6A00`, the green a forest `#1E6B3A` — because pure yellow and green
 cannot clear 4.5:1 on a light ground, and this product is read by people in
-their sixties and seventies. And verdigris was retired *from status* while
+their sixties and seventies. And verdigris was retired _from status_ while
 staying the interface accent for buttons, links, focus and the active nav item,
 so "the thing you can do" and "the state something is in" never share a colour.
 
@@ -291,14 +292,14 @@ the test exercises the real algorithm.
 
 There is no Resend API key in this environment. Being precise about the gap:
 
-*Covered.* The request Co-operator puts on the wire — endpoint, method, bearer
+_Covered._ The request Co-operator puts on the wire — endpoint, method, bearer
 token, and a body carrying `from`, `to`, `subject`, `html` and `text` — is
 asserted by intercepting `fetch` rather than mocking the SDK, which would only
 prove that Co-operator calls a function it also defines. A provider refusal
 surfaces as a FAILED notification rather than being swallowed. Signature
 verification runs the real Svix algorithm.
 
-*Not covered.* That Resend accepts that request; that the sending domain is
+_Not covered._ That Resend accepts that request; that the sending domain is
 verified (a DNS matter no code can prove); and inbox placement. All three are
 first-deploy checks, not logic. Do a single live test send before trusting the
 notices module with a legally required notice.

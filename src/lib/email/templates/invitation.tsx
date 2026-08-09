@@ -27,10 +27,7 @@ export function invitationSubject(props: InvitationProps): string {
 
 export function InvitationEmail(props: InvitationProps) {
   return (
-    <EmailLayout
-      preview={invitationSubject(props)}
-      buildingName={props.buildingName}
-    >
+    <EmailLayout preview={invitationSubject(props)} buildingName={props.buildingName}>
       <Text style={textStyles.eyebrow}>An invitation</Text>
 
       <Text
@@ -46,9 +43,9 @@ export function InvitationEmail(props: InvitationProps) {
       </Text>
 
       <Text style={textStyles.body}>
-        Co-operator is where the building keeps its compliance deadlines,
-        insurance certificates, alteration requests and records. You&rsquo;ve
-        been added as {describeRoles(props.roles)}.
+        Co-operator is where the building keeps its compliance deadlines, insurance
+        certificates, alteration requests and records. You&rsquo;ve been added as{" "}
+        {describeRoles(props.roles)}.
       </Text>
 
       {props.note ? (
@@ -81,10 +78,9 @@ export function InvitationEmail(props: InvitationProps) {
       </Section>
 
       <Text style={{ ...textStyles.muted, marginTop: "16px" }}>
-        The link works for {props.expiresInDays} days, and only for this email
-        address — you&rsquo;ll be asked to sign in with it. Don&rsquo;t forward
-        it; if someone else should have access, ask {props.invitedBy} to invite
-        them.
+        The link works for {props.expiresInDays} days, and only for this email address —
+        you&rsquo;ll be asked to sign in with it. Don&rsquo;t forward it; if someone
+        else should have access, ask {props.invitedBy} to invite them.
       </Text>
     </EmailLayout>
   );

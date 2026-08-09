@@ -37,13 +37,8 @@ export function ObligationReminderEmail(props: ObligationReminderProps) {
   const accent = props.overdue ? COLORS.stamp : COLORS.started;
 
   return (
-    <EmailLayout
-      preview={subjectFor(props)}
-      buildingName={props.buildingName}
-    >
-      <Text style={textStyles.eyebrow}>
-        {props.overdue ? "Overdue" : "Coming up"}
-      </Text>
+    <EmailLayout preview={subjectFor(props)} buildingName={props.buildingName}>
+      <Text style={textStyles.eyebrow}>{props.overdue ? "Overdue" : "Coming up"}</Text>
 
       <Text
         style={{
@@ -79,8 +74,8 @@ export function ObligationReminderEmail(props: ObligationReminderProps) {
             borderLeft: `2px solid ${COLORS.brownstone}`,
           }}
         >
-          The requirement is real, but we could not confirm this exact deadline.
-          Check it with the agency before relying on the date.
+          The requirement is real, but we could not confirm this exact deadline. Check
+          it with the agency before relying on the date.
         </Text>
       ) : null}
 

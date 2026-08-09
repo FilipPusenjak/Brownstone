@@ -17,12 +17,9 @@ const button = cva(
   {
     variants: {
       intent: {
-        primary:
-          "border-verdigris bg-verdigris text-white hover:bg-verdigris/90",
-        secondary:
-          "border-limestone-deep bg-paper text-ironwork hover:bg-paper-sunk",
-        destructive:
-          "border-stamp bg-transparent text-stamp hover:bg-stamp-soft",
+        primary: "border-verdigris bg-verdigris text-white hover:bg-verdigris/90",
+        secondary: "border-limestone-deep bg-paper text-ironwork hover:bg-paper-sunk",
+        destructive: "border-stamp bg-transparent text-stamp hover:bg-stamp-soft",
         quiet:
           "border-transparent bg-transparent text-ironwork-soft underline underline-offset-4 hover:text-ironwork",
       },
@@ -60,9 +57,9 @@ export function Field({
       {/* Errors say what happened and how to fix it, in the interface's voice.
           They never apologise and are never vague. */}
       {error ? (
-        <span className="mt-1 block text-xs text-stamp">{error}</span>
+        <span className="text-stamp mt-1 block text-xs">{error}</span>
       ) : hint ? (
-        <span className="mt-1 block text-xs text-ironwork-faint">{hint}</span>
+        <span className="text-ironwork-faint mt-1 block text-xs">{hint}</span>
       ) : null}
     </label>
   );

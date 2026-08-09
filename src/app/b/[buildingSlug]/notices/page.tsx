@@ -61,14 +61,15 @@ export default async function NoticesPage({
             return (
               <li key={campaign.id} className="sheet px-4 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <span className="text-sm font-medium text-ironwork">
-                    {campaign.noticeType.toLowerCase().replaceAll("_", " ")} · {campaign.year}
+                  <span className="text-ironwork text-sm font-medium">
+                    {campaign.noticeType.toLowerCase().replaceAll("_", " ")} ·{" "}
+                    {campaign.year}
                   </span>
-                  <span className="font-mono text-xs text-ironwork-soft">
+                  <span className="text-ironwork-soft font-mono text-xs">
                     due {formatDate(toPlainDate(campaign.dueOn))}
                   </span>
                 </div>
-                <p className="mt-1 font-mono text-[0.6875rem] text-ironwork-faint">
+                <p className="text-ironwork-faint mt-1 font-mono text-[0.6875rem]">
                   {campaign.sentAt ? "sent" : "not sent"} · {replied} of {rows.length}{" "}
                   households replied
                 </p>

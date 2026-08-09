@@ -36,7 +36,5 @@ export default async function BuildingLayout({
     throw error;
   }
 
-  return (
-    <AppShell ctx={ctx}>{children}</AppShell>
-  );
+  return <AppShell ctx={ctx}>{children}</AppShell>;
 }

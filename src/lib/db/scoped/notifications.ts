@@ -115,7 +115,9 @@ export async function applyDeliveryStatus(
       data: {
         status,
         ...(status === "DELIVERED" ? { deliveredAt: new Date() } : {}),
-        ...(status === "BOUNCED" || status === "FAILED" ? { failedAt: new Date() } : {}),
+        ...(status === "BOUNCED" || status === "FAILED"
+          ? { failedAt: new Date() }
+          : {}),
       },
     });
   });

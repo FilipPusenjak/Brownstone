@@ -11,16 +11,16 @@
  */
 export function ScaffoldNotice({ missing }: { missing: readonly string[] }) {
   return (
-    <aside className="mb-6 border-l-2 border-brass bg-paper px-4 py-3">
-      <p className="text-sm font-medium text-ironwork">
+    <aside className="border-brass bg-paper mb-6 border-l-2 px-4 py-3">
+      <p className="text-ironwork text-sm font-medium">
         This module reads, but doesn&rsquo;t write yet.
       </p>
-      <p className="mt-1 text-sm text-ironwork-soft">
+      <p className="text-ironwork-soft mt-1 text-sm">
         What&rsquo;s below is real data from this building. Still to build:
       </p>
       <ul className="mt-2 space-y-0.5">
         {missing.map((item) => (
-          <li key={item} className="font-mono text-[0.6875rem] text-ironwork-faint">
+          <li key={item} className="text-ironwork-faint font-mono text-[0.6875rem]">
             — {item}
           </li>
         ))}

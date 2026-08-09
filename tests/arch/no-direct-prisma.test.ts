@@ -25,15 +25,14 @@ const SRC = join(ROOT, "src");
  * to scope those reads to, so the adapter gets the raw client and nothing else
  * does.
  */
-const ALLOWED = [
-  "src/lib/db/prisma.ts",
-  "src/lib/db/tx.ts",
-  "src/lib/auth/config.ts",
-];
+const ALLOWED = ["src/lib/db/prisma.ts", "src/lib/db/tx.ts", "src/lib/auth/config.ts"];
 
 const FORBIDDEN = [
   { pattern: /from\s+["']@prisma\/client["']/, what: "@prisma/client" },
-  { pattern: /from\s+["'][^"']*generated\/prisma\/client["']/, what: "the generated client" },
+  {
+    pattern: /from\s+["'][^"']*generated\/prisma\/client["']/,
+    what: "the generated client",
+  },
   { pattern: /from\s+["'][^"']*lib\/db\/prisma["']/, what: "the raw client module" },
   { pattern: /new\s+PrismaClient\s*\(/, what: "a new PrismaClient" },
 ];
