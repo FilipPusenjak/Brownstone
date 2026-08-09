@@ -148,6 +148,11 @@ export function relativeDays(from: PlainDate, to: PlainDate): string {
   return days > 0 ? `in ${days} days` : `${Math.abs(days)} days ago`;
 }
 
+/** "1 day" / "7 days". Small, but "1 days before" reads as a bug to a reader. */
+export function pluralDays(count: number): string {
+  return count === 1 ? "1 day" : `${count} days`;
+}
+
 /** An instant from a wall-clock time in the building's timezone. */
 export function instantAt(
   date: PlainDate,

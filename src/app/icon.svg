@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Co-operator">
+  <!-- A brownstone stoop and door, reduced to the two marks that read at 16px:
+       the stone ground and the lit doorway above a flight of steps. -->
+  <rect width="32" height="32" fill="#6e4a38"/>
+  <rect x="11" y="7" width="10" height="14" fill="#e7e9e2"/>
+  <rect x="15" y="13" width="2" height="8" fill="#6e4a38"/>
+  <rect x="8" y="22" width="16" height="2" fill="#9c8348"/>
+  <rect x="6" y="25" width="20" height="2" fill="#9c8348"/>
+</svg>

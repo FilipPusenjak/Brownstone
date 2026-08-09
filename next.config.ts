@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
+  // The dev server refuses static chunks requested from an origin it doesn't
+  // recognise, and answers 403. The page still renders — it just never
+  // hydrates, so every button silently does nothing, which is a miserable
+  // thing to debug. Playwright drives the app over 127.0.0.1.
+  allowedDevOrigins: ["127.0.0.1"],
   // Next 16 writes AGENTS.md and CLAUDE.md into the repo root on first run.
   // This project documents itself in README.md and ARCHITECTURE.md.
   agentRules: false,

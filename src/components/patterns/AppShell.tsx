@@ -1,7 +1,7 @@
-import Link from "next/link";
 import type { BuildingContext } from "~/lib/db/context";
 import type { Capability } from "~/lib/auth/capabilities";
 import { can } from "~/lib/auth/capabilities";
+import { NavLinks } from "./NavLinks";
 
 /**
  * The shell: a bell plate on the left, the building's name across the top.
@@ -27,6 +27,7 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
     items: [
       { label: "Overview", href: "" },
       { label: "Compliance", href: "/compliance", capability: "compliance.view" },
+      { label: "Requirements", href: "/compliance/rules", capability: "compliance.view" },
       { label: "Alterations", href: "/alterations" },
       { label: "Insurance", href: "/insurance", capability: "coi.view" },
       { label: "Documents", href: "/documents" },
@@ -56,11 +57,9 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
 
 export function AppShell({
   ctx,
-  current,
   children,
 }: {
   ctx: BuildingContext;
-  current: string;
   children: React.ReactNode;
 }) {
   const base = `/b/${ctx.building.slug}`;
@@ -104,33 +103,7 @@ export function AppShell({
                 <p className="px-2 pb-1.5 font-mono text-[0.625rem] uppercase tracking-[0.14em] text-plaster/40">
                   {section.heading}
                 </p>
-                <ul>
-                  {visible.map((item) => {
-                    const href = `${base}${item.href}`;
-                    const active = current === item.href;
-
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={href}
-                          aria-current={active ? "page" : undefined}
-                          className={`flex items-center justify-between gap-2 px-2 py-1.5 text-sm ${
-                            active
-                              ? "bg-verdigris text-white"
-                              : "text-plaster/80 hover:bg-white/8 hover:text-plaster"
-                          }`}
-                        >
-                          <span>{item.label}</span>
-                          {item.stub ? (
-                            <span className="font-mono text-[0.5625rem] uppercase tracking-wider text-plaster/35">
-                              stub
-                            </span>
-                          ) : null}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <NavLinks base={base} items={visible} />
               </div>
             );
           })}

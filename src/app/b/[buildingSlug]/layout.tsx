@@ -37,8 +37,6 @@ export default async function BuildingLayout({
   }
 
   return (
-    <AppShell ctx={ctx} current="">
-      {children}
-    </AppShell>
+    <AppShell ctx={ctx}>{children}</AppShell>
   );
 }

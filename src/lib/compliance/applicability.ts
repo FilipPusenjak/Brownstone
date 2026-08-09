@@ -93,6 +93,14 @@ function describeValue(value: unknown): string {
   if (value === null) return "unknown";
   if (typeof value === "boolean") return value ? "yes" : "no";
   if (Array.isArray(value)) return value.map(describeValue).join(" or ");
+
+  // These reasons are read by board members, not developers. SCREAMING_SNAKE
+  // enum values are how the database spells things, and letting them surface
+  // here would be naming something by how the system is built.
+  if (typeof value === "string" && /^[A-Z][A-Z0-9_]*$/.test(value)) {
+    return value.toLowerCase().replaceAll("_", " ");
+  }
+
   return String(value);
 }
 
