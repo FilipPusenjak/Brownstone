@@ -182,3 +182,47 @@ development run that quietly mails them is a mistake nobody gets to make twice.
 **Magic links go through Co-operator's own mailer**, not Auth.js's default
 transport, so the catcher applies to sign-in links too. A magic link mailed to a
 real address during a seeded dev run is an account takeover.
+
+---
+
+## Alterations, documents and certificates (M5)
+
+**A decision is a record, not a setting.** Once approved or denied, an
+alteration cannot be re-decided or withdrawn — the answer to a board changing
+its mind is a new request. Otherwise the minutes and the system can disagree
+about what was approved and when, which is exactly the continuity gap this
+product exists to close.
+
+**The interface can only offer what the server would allow.** `availableActions`
+runs on the server against the shared approval state machine, and the result
+drives which buttons render. There is no second, client-side opinion about who
+may approve what.
+
+**Board-only comments are filtered in the query, not the view.** A thread that
+leaks through an API response leaks whether or not a component renders it.
+`getAlteration` applies the visibility filter, so the private thread never
+reaches the client at all.
+
+**A COI expiry is a compliance obligation.** Recording a certificate generates
+an `Obligation` on the same calendar as the boiler inspection, with reminders at
+45, 14 and 3 days. Rejected: a separate "alerts" or "expiring soon" concept —
+a board already has one list they check, and a second one is a list they don't.
+
+**The additional-insured endorsement is tracked as its own verified fact,** with
+a name and a timestamp against it. A certificate that does not name the
+corporation is valid on its face and worthless to the building; it is the most
+common defect in a co-op COI, so "we looked at it" and "we checked the
+endorsement" are recorded as different claims.
+
+**Uploads go straight from the browser to storage** over a presigned PUT, and
+the client is assumed to be lying about all of it — content type, size and
+filename are validated server-side before anything is signed, and the returned
+key is re-checked against the building's prefix when the document row is
+written. Downloads are short-lived presigned GETs issued only after a capability
+check, so there is no document URL that keeps working once someone leaves the
+board.
+
+**Officers can file on a shareholder's behalf.** In a twelve-unit building the
+secretary routinely types things up for a neighbour who doesn't use email.
+Anyone with `alteration.viewAll` may file against any unit; a plain shareholder
+may only file against their own.
