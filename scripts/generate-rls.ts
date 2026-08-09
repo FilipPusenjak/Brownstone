@@ -144,7 +144,27 @@ CREATE POLICY member_bootstrap ON "Building"
         NULLIF(current_setting('app.member_building_ids', true), ''), ','
       )::uuid[]
     )
-  );`;
+  );
+
+-- Background jobs.
+--
+-- The daily reminder run must find work in every building, and the delivery
+-- webhook arrives knowing a provider message id and nothing else. Both need to
+-- answer "which building?" before any scoped work can start.
+--
+-- The grant is the smallest thing that answers it: reading the tenant registry
+-- and reading notifications, both SELECT only. Everything else still requires
+-- app.current_building_id, so a job resolves the building here and then does
+-- its real work inside withBuildingTx.
+DROP POLICY IF EXISTS job_building_scan ON "Building";
+CREATE POLICY job_building_scan ON "Building"
+  FOR SELECT
+  USING (current_setting('app.job_scope', true) = 'all_buildings');
+
+DROP POLICY IF EXISTS job_notification_scan ON "Notification";
+CREATE POLICY job_notification_scan ON "Notification"
+  FOR SELECT
+  USING (current_setting('app.job_scope', true) = 'all_buildings');`;
 }
 
 export function buildSql(tables: string[]): string {

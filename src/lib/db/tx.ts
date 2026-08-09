@@ -113,8 +113,39 @@ export async function withMemberBootstrapTx<T>(
  * is that the caller does not yet belong to the building.
  *
  * None of those tables carry RLS, so this grants nothing extra — it exists to
- * make the intent legible at the call site and greppable in review.
+ * make the intent legible at the call site and greppable in review. A tenant
+ * table read in here returns nothing, which is the fail-closed default working
+ * as designed.
  */
 export async function withUntenantedTx<T>(fn: (tx: ScopedTx) => Promise<T>): Promise<T> {
   return prisma.$transaction(async (tx) => fn(tx), TX_OPTIONS);
+}
+
+/**
+ * Runs `fn` with permission to enumerate tenants, for background jobs that have
+ * no tenant of their own.
+ *
+ * Two things in this system genuinely span every building: the daily reminder
+ * job, which must find work in all of them, and the delivery webhook, which
+ * arrives knowing a provider message id and nothing else. Both need to answer
+ * "which building?" before any scoped work can begin.
+ *
+ * The grant is deliberately the smallest thing that answers that question:
+ * SELECT on `Building` and SELECT on `Notification`, and nothing else. Every
+ * other table still requires `app.current_building_id`, so a job reads the
+ * registry here and then does its actual work inside `withBuildingTx` per
+ * building. `tests/tenancy/rls.test.ts` asserts the scope does not reach
+ * further than those two tables.
+ *
+ * Rejected: running the cron as the migration role. That role owns the tables
+ * and would bypass every policy in the system, turning one narrow need into a
+ * total exemption. Rejected too: scanning each building in turn to find a
+ * webhook's notification — no more secure, since a process able to set one
+ * setting can set the other, and O(buildings) per delivery event.
+ */
+export async function withJobTx<T>(fn: (tx: ScopedTx) => Promise<T>): Promise<T> {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(`SET LOCAL app.job_scope = 'all_buildings'`);
+    return fn(tx);
+  }, TX_OPTIONS);
 }

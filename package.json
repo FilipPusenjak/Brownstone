@@ -43,6 +43,7 @@
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "7.9.1",
     "@react-email/components": "1.0.12",
+    "@react-email/render": "^2.1.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "date-fns": "4.4.0",
@@ -52,6 +53,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "resend": "6.18.1",
+    "svix": "^1.99.1",
     "tailwind-merge": "3.6.0",
     "zod": "4.4.3"
   },

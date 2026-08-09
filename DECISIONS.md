@@ -237,3 +237,68 @@ board.
 secretary routinely types things up for a neighbour who doesn't use email.
 Anyone with `alteration.viewAll` may file against any unit; a plain shareholder
 may only file against their own.
+
+---
+
+## Reminders, email and the cron (M7)
+
+**Idempotency is enforced twice, not once.** `ObligationReminder` is unique on
+(obligation, offset, scheduledFor), so a reminder row exists at most once. And
+`Notification.dedupeKey` derives from that same triple plus the recipient, so
+even if a reminder row were processed twice the second send loses the insert
+race and never reaches the provider. Belt and braces on purpose: a cron that
+mails a twelve-unit building twice about the same boiler inspection is how a
+board learns to ignore the emails, and once they do the product has failed at
+the only thing it does.
+
+**One email per filing per day, not one per reminder offset.** Found by running
+the job for real rather than by reasoning about it: forcing every offset due at
+once produced four separate emails to the same person about the same filing.
+Reminders for one obligation coming due on the same day now collapse into a
+single message — the most urgent offset wins, and the rest are marked sent.
+This is the same failure as double-sending, arriving by a different route.
+
+**Reminders whose date has passed are picked up, not skipped.** A building
+standing the system up in March should still hear about the filing whose
+reminder date was February.
+
+**Not everyone gets every email.** The assignee plus officers, not the whole
+building. A shareholder does not need eleven emails a year about the boiler,
+and a product that mails everyone about everything gets filtered to a folder.
+
+**A new, narrow cross-tenant grant: `withJobTx`.** Two things genuinely span
+every building — the daily run, which must find work in all of them, and the
+delivery webhook, which arrives knowing a provider message id and nothing else.
+Both need to answer "which building?" before any scoped work can start. The
+grant is SELECT on `Building` and SELECT on `Notification`, and nothing else;
+`tests/tenancy/rls.test.ts` asserts the scope reaches no further and cannot
+write. Rejected: running the cron as the migration role, which owns the tables
+and would bypass every policy in the system — turning one narrow need into a
+total exemption.
+
+This was found by a failing test rather than by design: `withUntenantedTx`
+correctly returned zero buildings, because `Building` carries RLS keyed on
+`id`. The fail-closed default worked exactly as intended and surfaced a gap in
+the plan.
+
+**Webhook signatures use Svix's own library, not a hand-rolled HMAC.** Resend
+signs with Svix. A verifier written from a guess at the scheme, tested against
+a payload written from the same guess, passes its tests and proves nothing —
+worse than no test, because it looks like coverage. Using their library means
+the test exercises the real algorithm.
+
+### What is genuinely unverified
+
+There is no Resend API key in this environment. Being precise about the gap:
+
+*Covered.* The request Co-operator puts on the wire — endpoint, method, bearer
+token, and a body carrying `from`, `to`, `subject`, `html` and `text` — is
+asserted by intercepting `fetch` rather than mocking the SDK, which would only
+prove that Co-operator calls a function it also defines. A provider refusal
+surfaces as a FAILED notification rather than being swallowed. Signature
+verification runs the real Svix algorithm.
+
+*Not covered.* That Resend accepts that request; that the sending domain is
+verified (a DNS matter no code can prove); and inbox placement. All three are
+first-deploy checks, not logic. Do a single live test send before trusting the
+notices module with a legally required notice.

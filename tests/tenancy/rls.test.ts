@@ -173,6 +173,70 @@ describe("row-level security", () => {
     }
   });
 
+  it("confines the background job scope to the tenant registry", async () => {
+    // Background jobs need to answer "which building?" before any scoped work
+    // can start. The grant is deliberately just Building and Notification; if
+    // it ever widened, a compromised job would become a full read of every
+    // co-op's records.
+    //
+    // Self-contained on purpose: the notification it reads is written inside
+    // this transaction and rolled back, so the assertion never depends on
+    // another suite having run first.
+    const permitted = new Set(["Building", "Notification"]);
+
+    await client.query("BEGIN");
+    try {
+      await client.query(`SET LOCAL app.current_building_id = '${adelaideId}'`);
+      await client.query(
+        `INSERT INTO "Notification"
+           ("buildingId", "recipientEmail", template, subject, payload, "textBody", "dedupeKey")
+         VALUES ($1, 'probe@example.com', 'probe', 'probe', '{}'::jsonb, 'probe', $2)`,
+        [adelaideId, `job-scope-probe-${Date.now()}`],
+      );
+
+      // Drop the tenant and pick up the job scope.
+      await client.query(`SET LOCAL app.current_building_id = ''`);
+      await client.query(`SET LOCAL app.job_scope = 'all_buildings'`);
+
+      for (const table of tables) {
+        const { rows } = await client.query<{ count: string }>(
+          `SELECT count(*)::text AS count FROM "${table}"`,
+        );
+        const visible = Number(rows[0]?.count ?? "0");
+
+        if (permitted.has(table)) {
+          expect(
+            visible,
+            `${table} should be readable under the job scope`,
+          ).toBeGreaterThan(0);
+        } else {
+          expect(
+            { table, visible },
+            `${table} is readable under the job scope and should not be`,
+          ).toEqual({ table, visible: 0 });
+        }
+      }
+    } finally {
+      await client.query("ROLLBACK");
+    }
+  });
+
+  it("gives the job scope no way to write", async () => {
+    await client.query("BEGIN");
+    try {
+      await client.query(`SET LOCAL app.job_scope = 'all_buildings'`);
+      // The job policies are FOR SELECT. Writing still needs a tenant.
+      await expect(
+        client.query(
+          `INSERT INTO "Unit" ("buildingId", label, "floorIndex")
+           SELECT id, 'JOBWRITE', 9 FROM "Building" LIMIT 1`,
+        ),
+      ).rejects.toThrow(/row-level security/i);
+    } finally {
+      await client.query("ROLLBACK");
+    }
+  });
+
   it("does not let the setting survive a transaction", async () => {
     await client.query("BEGIN");
     await client.query(`SET LOCAL app.current_building_id = '${adelaideId}'`);
