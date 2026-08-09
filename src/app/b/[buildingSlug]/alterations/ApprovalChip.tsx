@@ -1,12 +1,12 @@
 import type { ApprovalStatus } from "~/lib/primitives/approvals";
 
 /**
- * Approval status, in the same two colours as everything else.
+ * Approval status, in the four-state progression.
  *
- * Verdigris means someone needs to act; stamp red means denied. Approved is
- * deliberately colourless — ink and a mark, like a stamped permit. A green
- * "approved" chip would make the palette carry three signals and none of them
- * would be loud.
+ * This is the workflow that has all four: submitted is started (yellow), under
+ * review is progress (blue), approved is complete (green), denied is the red of
+ * a stamped notice. Draft and withdrawn carry no colour — nothing is being
+ * asked of anyone.
  */
 const STYLES: Record<ApprovalStatus, { label: string; className: string }> = {
   DRAFT: {
@@ -15,19 +15,19 @@ const STYLES: Record<ApprovalStatus, { label: string; className: string }> = {
   },
   SUBMITTED: {
     label: "Waiting",
-    className: "border-verdigris bg-verdigris-soft text-verdigris",
+    className: "border-started-line bg-started-soft text-started",
   },
   UNDER_REVIEW: {
     label: "Under review",
-    className: "border-verdigris bg-verdigris-soft text-verdigris",
+    className: "border-progress-line bg-progress-soft text-progress",
   },
   APPROVED: {
     label: "Approved",
-    className: "border-limestone text-ironwork-soft",
+    className: "border-complete-line bg-complete-soft text-complete",
   },
   APPROVED_WITH_CONDITIONS: {
     label: "Approved, with conditions",
-    className: "border-limestone-deep text-ironwork",
+    className: "border-complete-line bg-complete-soft text-complete",
   },
   DENIED: {
     label: "Denied",

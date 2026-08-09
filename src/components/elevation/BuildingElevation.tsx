@@ -28,7 +28,7 @@ export interface ElevationUnit {
   readonly floorIndex: number;
   readonly shares: number;
   readonly holderName: string | null;
-  /** Drives the status edge. `overdue` is stamp red, `attention` verdigris. */
+  /** Drives the status edge. `overdue` is stamp red, `attention` yellow. */
   readonly flag: UnitFlag;
   /** One line explaining the flag, e.g. "COI expires in 11 days". */
   readonly note?: string | null;
@@ -44,9 +44,10 @@ interface Props {
   readonly selectedUnitId?: string | null;
 }
 
+/** Same vocabulary as the status chips: red is late, yellow needs someone. */
 const FLAG_EDGE: Record<UnitFlag, string> = {
   overdue: "bg-stamp",
-  attention: "bg-verdigris",
+  attention: "bg-started-line",
   none: "bg-limestone",
 };
 
@@ -152,7 +153,7 @@ function UnitCell({
 
   const body = (
     <>
-      {/* The status edge. The only colour in the component, and it is never
+      {/* The status edge. The only colour in the component, and never
           decorative — an unflagged unit gets limestone, the same as a rule. */}
       <span
         aria-hidden

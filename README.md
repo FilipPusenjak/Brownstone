@@ -19,8 +19,8 @@ together and `DECISIONS.md` for what was chosen and what was rejected.
 
 | Module | State |
 | --- | --- |
-| Compliance Calendar | building |
-| Alterations & COIs | building |
+| Compliance Calendar | built |
+| Alterations & COIs | built |
 | Annual Notices | scaffold |
 | Meetings & Proxies | scaffold |
 | Sublet Register | scaffold |
@@ -28,6 +28,11 @@ together and `DECISIONS.md` for what was chosen and what was rejected.
 | Bookings | scaffold |
 | Repair Tickets | scaffold |
 | Duty Rotation | scaffold |
+
+A scaffold has real tables, real scoped queries and a list view over real
+seeded data, and writes nothing. Each one carries a `TODO.md` saying exactly
+what is missing; `tests/arch/scaffolds.test.ts` fails if that file and the
+banner on the page ever disagree.
 
 ## Getting started
 

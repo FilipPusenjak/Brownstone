@@ -15,7 +15,7 @@
    trustworthy.
 
    Domestic warmth against municipal rigor. Warm hues carry the identity; the
-   two saturated colours carry only meaning.
+   status colours carry only meaning.
 
    Deliberately NOT the warm-cream-and-terracotta look that every brownstone
    brief pulls toward. The plaster ground is pushed cool and slightly green,
@@ -45,20 +45,38 @@
   --color-brass-soft: #b8a06a;
 
   /* --- System status ----------------------------------------------------
-     Two saturated colours, and they are never decorative. The brief asked for
-     one; a compliance product cannot say "action required" and "expired" in
-     the same colour, since telling those apart is the entire job.
+     A four-state progression, at the client's direction: started is yellow,
+     in progress is blue, complete is green, and overdue or denied stays the
+     red of a stamped notice.
 
-     Note what has no colour: complete. A finished obligation is ink and a
-     mark, like a stamped permit. Keeping success colourless is what keeps
-     these two rare enough to mean something. */
+     Every value here is a text colour that clears 4.5:1 on its own pale
+     ground, which is why the yellow is a dark ochre and the green a forest
+     rather than the pure hues — a board is often reading this at sixty.
 
-  /* Action required, in progress, focus. Municipal verdigris. */
-  --color-verdigris: #0b6e62;
-  --color-verdigris-soft: #d3e3df;
-  /* Overdue, expired, violation. The red of a stamped notice. */
+     Still never decorative: colour appears on a status chip and on the status
+     edge of a unit cell, and nowhere else in the product. */
+
+  /* Started — filed, submitted, on someone's plate but not yet moving. */
+  --color-started: #8a6a00;
+  --color-started-soft: #f6efd6;
+  --color-started-line: #c9a227;
+  /* In progress — under review, being worked. */
+  --color-progress: #1b4f8a;
+  --color-progress-soft: #dde7f4;
+  --color-progress-line: #2c6bb5;
+  /* Complete — filed, approved, done. */
+  --color-complete: #1e6b3a;
+  --color-complete-soft: #dcebe1;
+  --color-complete-line: #2f8b4f;
+  /* Overdue, expired, denied. */
   --color-stamp: #a32e24;
   --color-stamp-soft: #f0dcd9;
+
+  /* Verdigris is no longer a status colour. It remains the interface accent —
+     primary buttons, links, focus rings, the active nav item — so "the thing
+     you can do" and "the state something is in" never share a colour. */
+  --color-verdigris: #0b6e62;
+  --color-verdigris-soft: #d3e3df;
 
   /* --- Type -------------------------------------------------------------
      Three roles, three faces.

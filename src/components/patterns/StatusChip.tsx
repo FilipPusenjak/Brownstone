@@ -1,13 +1,16 @@
 import type { DueStatus } from "~/lib/primitives/obligations/recurrence";
 
-/**
- * Status, in the two saturated colours and no others.
- *
- * Completed is deliberately colourless — ink on paper, the way a stamped permit
- * is just ink. If success were green, the palette would carry three signals and
- * none of them would be loud.
- */
 
+/**
+ * Status, in the four-state progression: started is yellow, in progress is
+ * blue, complete is green, overdue is the red of a stamped notice.
+ *
+ * The compliance calendar has no "in progress" of its own — a filing is due or
+ * it is made — so blue appears on approval workflows rather than here. Upcoming
+ * carries no colour at all, because nothing is being asked of anyone yet, and a
+ * calendar where every row is coloured is a calendar where colour means
+ * nothing.
+ */
 const STYLES: Record<DueStatus, { label: string; className: string }> = {
   OVERDUE: {
     label: "Overdue",
@@ -15,7 +18,7 @@ const STYLES: Record<DueStatus, { label: string; className: string }> = {
   },
   DUE_SOON: {
     label: "Due soon",
-    className: "bg-verdigris-soft text-verdigris border-verdigris",
+    className: "bg-started-soft text-started border-started-line",
   },
   UPCOMING: {
     label: "Upcoming",
@@ -23,7 +26,7 @@ const STYLES: Record<DueStatus, { label: string; className: string }> = {
   },
   COMPLETED: {
     label: "Complete",
-    className: "bg-transparent text-ironwork-faint border-limestone",
+    className: "bg-complete-soft text-complete border-complete-line",
   },
   WAIVED: {
     label: "Waived",

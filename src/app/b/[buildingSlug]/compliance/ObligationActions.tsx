@@ -124,7 +124,7 @@ export function ObligationActions({
   return (
     <div>
       {message ? (
-        <p className="mb-3 border-l-2 border-verdigris bg-verdigris-soft px-3 py-2 text-sm text-ironwork">
+        <p className="mb-3 border-l-2 border-complete-line bg-complete-soft px-3 py-2 text-sm text-ironwork">
           {message}
         </p>
       ) : null}

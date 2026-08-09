@@ -140,14 +140,25 @@ someone is in a hurry.
 
 ## Where this disagrees with the brief
 
-**Two status colours, not one.** The brief asks for a single saturated accent
-reserved for system status. A compliance product cannot say "action required"
-and "expired" in the same colour — telling those apart is the product's entire
-job. So there are two, both municipal, both meaning-only: verdigris `#0B6E62`
-for action required, stamp red `#A32E24` for overdue and expired. Complete is
-deliberately *colourless* — ink and a mark, like an approved permit — which
-keeps saturation rare and honest. Flagged to the client; reversible in one file
-if they disagree.
+**Status colours: superseded by the client (M6).** The brief asked for one
+saturated accent. I argued for two — action and overdue — with complete left
+deliberately colourless. The client saw it and chose a four-state progression
+instead: **started is yellow, in progress is blue, complete is green**, with
+overdue and denied keeping the stamp red a compliance product cannot do
+without. Implemented as they asked.
+
+The mapping I chose, which is the part they did not specify and may want to
+adjust: submitted → yellow, under review → blue, approved and completed →
+green, overdue and denied → red. Draft, withdrawn, upcoming, waived and not-
+applicable carry no colour at all, because nothing is being asked of anyone and
+a table where every row is coloured is a table where colour means nothing.
+
+Two consequences worth knowing. The hues are darkened — the yellow is a dark
+ochre `#8A6A00`, the green a forest `#1E6B3A` — because pure yellow and green
+cannot clear 4.5:1 on a light ground, and this product is read by people in
+their sixties and seventies. And verdigris was retired *from status* while
+staying the interface accent for buttons, links, focus and the active nav item,
+so "the thing you can do" and "the state something is in" never share a colour.
 
 **Contractor COIs: no unauthenticated upload path in v1.** Left open by the
 client, defaulted conservatively. Officers upload on a contractor's behalf. The

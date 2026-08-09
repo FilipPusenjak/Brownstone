@@ -786,6 +786,47 @@ async function seedBuildingExtras(
     ],
   });
 
+  // --- Sublets (module 5) ------------------------------------------------
+  const subletApproval = await tx.approvalRequest.create({
+    data: {
+      buildingId,
+      kind: "SUBLET",
+      status: "APPROVED",
+      submittedById: submitter,
+      submittedAt: new Date(Date.UTC(year, 2, 3)),
+      decidedAt: new Date(Date.UTC(year, 2, 18)),
+      decidedById: presidentMembership,
+      decisionNote: "Approved for one year, renewable once under the house rules.",
+    },
+    select: { id: true },
+  });
+
+  await tx.subletRegistration.create({
+    data: {
+      buildingId,
+      unitId: units[units.length - 1]?.[1] ?? firstUnit,
+      approvalRequestId: subletApproval.id,
+      subtenantName: spec.slug === "adelaide" ? "Delphine Okaro" : "Tomas Reyes",
+      termStart: toDbDate(makeDate(year, 4, 1)),
+      termEnd: toDbDate(makeDate(year + 1, 3, 31)),
+      feeCents: 120_000,
+    },
+  });
+
+  // --- Bookings (module 7) ------------------------------------------------
+  await tx.booking.create({
+    data: {
+      buildingId,
+      resourceId: resource.id,
+      unitId: secondUnit,
+      requestedById: submitter,
+      startsAt: new Date(Date.UTC(year, new Date().getUTCMonth(), 22, 13, 0)),
+      endsAt: new Date(Date.UTC(year, new Date().getUTCMonth(), 22, 17, 0)),
+      status: "HELD",
+      note: "Move-in. Deposit not yet recorded.",
+    },
+  });
+
   // --- Tickets (module 8) -----------------------------------------------
   await tx.ticket.createMany({
     data: [
