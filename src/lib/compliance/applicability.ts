@@ -76,6 +76,15 @@ const OPS: Record<string, string> = {
   nin: "is not one of",
 };
 
+/** Attributes whose reason reads better without the building's raw value. */
+const BOOLEAN_ATTRS = new Set<AttributeKey>([
+  "hasElevator",
+  "oilTankPresent",
+  "isLandmarked",
+  "hasParapet",
+  "ownerOccupied",
+]);
+
 function isComparison(p: Predicate): p is Comparison {
   return "attr" in p;
 }
@@ -93,7 +102,12 @@ function evaluateComparison(
 ): { result: boolean; clause: string } {
   const actual = attributes[predicate.attr];
   const label = LABELS[predicate.attr];
-  const clause = `${label} ${OPS[predicate.op]} ${describeValue(predicate.value)}`;
+  // Quote the building's own number, not just the threshold. "unit count is at
+  // least 3" tells a board nothing they can check; "unit count is 6, which is
+  // at least 3" lets them see both the rule and their building in one line.
+  const clause = BOOLEAN_ATTRS.has(predicate.attr)
+    ? `${label} is ${describeValue(actual)}`
+    : `${label} is ${describeValue(actual)}, which ${OPS[predicate.op]} ${describeValue(predicate.value)}`;
 
   // An unknown attribute cannot satisfy a threshold. Treating null as zero
   // would quietly conclude that a building with no recorded floor area is

@@ -80,7 +80,13 @@ const schema = z
       }
     }
 
-    if (env.NODE_ENV === "production" && env.EMAIL_DRIVER === "catcher") {
+    // `next build` runs with NODE_ENV=production even on a laptop, and nothing
+    // is mailed or stored while a build collects page data. Checking the driver
+    // there would make it impossible to build the app locally, so these two
+    // guards apply to serving traffic only.
+    const isBuildStep = process.env["NEXT_PHASE"] === "phase-production-build";
+
+    if (!isBuildStep && env.NODE_ENV === "production" && env.EMAIL_DRIVER === "catcher") {
       ctx.addIssue({
         code: "custom",
         path: ["EMAIL_DRIVER"],
@@ -89,7 +95,7 @@ const schema = z
       });
     }
 
-    if (env.NODE_ENV === "production" && env.STORAGE_DRIVER === "local") {
+    if (!isBuildStep && env.NODE_ENV === "production" && env.STORAGE_DRIVER === "local") {
       ctx.addIssue({
         code: "custom",
         path: ["STORAGE_DRIVER"],

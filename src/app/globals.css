@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Co-operator — design tokens
+
+   Two worlds, deliberately collided.
+
+   The material: brownstone is a soft reddish sandstone that spalls and
+   weathers. The building's own vocabulary is the stoop, the parlor floor, the
+   garden level, the cornice, the areaway, the bell plate.
+
+   The municipal document: this is a compliance product, and its other native
+   language is the DOB permit placard, the enamel house-number plate, the
+   engraved stock certificate, the ruled ledger. Dense, official, unglamorous,
+   trustworthy.
+
+   Domestic warmth against municipal rigor. Warm hues carry the identity; the
+   two saturated colours carry only meaning.
+
+   Deliberately NOT the warm-cream-and-terracotta look that every brownstone
+   brief pulls toward. The plaster ground is pushed cool and slightly green,
+   away from cream, and the accent is verdigris rather than clay.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* --- Material palette ------------------------------------------------- */
+
+  /* Limewashed parlor plaster. Cool, faintly green — the page ground. */
+  --color-plaster: #e7e9e2;
+  /* A sheet laid on the plaster: forms, tables, panels. */
+  --color-paper: #f5f6f1;
+  --color-paper-sunk: #eef0e9;
+  /* Limestone lintel. Every rule, border and hairline in the interface. */
+  --color-limestone: #cfccc0;
+  --color-limestone-deep: #b4b0a2;
+  /* The stone itself. Dull reddish sandstone, not terracotta. */
+  --color-brownstone: #6e4a38;
+  --color-brownstone-deep: #533628;
+  /* Painted wrought iron: the areaway fence, the stoop rail. All body text. */
+  --color-ironwork: #16191a;
+  --color-ironwork-soft: #4d5451;
+  --color-ironwork-faint: #6f7671;
+  /* Aged brass: the bell plate, the house numbers. Marks of record. */
+  --color-brass: #9c8348;
+  --color-brass-soft: #b8a06a;
+
+  /* --- System status ----------------------------------------------------
+     Two saturated colours, and they are never decorative. The brief asked for
+     one; a compliance product cannot say "action required" and "expired" in
+     the same colour, since telling those apart is the entire job.
+
+     Note what has no colour: complete. A finished obligation is ink and a
+     mark, like a stamped permit. Keeping success colourless is what keeps
+     these two rare enough to mean something. */
+
+  /* Action required, in progress, focus. Municipal verdigris. */
+  --color-verdigris: #0b6e62;
+  --color-verdigris-soft: #d3e3df;
+  /* Overdue, expired, violation. The red of a stamped notice. */
+  --color-stamp: #a32e24;
+  --color-stamp-soft: #f0dcd9;
+
+  /* --- Type -------------------------------------------------------------
+     Three roles, three faces.
+
+     Display is Abril Fatface — the gilded transom numeral and the fat-face
+     stock certificate. Used for building names and house numbers ONLY, never
+     for body copy, never for section headings.
+
+     UI is Archivo, a slightly narrow American gothic: the permit placard.
+
+     Data is IBM Plex Mono with tabular figures. Not a stylistic tic — a column
+     of dates, share counts and dollar amounts genuinely reads better aligned,
+     and it puts the whole interface in the register of a ruled ledger. */
+
+  --font-display: var(--font-abril), Georgia, serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* --- Structure --------------------------------------------------------- */
+
+  /* Permit-form corners: present, but barely. */
+  --radius-sheet: 2px;
+  --radius-chip: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-plaster);
+    color: var(--color-ironwork);
+    font-family: var(--font-sans);
+    /* Board members are often older. 16px floor, generous line height, real
+       contrast ratios. None of this is announced anywhere in the interface. */
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Every number in the product is tabular. */
+  :where(.font-mono, code, kbd, samp) {
+    font-feature-settings: "tnum" 1, "zero" 1;
+  }
+
+  /* Visible, and in the system accent rather than the browser's blue. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-verdigris);
+    outline-offset: 2px;
+    border-radius: 1px;
+  }
+
+  ::selection {
+    background-color: var(--color-brass-soft);
+    color: var(--color-ironwork);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Utilities
+--------------------------------------------------------------------------- */
+
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ironwork-faint);
+}
+
+/* A sheet of paper on the plaster. No shadows anywhere in this product —
+   the surfaces are documents, not floating cards. */
+@utility sheet {
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-limestone);
+  border-radius: var(--radius-sheet);
+}
+
+/* The ruled ledger: hairline rows, no zebra striping, no rounded cells. */
+@utility ledger-row {
+  border-bottom: 1px solid var(--color-limestone);
+}

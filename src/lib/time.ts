@@ -1,4 +1,4 @@
-import { format, formatDistanceStrict, isValid, parseISO } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 
 /**
@@ -140,10 +140,12 @@ export function relativeDays(from: PlainDate, to: PlainDate): string {
   if (days === 0) return "today";
   if (days === 1) return "tomorrow";
   if (days === -1) return "yesterday";
-  return formatDistanceStrict(toDbDate(to), toDbDate(from), {
-    unit: "day",
-    addSuffix: true,
-  });
+
+  // Counted from the same `daysBetween` the rest of the product uses. A
+  // duration formatter would round here and print "in 24 days" for a date 23
+  // days away, and a compliance calendar that is off by one is worse than one
+  // that says nothing — someone will plan a filing around it.
+  return days > 0 ? `in ${days} days` : `${Math.abs(days)} days ago`;
 }
 
 /** An instant from a wall-clock time in the building's timezone. */
