@@ -118,13 +118,30 @@ const schema = z
 
 export type Env = z.infer<typeof schema>;
 
+/**
+ * Fields safe to echo verbatim into an error message. Everything else on this
+ * schema is a credential or a connection string, and a validation failure
+ * must never be the reason one ends up in a build log.
+ *
+ * This exists because "invalid option" alone doesn't say what was received —
+ * and the two ways a correct-looking value fails that check (a stray quote
+ * character, invisible whitespace) are exactly the ones a person cannot spot
+ * by looking at the field in a dashboard.
+ */
+const SAFE_TO_ECHO = new Set(["NODE_ENV", "AUTH_URL", "EMAIL_DRIVER", "EMAIL_FROM", "STORAGE_DRIVER", "S3_REGION"]);
+
 function load(): Env {
   const parsed = schema.safeParse(process.env);
 
   if (!parsed.success) {
     const lines = parsed.error.issues.map((issue) => {
       const name = issue.path.join(".") || "(root)";
-      return `  • ${name}: ${issue.message}`;
+      const key = issue.path[0];
+      const received =
+        typeof key === "string" && SAFE_TO_ECHO.has(key)
+          ? ` (received ${JSON.stringify(process.env[key])})`
+          : "";
+      return `  • ${name}: ${issue.message}${received}`;
     });
 
     throw new Error(
