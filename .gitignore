@@ -16,7 +16,10 @@ next-env.d.ts
 src/generated/
 
 # Local drivers: uploaded files and caught mail. Both are dev-only artifacts.
-storage/
+# Anchored to the repo root — an unanchored "storage/" also matches
+# src/lib/storage/, the real storage-driver module, and silently excludes it
+# from every commit. That happened here; see git history.
+/storage/
 .mail/
 
 coverage/
