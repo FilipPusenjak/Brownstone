@@ -18,7 +18,6 @@ const SCAFFOLDS = [
   "notices",
   "meetings",
   "sublets",
-  "arrears",
   "bookings",
   "tickets",
   "duty",

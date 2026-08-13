@@ -128,7 +128,14 @@ export type Env = z.infer<typeof schema>;
  * character, invisible whitespace) are exactly the ones a person cannot spot
  * by looking at the field in a dashboard.
  */
-const SAFE_TO_ECHO = new Set(["NODE_ENV", "AUTH_URL", "EMAIL_DRIVER", "EMAIL_FROM", "STORAGE_DRIVER", "S3_REGION"]);
+const SAFE_TO_ECHO = new Set([
+  "NODE_ENV",
+  "AUTH_URL",
+  "EMAIL_DRIVER",
+  "EMAIL_FROM",
+  "STORAGE_DRIVER",
+  "S3_REGION",
+]);
 
 function load(): Env {
   const parsed = schema.safeParse(process.env);

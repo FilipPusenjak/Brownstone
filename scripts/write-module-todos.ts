@@ -77,25 +77,6 @@ const MODULES: ModuleSpec[] = [
     ],
   },
   {
-    dir: "arrears",
-    title: "Arrears",
-    purpose:
-      "Maintenance charge aging and payment records. Payments are *recorded*, never collected.",
-    standing: [
-      "`src/lib/primitives/ledger.ts` — aging, balances, reversal handling. Fully tested",
-      "`Charge` and `Payment`, append-only below the application: the runtime role has no UPDATE or DELETE",
-      "The aging table on this page already works against real data",
-      "`arrears.viewAll` is held by the treasurer and president only",
-    ],
-    missing: [
-      "Posting a charge, and recording a payment",
-      "Reversing entries through the interface",
-      "Payment plans",
-      "Late fee rules",
-      "The arrears letter, sent through the notification log",
-    ],
-  },
-  {
     dir: "bookings",
     title: "Bookings",
     purpose:

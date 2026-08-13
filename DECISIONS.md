@@ -392,3 +392,60 @@ Two things about running it. It needs a browser Playwright can find —
 one at a fixed path. And it drives one host end to end, because `localhost` and
 `127.0.0.1` are different hosts to a cookie jar; the config picks the host and
 hands it to the server as `AUTH_URL` rather than letting the two disagree.
+
+---
+
+## Arrears
+
+**Maintenance is posted for the building, not per apartment.**
+The treasurer enters what the building needs to collect and it is split by
+share allocation, because that is what maintenance _is_ in a co-op — a unit's
+share of the building's costs, not a rent figure attached to a door. Rejected: a
+per-unit monthly rate. It would have meant storing a number that is really a
+derived one, and the first share transfer would have left it silently wrong for
+every month after.
+
+**The split is previewed before it is posted, from the same function that
+posts it.** `allocateByShares` is pure and already tested, so the client runs it
+on the numbers already on the page and shows the exact per-apartment figures
+while the treasurer is still typing. Not an estimate — the same integer
+arithmetic, remainder to the largest holders, parts summing to the total. The
+server recomputes from the register as of the due date and stays the authority;
+if a transfer landed between the render and the submit, the server's numbers are
+what get written and the result panel says what actually happened.
+
+**Shares are read as of the due date, not as of today.** A transfer last month
+changes who owes what this month, and the dated share register is the only
+reason that question has an answer at all. This is the payoff for having no
+`shares` column on `Unit`.
+
+**The monthly run refuses to post a month twice.** Double-posting a building's
+maintenance produces twelve angry emails and an evening of reversing charges by
+hand, and a double-submitted form should not be able to cause it. The check is a
+query for a live `MAINTENANCE` charge on that due date, inside the same
+transaction as the writes.
+
+**Posting is the treasurer's alone.** `arrears.postCharge` and
+`arrears.recordPayment` are deliberately not in the president's set, though
+`arrears.viewAll` is. The president can see every ledger and change none of it.
+In a twelve-unit building this is a separation between two named neighbours
+rather than two departments, and it is worth keeping precisely because it would
+be so easy to collapse.
+
+**A reversal carries the original's due date.** The reversing charge is dated to
+when the original fell due, not to today, so the pair nets out in the bucket the
+original occupied instead of appearing as a credit in the current column. A
+reversal that ages differently from the thing it reverses is how a unit ends up
+looking permanently overdue for a charge that was withdrawn.
+
+**Reversed pairs stay visible, struck through.** Hiding them would make the
+ledger easier to read and much less useful — "there was a charge here once and
+it came off" is exactly what a shareholder disputes and a future board has to
+reconstruct.
+
+**Still not built, deliberately:** payment plans, late-fee rules, and the
+arrears letter. The letter waits on a verified sending domain, since a dunning
+notice that silently fails to deliver is worse than none. Late fees, when they
+come, should propose rather than post — the same review-list shape the
+compliance module uses, because charging money against a proprietary lease
+nobody has re-read is not something software should do unattended.

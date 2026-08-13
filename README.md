@@ -24,7 +24,7 @@ together and `DECISIONS.md` for what was chosen and what was rejected.
 | Annual Notices      | scaffold |
 | Meetings & Proxies  | scaffold |
 | Sublet Register     | scaffold |
-| Arrears             | scaffold |
+| Arrears             | built    |
 | Bookings            | scaffold |
 | Repair Tickets      | scaffold |
 | Duty Rotation       | scaffold |
@@ -79,13 +79,15 @@ than decoration — a role that owns the tables ignores them by default.
 | `pnpm db:seed`    | Reseed the two fictional buildings                          |
 | `pnpm rules:sync` | Upsert the compliance ruleset without reseeding             |
 
-### The smoke test
+### The browser tests
 
-`pnpm test:e2e` runs one path end to end: a president signs in, invites a
-neighbour, the neighbour follows the link, signs in as the invited address,
-joins, opens the compliance calendar, puts a requirement on it and files it.
-Nothing is faked — it reads magic links out of `./.mail` the way a person reads
-them out of an inbox.
+`pnpm test:e2e` runs two paths end to end. The first: a president signs in,
+invites a neighbour, the neighbour follows the link, signs in as the invited
+address, joins, opens the compliance calendar, puts a requirement on it and
+files it. The second: a treasurer posts a month's maintenance, checks the
+share-weighted split adds up before committing to it, then records a payment
+and watches the balance move. Nothing is faked — they read magic links out of
+`./.mail` the way a person reads them out of an inbox.
 
 It builds the app and starts it, so the first run takes a minute. If Playwright
 cannot find a browser, point it at one:
