@@ -36,7 +36,9 @@ banner on the page ever disagree.
 
 Outside the module list, the following are built: sign-in and invitation
 redemption, the members page with outstanding invitations, the share register,
-the document index, and the audit trail.
+the document index, the audit trail, and building work — what the building has
+to pay for, with each apartment's share of the cost shown as a percentage and a
+figure, and the assessment that turns it into money owed.
 
 ## Getting started
 
@@ -74,20 +76,22 @@ than decoration — a role that owns the tables ignores them by default.
 | `pnpm dev`        | Development server                                          |
 | `pnpm verify`     | Typecheck, lint and unit tests — run this before committing |
 | `pnpm test`       | Vitest, including the tenancy isolation suite               |
-| `pnpm test:e2e`   | Playwright smoke path — builds, starts, drives a browser    |
+| `pnpm test:e2e`   | Playwright browser tests — builds, starts, drives a browser |
 | `pnpm db:migrate` | Apply migrations to the development database                |
 | `pnpm db:seed`    | Reseed the two fictional buildings                          |
 | `pnpm rules:sync` | Upsert the compliance ruleset without reseeding             |
 
 ### The browser tests
 
-`pnpm test:e2e` runs two paths end to end. The first: a president signs in,
-invites a neighbour, the neighbour follows the link, signs in as the invited
-address, joins, opens the compliance calendar, puts a requirement on it and
-files it. The second: a treasurer posts a month's maintenance, checks the
-share-weighted split adds up before committing to it, then records a payment
-and watches the balance move. Nothing is faked — they read magic links out of
-`./.mail` the way a person reads them out of an inbox.
+`pnpm test:e2e` runs three paths end to end. A president signs in, invites a
+neighbour, the neighbour follows the link, signs in as the invited address,
+joins, opens the compliance calendar, puts a requirement on it and files it. A
+treasurer posts a month's maintenance, checks the share-weighted split adds up
+before committing to it, then records a payment and watches the balance move.
+And a treasurer prices a piece of building work, checks that the per-apartment
+percentages and amounts add up to the job, raises the assessment, and finds the
+resulting charge on an apartment's ledger. Nothing is faked — they read magic
+links out of `./.mail` the way a person reads them out of an inbox.
 
 It builds the app and starts it, so the first run takes a minute. If Playwright
 cannot find a browser, point it at one:

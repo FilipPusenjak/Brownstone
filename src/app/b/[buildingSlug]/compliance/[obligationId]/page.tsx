@@ -6,6 +6,9 @@ import { can } from "~/lib/auth/capabilities";
 import { getBuildingContext } from "~/lib/auth/current";
 import { getComplianceRule } from "~/lib/compliance/rules";
 import { getObligation } from "~/lib/db/scoped/compliance";
+import { workForObligation } from "~/lib/db/scoped/work";
+import { formatMoney, money } from "~/lib/money";
+import { AddWorkForm } from "../../work/WorkForms";
 import { dueStatus } from "~/lib/primitives/obligations/recurrence";
 import {
   formatDate,
@@ -38,6 +41,11 @@ export default async function ObligationPage({
 
   const pendingReminders = obligation.reminders.filter((r) => !r.sentAt);
   const sentReminders = obligation.reminders.filter((r) => r.sentAt);
+
+  // Paid work attached to this filing — the parapet observation that turns into
+  // parapet repairs, and the assessment that pays for them.
+  const work = await workForObligation(ctx, obligation.id);
+  const canManageWork = can(ctx, "work.manage");
 
   return (
     <>
@@ -163,6 +171,48 @@ export default async function ObligationPage({
           </p>
         </section>
       ) : null}
+
+      <section className="border-limestone mt-8 border-t pt-6">
+        <h2 className="eyebrow mb-2">What it costs</h2>
+        {work.length === 0 ? (
+          <>
+            <p className="text-ironwork-soft mb-3 max-w-2xl text-sm">
+              Nothing recorded yet. If this needs paid work — a contractor, a repair —
+              record it and everyone can see what their share of the cost comes to.
+            </p>
+            {canManageWork ? (
+              <AddWorkForm
+                buildingSlug={buildingSlug}
+                obligationId={obligation.id}
+                label="Record the work and its cost"
+              />
+            ) : null}
+          </>
+        ) : (
+          <ul className="divide-limestone divide-y">
+            {work.map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
+              >
+                <Link
+                  href={`/b/${buildingSlug}/work/${item.id}`}
+                  className="text-ironwork decoration-limestone-deep hover:decoration-verdigris text-sm underline underline-offset-4"
+                >
+                  {item.title}
+                </Link>
+                <span className="text-ironwork font-mono text-xs whitespace-nowrap">
+                  {item.assessmentTotalCents
+                    ? `${formatMoney(money(item.assessmentTotalCents))} assessed`
+                    : item.estimateCents
+                      ? `${formatMoney(money(item.estimateCents))} estimated`
+                      : "no estimate yet"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="border-limestone mt-8 border-t pt-6">
         <h2 className="eyebrow mb-2">Reminders</h2>

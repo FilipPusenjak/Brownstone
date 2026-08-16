@@ -94,17 +94,17 @@ model VerificationToken {
 // ---------------------------------------------------------------------------
 
 model Building {
-  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug   String @unique
-  name   String
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug      String  @unique
+  name      String
   legalName String?
 
-  addressLine1 String
-  addressLine2 String?
-  borough      Borough
-  zip          String
-  bbl          String?
-  bin          String?
+  addressLine1      String
+  addressLine2      String?
+  borough           Borough
+  zip               String
+  bbl               String?
+  bin               String?
   communityDistrict String?
 
   timezone    String      @default("America/New_York")
@@ -113,67 +113,68 @@ model Building {
   // Physical attributes. These are the inputs to compliance applicability —
   // every rule predicate reads from this set and nothing else, which is what
   // keeps the ruleset declarative.
-  unitCount        Int
-  stories          Int
-  yearBuilt        Int?
-  grossSquareFeet  Int?
-  hasElevator      Boolean         @default(false)
-  gasService       GasService      @default(UNKNOWN)
-  oilTankPresent   Boolean         @default(false)
-  sprinklerStatus  SprinklerStatus @default(UNKNOWN)
-  facadeHeightFt   Int?
-  isLandmarked     Boolean         @default(false)
-  hasParapet       Boolean         @default(true)
-  ownerOccupied    Boolean         @default(true)
+  unitCount       Int
+  stories         Int
+  yearBuilt       Int?
+  grossSquareFeet Int?
+  hasElevator     Boolean         @default(false)
+  gasService      GasService      @default(UNKNOWN)
+  oilTankPresent  Boolean         @default(false)
+  sprinklerStatus SprinklerStatus @default(UNKNOWN)
+  facadeHeightFt  Int?
+  isLandmarked    Boolean         @default(false)
+  hasParapet      Boolean         @default(true)
+  ownerOccupied   Boolean         @default(true)
 
   // Where those attributes came from, and whether a human has vouched for
   // them. An unconfirmed attribute set produces a compliance assessment marked
   // provisional, because a wrong unit count silently changes which laws apply.
-  attributeSource           AttributeSource @default(MANUAL)
-  attributesConfirmedAt     DateTime?
-  attributesConfirmedById   String?         @db.Uuid
+  attributeSource         AttributeSource @default(MANUAL)
+  attributesConfirmedAt   DateTime?
+  attributesConfirmedById String?         @db.Uuid
 
   subletCapPercent Int? // building-wide sublet ceiling, if the house rules set one
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships       Membership[]
-  membershipUnits   MembershipUnit[]
-  invitations       Invitation[]
-  units             Unit[]
-  shareAllocations  ShareAllocation[]
-  unitHoldings      UnitHolding[]
-  ruleAssessments   BuildingRuleAssessment[]
-  obligations       Obligation[]
+  memberships         Membership[]
+  membershipUnits     MembershipUnit[]
+  invitations         Invitation[]
+  units               Unit[]
+  shareAllocations    ShareAllocation[]
+  unitHoldings        UnitHolding[]
+  ruleAssessments     BuildingRuleAssessment[]
+  obligations         Obligation[]
   obligationReminders ObligationReminder[]
-  documents         Document[]
-  documentLinks     DocumentLink[]
-  certificates      CertificateOfInsurance[]
-  approvalRequests  ApprovalRequest[]
-  approvalComments  ApprovalComment[]
-  alterations       AlterationRequest[]
-  charges           Charge[]
-  payments          Payment[]
-  paymentPlans      PaymentPlan[]
-  notifications     Notification[]
-  auditLogs         AuditLog[]
-  resources         Resource[]
-  resourcePrereqs   ResourcePrerequisite[]
-  bookings          Booking[]
-  bookingChecks     BookingPrerequisiteCheck[]
-  meetings          Meeting[]
-  meetingAttendance MeetingAttendance[]
-  proxies           Proxy[]
-  resolutions       Resolution[]
-  sublets           SubletRegistration[]
-  tickets           Ticket[]
-  dutyRotations     DutyRotation[]
-  dutyAssignments   DutyAssignment[]
-  dsnyFines         DsnyFine[]
-  noticeCampaigns   NoticeCampaign[]
-  noticeDeliveries  NoticeDelivery[]
-  dataLookups       BuildingDataLookup[]
+  documents           Document[]
+  documentLinks       DocumentLink[]
+  certificates        CertificateOfInsurance[]
+  approvalRequests    ApprovalRequest[]
+  approvalComments    ApprovalComment[]
+  alterations         AlterationRequest[]
+  charges             Charge[]
+  payments            Payment[]
+  paymentPlans        PaymentPlan[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  resources           Resource[]
+  resourcePrereqs     ResourcePrerequisite[]
+  bookings            Booking[]
+  bookingChecks       BookingPrerequisiteCheck[]
+  meetings            Meeting[]
+  meetingAttendance   MeetingAttendance[]
+  proxies             Proxy[]
+  resolutions         Resolution[]
+  sublets             SubletRegistration[]
+  tickets             Ticket[]
+  dutyRotations       DutyRotation[]
+  dutyAssignments     DutyAssignment[]
+  dsnyFines           DsnyFine[]
+  noticeCampaigns     NoticeCampaign[]
+  noticeDeliveries    NoticeDelivery[]
+  dataLookups         BuildingDataLookup[]
+  buildingWork        BuildingWork[]
 }
 
 /// Raw payload from a NYC Open Data lookup, kept so a prefilled attribute can
@@ -218,23 +219,25 @@ model Membership {
   building Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   units    MembershipUnit[]
 
-  invitationsSent     Invitation[]             @relation("InvitationInvitedBy")
-  holdings            UnitHolding[]
-  uploadedDocuments   Document[]               @relation("DocumentUploadedBy")
+  invitationsSent      Invitation[]             @relation("InvitationInvitedBy")
+  holdings             UnitHolding[]
+  uploadedDocuments    Document[]               @relation("DocumentUploadedBy")
   verifiedCertificates CertificateOfInsurance[] @relation("CoiVerifiedBy")
-  assessmentDecisions BuildingRuleAssessment[] @relation("AssessmentDecidedBy")
-  assignedObligations Obligation[]             @relation("ObligationAssignee")
-  completedObligations Obligation[]            @relation("ObligationCompletedBy")
-  submittedApprovals  ApprovalRequest[]        @relation("ApprovalSubmittedBy")
-  assignedApprovals   ApprovalRequest[]        @relation("ApprovalAssignee")
-  decidedApprovals    ApprovalRequest[]        @relation("ApprovalDecidedBy")
-  approvalComments    ApprovalComment[]
-  chargesCreated      Charge[]
-  paymentsRecorded    Payment[]
-  bookingsRequested   Booking[]
-  auditLogs           AuditLog[]
-  ticketsReported     Ticket[]                 @relation("TicketReportedBy")
-  proxiesHeld         Proxy[]                  @relation("ProxyHolder")
+  assessmentDecisions  BuildingRuleAssessment[] @relation("AssessmentDecidedBy")
+  assignedObligations  Obligation[]             @relation("ObligationAssignee")
+  completedObligations Obligation[]             @relation("ObligationCompletedBy")
+  submittedApprovals   ApprovalRequest[]        @relation("ApprovalSubmittedBy")
+  assignedApprovals    ApprovalRequest[]        @relation("ApprovalAssignee")
+  decidedApprovals     ApprovalRequest[]        @relation("ApprovalDecidedBy")
+  approvalComments     ApprovalComment[]
+  chargesCreated       Charge[]
+  paymentsRecorded     Payment[]
+  bookingsRequested    Booking[]
+  auditLogs            AuditLog[]
+  ticketsReported      Ticket[]                 @relation("TicketReportedBy")
+  proxiesHeld          Proxy[]                  @relation("ProxyHolder")
+  workCreated          BuildingWork[]           @relation("WorkCreatedBy")
+  workAssessments      BuildingWork[]           @relation("WorkAssessmentRaisedBy")
 
   @@unique([userId, buildingId])
   @@index([buildingId])
@@ -262,23 +265,23 @@ model MembershipUnit {
 }
 
 model Invitation {
-  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId          String    @db.Uuid
-  email               String
-  roles               Role[]
-  unitIds             String[]  @db.Uuid
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId            String    @db.Uuid
+  email                 String
+  roles                 Role[]
+  unitIds               String[]  @db.Uuid
   /// SHA-256 of the token. The token itself only ever exists in the emailed
   /// link, so a database dump does not hand over building access.
-  tokenHash           String    @unique
-  expiresAt           DateTime
-  acceptedAt          DateTime?
-  acceptedByUserId    String?   @db.Uuid
-  revokedAt           DateTime?
-  invitedByMembershipId String  @db.Uuid
-  createdAt           DateTime  @default(now())
+  tokenHash             String    @unique
+  expiresAt             DateTime
+  acceptedAt            DateTime?
+  acceptedByUserId      String?   @db.Uuid
+  revokedAt             DateTime?
+  invitedByMembershipId String    @db.Uuid
+  createdAt             DateTime  @default(now())
 
-  building    Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  invitedBy   Membership @relation("InvitationInvitedBy", fields: [invitedByMembershipId], references: [id], onDelete: Cascade)
+  building  Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  invitedBy Membership @relation("InvitationInvitedBy", fields: [invitedByMembershipId], references: [id], onDelete: Cascade)
 
   @@index([buildingId])
   @@index([buildingId, email])
@@ -306,7 +309,7 @@ model Unit {
   unitType   UnitType @default(RESIDENTIAL)
   createdAt  DateTime @default(now())
 
-  building         Building          @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  building         Building                 @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   memberships      MembershipUnit[]
   shareAllocations ShareAllocation[]
   holdings         UnitHolding[]
@@ -382,12 +385,12 @@ model UnitHolding {
 // ---------------------------------------------------------------------------
 
 model ComplianceRule {
-  id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code     String    @unique // "hpd-annual-registration"
-  title    String // "HPD property registration"
-  authority Authority
-  citation String // "NYC Admin Code § 27-2097"
-  sourceUrl String?
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String    @unique // "hpd-annual-registration"
+  title       String // "HPD property registration"
+  authority   Authority
+  citation    String // "NYC Admin Code § 27-2097"
+  sourceUrl   String?
   /// What the building actually has to do, in the words a board member would
   /// use. This is display copy, not a summary of the statute.
   requirement String
@@ -442,8 +445,8 @@ model ComplianceRule {
 /// reason is kept. When the next board asks "why aren't we tracking gas
 /// inspections", the answer is here with a name and a date on it.
 model BuildingRuleAssessment {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId String   @db.Uuid
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String @db.Uuid
   ruleCode   String
 
   /// What the applicability engine concluded, and the attribute values it
@@ -453,9 +456,9 @@ model BuildingRuleAssessment {
   engineReason  String
   engineInputs  Json
 
-  decision   AssessmentDecision @default(PROPOSED)
-  decidedAt  DateTime?
-  decidedById String?           @db.Uuid
+  decision     AssessmentDecision @default(PROPOSED)
+  decidedAt    DateTime?
+  decidedById  String?            @db.Uuid
   decisionNote String?
 
   createdAt DateTime @default(now())
@@ -502,7 +505,7 @@ model Obligation {
   ruleCode     String?
 
   /// Legally date-only. See the note at the top of this file.
-  dueOn DateTime @db.Date
+  dueOn   DateTime  @db.Date
   /// When work can begin — a filing window that opens on 1 December is not
   /// something to nag about in June.
   opensOn DateTime? @db.Date
@@ -517,12 +520,12 @@ model Obligation {
   anchorOffsetMonths Int?
   reminderOffsets    Int[]
 
-  state         ObligationState @default(OPEN)
-  completedOn   DateTime?       @db.Date
-  completedById String?         @db.Uuid
+  state          ObligationState @default(OPEN)
+  completedOn    DateTime?       @db.Date
+  completedById  String?         @db.Uuid
   completionNote String?
-  waivedAt      DateTime?
-  waivedReason  String?
+  waivedAt       DateTime?
+  waivedReason   String?
 
   assigneeId String? @db.Uuid
 
@@ -547,10 +550,11 @@ model Obligation {
   parent      Obligation?             @relation("ObligationChain", fields: [parentObligationId], references: [id], onDelete: SetNull)
   children    Obligation[]            @relation("ObligationChain")
 
-  reminders     ObligationReminder[]
-  certificates  CertificateOfInsurance[]
+  reminders       ObligationReminder[]
+  certificates    CertificateOfInsurance[]
   dutyAssignments DutyAssignment[]
   noticeCampaigns NoticeCampaign[]
+  buildingWork    BuildingWork[]
 
   @@index([buildingId])
   @@index([buildingId, state, dueOn])
@@ -560,15 +564,54 @@ model Obligation {
 /// One row per (obligation, offset, scheduled date). The unique constraint is
 /// the cron's idempotency key: a double invocation cannot double-send, because
 /// the second insert loses the race rather than queuing a second email.
+model BuildingWork {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String     @db.Uuid
+  title      String
+  detail     String?
+  status     WorkStatus @default(PROPOSED)
+
+  /// What the board expects the work to cost, in cents. Null until somebody has
+  /// a number — "the roof needs doing" is worth recording before the quote
+  /// arrives, and a zero would be a lie rather than an absence.
+  estimateCents Int?
+
+  /// Set when this work satisfies something already on the compliance calendar
+  /// — a parapet observation, a facade cycle. Null for work a board decides to
+  /// do on its own: a new boiler, the lobby.
+  obligationId String? @db.Uuid
+
+  /// The assessment, once the board has actually raised one. Filled together or
+  /// not at all: charges are written in the same transaction that stamps these.
+  assessmentRaisedAt   DateTime?
+  assessmentRaisedById String?   @db.Uuid
+  assessmentTotalCents Int?
+  assessmentDueOn      DateTime? @db.Date
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  building           Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  obligation         Obligation? @relation(fields: [obligationId], references: [id], onDelete: SetNull)
+  createdBy          Membership? @relation("WorkCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  assessmentRaisedBy Membership? @relation("WorkAssessmentRaisedBy", fields: [assessmentRaisedById], references: [id], onDelete: SetNull)
+  charges            Charge[]
+
+  @@index([buildingId])
+  @@index([buildingId, status])
+  @@index([buildingId, obligationId])
+}
+
 model ObligationReminder {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId   String    @db.Uuid
-  obligationId String    @db.Uuid
-  offsetDays   Int
-  scheduledFor DateTime  @db.Date
-  sentAt       DateTime?
-  notificationId String? @db.Uuid
-  createdAt    DateTime  @default(now())
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId     String    @db.Uuid
+  obligationId   String    @db.Uuid
+  offsetDays     Int
+  scheduledFor   DateTime  @db.Date
+  sentAt         DateTime?
+  notificationId String?   @db.Uuid
+  createdAt      DateTime  @default(now())
 
   building   Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   obligation Obligation @relation(fields: [obligationId], references: [id], onDelete: Cascade)
@@ -611,10 +654,10 @@ model Document {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  building     Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  uploadedBy   Membership? @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
-  links        DocumentLink[]
-  certificates CertificateOfInsurance[]
+  building         Building                 @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  uploadedBy       Membership?              @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  links            DocumentLink[]
+  certificates     CertificateOfInsurance[]
   noticeDeliveries NoticeDelivery[]
 
   @@index([buildingId])
@@ -639,13 +682,13 @@ model DocumentLink {
 }
 
 model CertificateOfInsurance {
-  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId String       @db.Uuid
-  documentId String?      @db.Uuid
-  holderKind CoiHolderKind
-  holderName String
-  unitId     String?      @db.Uuid
-  alterationRequestId String? @db.Uuid
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId          String        @db.Uuid
+  documentId          String?       @db.Uuid
+  holderKind          CoiHolderKind
+  holderName          String
+  unitId              String?       @db.Uuid
+  alterationRequestId String?       @db.Uuid
 
   carrier       String
   policyNumber  String
@@ -690,10 +733,10 @@ model CertificateOfInsurance {
 // ---------------------------------------------------------------------------
 
 model ApprovalRequest {
-  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId  String         @db.Uuid
-  kind        ApprovalKind
-  status      ApprovalStatus @default(DRAFT)
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String         @db.Uuid
+  kind       ApprovalKind
+  status     ApprovalStatus @default(DRAFT)
 
   submittedById String    @db.Uuid
   assigneeId    String?   @db.Uuid
@@ -717,7 +760,7 @@ model ApprovalRequest {
   assignee    Membership? @relation("ApprovalAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   decidedBy   Membership? @relation("ApprovalDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
 
-  comments  ApprovalComment[]
+  comments   ApprovalComment[]
   alteration AlterationRequest?
   sublet     SubletRegistration?
   ticket     Ticket?
@@ -762,11 +805,11 @@ model AlterationRequest {
   /// Wet-over-dry — a bathroom or kitchen moved over a neighbour's dry room —
   /// is the classic alteration a co-op board refuses, so it is asked directly
   /// rather than left to be discovered in the plans.
-  wetOverDry       Boolean @default(false)
-  affectsStructure Boolean @default(false)
-  affectsRiser     Boolean @default(false)
+  wetOverDry        Boolean @default(false)
+  affectsStructure  Boolean @default(false)
+  affectsRiser      Boolean @default(false)
   requiresDobPermit Boolean @default(false)
-  dobJobNumber     String?
+  dobJobNumber      String?
 
   plannedStart DateTime? @db.Date
   plannedEnd   DateTime? @db.Date
@@ -775,9 +818,9 @@ model AlterationRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  building Building        @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  unit     Unit            @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  approval ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
+  building     Building                 @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit         Unit                     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  approval     ApprovalRequest          @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
   certificates CertificateOfInsurance[]
 
   @@index([buildingId])
@@ -794,24 +837,28 @@ model AlterationRequest {
 // ---------------------------------------------------------------------------
 
 model Charge {
-  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId String     @db.Uuid
-  unitId     String     @db.Uuid
-  kind       ChargeKind
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId  String     @db.Uuid
+  unitId      String     @db.Uuid
+  kind        ChargeKind
   amountCents Int
-  dueOn      DateTime   @db.Date
-  postedOn   DateTime   @db.Date
-  memo       String?
+  dueOn       DateTime   @db.Date
+  postedOn    DateTime   @db.Date
+  memo        String?
 
-  reversesChargeId String? @db.Uuid
-  createdById      String? @db.Uuid
+  reversesChargeId String?  @db.Uuid
+  /// Set when this charge came from a share-weighted assessment for a piece of
+  /// building work, so the work can show what it actually raised.
+  buildingWorkId   String?  @db.Uuid
+  createdById      String?  @db.Uuid
   createdAt        DateTime @default(now())
 
-  building  Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  unit      Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  createdBy Membership? @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  reverses  Charge?     @relation("ChargeReversal", fields: [reversesChargeId], references: [id], onDelete: SetNull)
-  reversedBy Charge[]   @relation("ChargeReversal")
+  building     Building      @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit         Unit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  createdBy    Membership?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  reverses     Charge?       @relation("ChargeReversal", fields: [reversesChargeId], references: [id], onDelete: SetNull)
+  reversedBy   Charge[]      @relation("ChargeReversal")
+  buildingWork BuildingWork? @relation(fields: [buildingWorkId], references: [id], onDelete: SetNull)
 
   @@index([buildingId])
   @@index([buildingId, unitId, dueOn])
@@ -829,8 +876,8 @@ model Payment {
   reference   String?
   memo        String?
 
-  reversesPaymentId String? @db.Uuid
-  recordedById      String? @db.Uuid
+  reversesPaymentId String?  @db.Uuid
+  recordedById      String?  @db.Uuid
   createdAt         DateTime @default(now())
 
   building   Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
@@ -844,15 +891,15 @@ model Payment {
 }
 
 model PaymentPlan {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId     String   @db.Uuid
-  unitId         String   @db.Uuid
-  totalCents     Int
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId       String   @db.Uuid
+  unitId           String   @db.Uuid
+  totalCents       Int
   installmentCents Int
-  startsOn       DateTime @db.Date
-  endsOn         DateTime @db.Date
-  note           String?
-  createdAt      DateTime @default(now())
+  startsOn         DateTime @db.Date
+  endsOn           DateTime @db.Date
+  note             String?
+  createdAt        DateTime @default(now())
 
   building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   unit     Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
@@ -909,19 +956,19 @@ model Notification {
 /// Append-only. Board turnover is the reason this product exists; this table is
 /// the continuity. Never exposed as mutable — there is no update or delete path.
 model AuditLog {
-  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId String     @db.Uuid
-  actorUserId String?   @db.Uuid
-  actorMembershipId String? @db.Uuid
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId        String     @db.Uuid
+  actorUserId       String?    @db.Uuid
+  actorMembershipId String?    @db.Uuid
   /// Dotted verb matching the capability that authorised it:
   /// "obligation.complete", "alteration.decide".
-  action     String
-  entityType EntityType
-  entityId   String     @db.Uuid
-  before     Json?
-  after      Json?
-  summary    String?
-  createdAt  DateTime   @default(now())
+  action            String
+  entityType        EntityType
+  entityId          String     @db.Uuid
+  before            Json?
+  after             Json?
+  summary           String?
+  createdAt         DateTime   @default(now())
 
   building        Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   actorMembership Membership? @relation(fields: [actorMembershipId], references: [id], onDelete: SetNull)
@@ -966,8 +1013,8 @@ model ResourcePrerequisite {
   config     Json
   createdAt  DateTime         @default(now())
 
-  building Building  @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  resource Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  building Building                   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  resource Resource                   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
   checks   BookingPrerequisiteCheck[]
 
   @@index([buildingId])
@@ -975,22 +1022,22 @@ model ResourcePrerequisite {
 }
 
 model Booking {
-  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId String        @db.Uuid
-  resourceId String        @db.Uuid
-  unitId     String        @db.Uuid
-  requestedById String     @db.Uuid
-  startsAt   DateTime
-  endsAt     DateTime
-  status     BookingStatus @default(HELD)
-  note       String?
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId    String        @db.Uuid
+  resourceId    String        @db.Uuid
+  unitId        String        @db.Uuid
+  requestedById String        @db.Uuid
+  startsAt      DateTime
+  endsAt        DateTime
+  status        BookingStatus @default(HELD)
+  note          String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  building    Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  resource    Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  unit        Unit       @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  requestedBy Membership @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+  building    Building                   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  resource    Resource                   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  unit        Unit                       @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  requestedBy Membership                 @relation(fields: [requestedById], references: [id], onDelete: Cascade)
   checks      BookingPrerequisiteCheck[]
 
   @@index([buildingId])
@@ -1025,12 +1072,12 @@ model BookingPrerequisiteCheck {
 // ---------------------------------------------------------------------------
 
 model Meeting {
-  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId String      @db.Uuid
-  title      String
-  type       MeetingType @default(ANNUAL)
-  scheduledFor DateTime
-  location   String?
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId        String      @db.Uuid
+  title             String
+  type              MeetingType @default(ANNUAL)
+  scheduledFor      DateTime
+  location          String?
   /// Quorum threshold as an exact fraction of total shares, because bylaws are
   /// written in fractions. Two-thirds has no exact representation in basis
   /// points: 6667 demands 801 of 1200 shares where two-thirds is exactly 800,
@@ -1040,16 +1087,16 @@ model Meeting {
   /// `quorumStrict` separates "more than half" from "at least half". A majority
   /// is strict, a two-thirds requirement usually is not, and the difference
   /// decides every tied vote.
-  quorumNumerator   Int     @default(1)
-  quorumDenominator Int     @default(2)
-  quorumStrict      Boolean @default(true)
-  minutesDocumentId String? @db.Uuid
-  heldAt     DateTime?
-  createdAt  DateTime    @default(now())
+  quorumNumerator   Int         @default(1)
+  quorumDenominator Int         @default(2)
+  quorumStrict      Boolean     @default(true)
+  minutesDocumentId String?     @db.Uuid
+  heldAt            DateTime?
+  createdAt         DateTime    @default(now())
 
-  building   Building            @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  attendance MeetingAttendance[]
-  proxies    Proxy[]
+  building    Building            @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  attendance  MeetingAttendance[]
+  proxies     Proxy[]
   resolutions Resolution[]
 
   @@index([buildingId])
@@ -1073,13 +1120,13 @@ model MeetingAttendance {
 }
 
 model Proxy {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId String   @db.Uuid
-  meetingId  String   @db.Uuid
-  unitId     String   @db.Uuid
-  holderId   String?  @db.Uuid
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId String    @db.Uuid
+  meetingId  String    @db.Uuid
+  unitId     String    @db.Uuid
+  holderId   String?   @db.Uuid
   holderName String
-  grantedAt  DateTime @default(now())
+  grantedAt  DateTime  @default(now())
   revokedAt  DateTime?
   /// How the grant was captured, kept because a proxy is only as good as the
   /// evidence that it was granted.
@@ -1095,16 +1142,16 @@ model Proxy {
 }
 
 model Resolution {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId String   @db.Uuid
-  meetingId  String   @db.Uuid
-  title      String
-  text       String
-  sharesFor  Int      @default(0)
-  sharesAgainst Int   @default(0)
-  sharesAbstain Int   @default(0)
-  passed     Boolean?
-  createdAt  DateTime @default(now())
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId    String   @db.Uuid
+  meetingId     String   @db.Uuid
+  title         String
+  text          String
+  sharesFor     Int      @default(0)
+  sharesAgainst Int      @default(0)
+  sharesAbstain Int      @default(0)
+  passed        Boolean?
+  createdAt     DateTime @default(now())
 
   building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   meeting  Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
@@ -1113,16 +1160,16 @@ model Resolution {
 }
 
 model SubletRegistration {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId        String    @db.Uuid
-  unitId            String    @db.Uuid
-  approvalRequestId String?   @unique @db.Uuid
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId        String   @db.Uuid
+  unitId            String   @db.Uuid
+  approvalRequestId String?  @unique @db.Uuid
   subtenantName     String
-  termStart         DateTime  @db.Date
-  termEnd           DateTime  @db.Date
-  feeCents          Int       @default(0)
-  obligationId      String?   @db.Uuid
-  createdAt         DateTime  @default(now())
+  termStart         DateTime @db.Date
+  termEnd           DateTime @db.Date
+  feeCents          Int      @default(0)
+  obligationId      String?  @db.Uuid
+  createdAt         DateTime @default(now())
 
   building Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   unit     Unit             @relation(fields: [unitId], references: [id], onDelete: Cascade)
@@ -1133,23 +1180,23 @@ model SubletRegistration {
 }
 
 model Ticket {
-  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId String         @db.Uuid
-  unitId     String?        @db.Uuid
-  reportedById String       @db.Uuid
-  title      String
-  detail     String
-  area       String?
-  status     TicketStatus   @default(OPEN)
-  priority   TicketPriority @default(NORMAL)
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId        String         @db.Uuid
+  unitId            String?        @db.Uuid
+  reportedById      String         @db.Uuid
+  title             String
+  detail            String
+  area              String?
+  status            TicketStatus   @default(OPEN)
+  priority          TicketPriority @default(NORMAL)
   /// Who pays. In a co-op this is the question every repair turns into, so the
   /// determination is a written record with an officer's name on it rather than
   /// a conversation nobody can reconstruct two boards later.
-  responsibility Responsibility @default(UNDETERMINED)
-  approvalRequestId String?  @unique @db.Uuid
-  resolvedAt DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  responsibility    Responsibility @default(UNDETERMINED)
+  approvalRequestId String?        @unique @db.Uuid
+  resolvedAt        DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   building   Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   unit       Unit?            @relation(fields: [unitId], references: [id], onDelete: SetNull)
@@ -1199,17 +1246,17 @@ model DutyAssignment {
 }
 
 model DsnyFine {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId   String   @db.Uuid
-  unitId       String?  @db.Uuid
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId   String    @db.Uuid
+  unitId       String?   @db.Uuid
   ticketNumber String
-  issuedOn     DateTime @db.Date
+  issuedOn     DateTime  @db.Date
   violation    String
   amountCents  Int
   paidOn       DateTime? @db.Date
   contestedOn  DateTime? @db.Date
   note         String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
   building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   unit     Unit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
@@ -1236,19 +1283,19 @@ model NoticeCampaign {
 }
 
 model NoticeDelivery {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  buildingId     String   @db.Uuid
-  campaignId     String   @db.Uuid
-  unitId         String   @db.Uuid
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId     String    @db.Uuid
+  campaignId     String    @db.Uuid
+  unitId         String    @db.Uuid
   recipientName  String
   recipientEmail String?
-  notificationId String?  @db.Uuid
+  notificationId String?   @db.Uuid
   /// Proof of delivery — the signed return card, the photo of the notice under
   /// the door. The reason the module exists.
-  documentId     String?  @db.Uuid
+  documentId     String?   @db.Uuid
   respondedAt    DateTime?
   response       Json?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
 
   building Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   campaign NoticeCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -1354,6 +1401,14 @@ enum ObligationKind {
   SUBLET_EXPIRY
   DUTY
   CUSTOM
+}
+
+enum WorkStatus {
+  PROPOSED
+  APPROVED
+  IN_PROGRESS
+  COMPLETE
+  CANCELLED
 }
 
 enum ObligationState {

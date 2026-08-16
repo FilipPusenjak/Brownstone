@@ -307,6 +307,109 @@ export async function reversePayment(
   });
 }
 
+export interface ShareWeightedLine {
+  readonly unitId: string;
+  readonly unitLabel: string;
+  readonly shares: number;
+  readonly amountCents: number;
+}
+
+/**
+ * Splits a total across the apartments by share allocation and writes a charge
+ * for each, inside a transaction the caller already opened.
+ *
+ * Shared by the two things that raise money from the whole building — the
+ * monthly maintenance run and a special assessment for a piece of work. The
+ * delicate part is the same for both and belongs in one place: shares are read
+ * *as of the due date* rather than today, because a transfer last month changes
+ * who owes what this month, and `allocateByShares` puts the rounding remainder
+ * on the largest holders so the parts sum to exactly the total. A building that
+ * quietly over- or under-collects by a few cents a month is a reconciliation
+ * problem nobody enjoys finding a year later.
+ */
+async function postShareWeighted(
+  tx: Parameters<Parameters<typeof withBuildingTx>[1]>[0],
+  ctx: BuildingContext,
+  input: {
+    kind: ChargeKind;
+    dueOn: PlainDate;
+    totalCents: number;
+    memo: string;
+    buildingWorkId?: string;
+  },
+): Promise<Result<ShareWeightedLine[]>> {
+  const due = toDbDate(input.dueOn);
+
+  const units = await tx.unit.findMany({
+    orderBy: [{ floorIndex: "asc" }, { label: "asc" }],
+    select: {
+      id: true,
+      label: true,
+      shareAllocations: {
+        where: {
+          effectiveFrom: { lte: due },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gte: due } }],
+        },
+        orderBy: { effectiveFrom: "desc" },
+        take: 1,
+        select: { shares: true },
+      },
+    },
+  });
+
+  const holdings = units
+    .map((unit) => ({
+      unitId: unit.id,
+      label: unit.label,
+      shares: unit.shareAllocations[0]?.shares ?? 0,
+    }))
+    .filter((holding) => holding.shares > 0);
+
+  if (holdings.length === 0) {
+    return fail(
+      "invalid",
+      "No apartment has a share allocation on that date, so there is nothing to split this across.",
+    );
+  }
+
+  const split = allocateByShares(
+    input.totalCents,
+    holdings.map((h) => ({ unitId: h.unitId, shares: h.shares })),
+  );
+
+  const lines: ShareWeightedLine[] = [];
+
+  for (const holding of holdings) {
+    const amountCents = split.get(holding.unitId) ?? 0;
+    if (amountCents <= 0) continue;
+
+    await tx.charge.create({
+      data: {
+        buildingId: ctx.building.id,
+        unitId: holding.unitId,
+        kind: input.kind,
+        amountCents,
+        dueOn: due,
+        postedOn: due,
+        memo: input.memo,
+        createdById: ctx.membership.id,
+        ...(input.buildingWorkId ? { buildingWorkId: input.buildingWorkId } : {}),
+      },
+    });
+
+    lines.push({
+      unitId: holding.unitId,
+      unitLabel: holding.label,
+      shares: holding.shares,
+      amountCents,
+    });
+  }
+
+  return ok(lines);
+}
+
+export { postShareWeighted };
+
 export interface MaintenanceRunInput {
   /** The month being charged for, as the date the charge falls due. */
   readonly dueOn: PlainDate;
@@ -363,67 +466,14 @@ export async function postMonthlyMaintenance(
       );
     }
 
-    // Shares as of the due date, not as of today. The register is dated for
-    // exactly this reason.
-    const units = await tx.unit.findMany({
-      orderBy: [{ floorIndex: "asc" }, { label: "asc" }],
-      select: {
-        id: true,
-        label: true,
-        shareAllocations: {
-          where: {
-            effectiveFrom: { lte: due },
-            OR: [{ effectiveTo: null }, { effectiveTo: { gte: due } }],
-          },
-          orderBy: { effectiveFrom: "desc" },
-          take: 1,
-          select: { shares: true },
-        },
-      },
+    const posted = await postShareWeighted(tx, ctx, {
+      kind: "MAINTENANCE",
+      dueOn: input.dueOn,
+      totalCents: input.totalCents,
+      memo: input.memo?.trim() || "Monthly maintenance",
     });
-
-    const holdings = units
-      .map((unit) => ({
-        unitId: unit.id,
-        shares: unit.shareAllocations[0]?.shares ?? 0,
-      }))
-      .filter((holding) => holding.shares > 0);
-
-    if (holdings.length === 0) {
-      return fail(
-        "invalid",
-        "No apartment has a share allocation on that date, so there is nothing to split the maintenance across.",
-      );
-    }
-
-    const split = allocateByShares(input.totalCents, holdings);
-    const labels = new Map(units.map((unit) => [unit.id, unit.label]));
-    const memo = input.memo?.trim() || "Monthly maintenance";
-
-    const lines: Array<{ unitLabel: string; amountCents: number }> = [];
-
-    for (const holding of holdings) {
-      const amountCents = split.get(holding.unitId) ?? 0;
-      if (amountCents <= 0) continue;
-
-      await tx.charge.create({
-        data: {
-          buildingId: ctx.building.id,
-          unitId: holding.unitId,
-          kind: "MAINTENANCE",
-          amountCents,
-          dueOn: due,
-          postedOn: due,
-          memo,
-          createdById: ctx.membership.id,
-        },
-      });
-
-      lines.push({
-        unitLabel: labels.get(holding.unitId) ?? "—",
-        amountCents,
-      });
-    }
+    if (!posted.ok) return posted;
+    const lines = posted.data;
 
     await recordAudit(tx, ctx, {
       action: "arrears.postMonthlyMaintenance",

@@ -33,6 +33,7 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
         capability: "compliance.view",
       },
       { label: "Alterations", href: "/alterations" },
+      { label: "Building work", href: "/work", capability: "work.view" },
       { label: "Insurance", href: "/insurance", capability: "coi.view" },
       { label: "Documents", href: "/documents" },
     ],

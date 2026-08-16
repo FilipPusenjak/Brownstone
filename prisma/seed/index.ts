@@ -742,6 +742,25 @@ async function seedBuildingExtras(
     ],
   });
 
+  // --- Building work ------------------------------------------------------
+  // One job with an estimate and no assessment yet, so the split shows as a
+  // projection, and one already raised, so the charged view has something in
+  // it. Both are the kind of thing these buildings actually face.
+  await tx.buildingWork.create({
+    data: {
+      buildingId,
+      title:
+        spec.slug === "adelaide" ? "Replace the roof" : "Elevator controller upgrade",
+      detail:
+        spec.slug === "adelaide"
+          ? "Two quotes received. The cheaper one excludes the parapet flashing, which is why it is cheaper."
+          : "The controller is obsolete and parts are salvage-only. Quoted by the maintenance contractor.",
+      status: "PROPOSED",
+      estimateCents: spec.slug === "adelaide" ? 4_200_000 : 9_800_000,
+      createdById: presidentMembership,
+    },
+  });
+
   // --- Ledger (module 6) -------------------------------------------------
   // Similar amounts in both buildings, so a cross-tenant leak would look like
   // ordinary data rather than announcing itself.

@@ -449,3 +449,59 @@ notice that silently fails to deliver is worse than none. Late fees, when they
 come, should propose rather than post — the same review-list shape the
 compliance module uses, because charging money against a proprietary lease
 nobody has re-read is not something software should do unattended.
+
+---
+
+## Building work and assessments
+
+**One concept, two origins.** Work can stand alone — a new boiler, the lobby —
+or hang off a compliance obligation, which is how a parapet _observation_ turns
+into parapet _repairs_. Rejected: two separate things. A board asking "what is
+this going to cost us" does not care which of those it started as, and making
+them choose a menu before they can record a quote is the kind of taxonomy that
+only makes sense to whoever built it.
+
+**The split is shown to everyone, including the shareholder being assessed.**
+This is a deliberate exception to the rule that governs the rest of the ledger.
+Arrears are private because falling behind is private; the split of a roof is a
+published fact. A shareholder facing a four-thousand-dollar assessment is
+entitled to see the estimate and the arithmetic without asking an officer, and a
+board that could not show it would have a governance problem rather than a
+privacy one.
+
+**Percentage and money together, never money alone.** "You owe $4,180.22"
+invites an argument. "You hold 209 of 1,200 shares, 17.4%, which is $4,180.22"
+answers it first. The percentages are rounded for reading and never used to
+compute money — the cent that rounding would lose goes to the largest holder
+instead — which is why the money column sums exactly and the percentage column
+may not quite reach 100.
+
+**What is displayed comes from the function that writes the charges.**
+`splitLines` and the real posting path both call `allocateByShares`. A test
+raises an assessment and asserts, unit by unit, that what the interface showed
+equals what landed on the ledger; mutating the display to round independently
+fails it. Two implementations of the same arithmetic is how a shareholder ends
+up with a bill that disagrees with the page they were shown.
+
+**Recording work and charging for it are different capabilities.** Any officer
+may record that the roof needs doing and what the quote came to — that is
+planning and it costs nobody anything. Turning the estimate into money owed by
+twelve neighbours needs `arrears.postCharge`, the treasurer's alone. In a real
+co-op a special assessment follows a board vote; Co-operator does not pretend to
+hold that vote, but it refuses to let an estimate quietly become a debt.
+
+**Raising is once, and confirmed.** A second raise is refused rather than
+doubling everyone's assessment. The button asks again before it fires, naming
+the number of apartments, because this is the moment an estimate becomes debt on
+twelve ledgers and undoing it means a reversing entry per apartment.
+
+**The estimate locks once an assessment is raised against it.** It is what the
+charges were justified by; editing it afterwards would leave real money on the
+ledger explained by a number that has since changed. A revised cost is a second
+piece of work.
+
+**Before and after are read differently, on purpose.** Unraised, the split is a
+projection recomputed live from the current share register. Raised, it is read
+back from the charges themselves rather than recalculated — shares may have
+moved since, and the bill somebody actually received does not change when their
+neighbour sells.

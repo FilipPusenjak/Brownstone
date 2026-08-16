@@ -51,6 +51,8 @@ export const CAPABILITIES = [
   "arrears.viewOwnUnit",
   "arrears.recordPayment",
   "arrears.postCharge",
+  "work.view",
+  "work.manage",
 
   // Meetings
   "meeting.view",
@@ -111,6 +113,7 @@ const BASE: readonly Capability[] = [
   "duty.view",
   "notice.view",
   "document.upload",
+  "work.view",
 ];
 
 /** Everything an officer needs to run the building's records. */
@@ -134,6 +137,7 @@ const OFFICER: readonly Capability[] = [
   "notice.send",
   "member.invite",
   "audit.view",
+  "work.manage",
 ];
 
 const BY_ROLE: Record<Role, readonly Capability[]> = {

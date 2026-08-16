@@ -7,6 +7,7 @@ import {
 } from "~/lib/db/context";
 import * as alterations from "~/lib/db/scoped/alterations";
 import * as audit from "~/lib/db/scoped/audit";
+import * as work from "~/lib/db/scoped/work";
 import * as compliance from "~/lib/db/scoped/compliance";
 import * as documents from "~/lib/db/scoped/documents";
 import * as ledger from "~/lib/db/scoped/ledger";
@@ -134,6 +135,12 @@ const READERS: Array<{ name: string; tables: string[]; read: Reader }> = [
     name: "ledger.listPaymentPlans",
     tables: ["PaymentPlan"],
     read: ledger.listPaymentPlans,
+  },
+
+  {
+    name: "work.listWorkForTenancyCheck",
+    tables: ["BuildingWork"],
+    read: work.listWorkForTenancyCheck,
   },
 
   {
