@@ -6,7 +6,12 @@ import type { BuildingContext } from "~/lib/db/context";
 import { unitLedger } from "~/lib/db/scoped/ledger";
 import { listUnitsWithShares } from "~/lib/db/scoped/units";
 import { assessmentCharges, getWork, listWork } from "~/lib/db/scoped/work";
-import { createWork, raiseAssessment, updateWork } from "~/lib/db/scoped/work-writes";
+import {
+  createWork,
+  raiseAssessment,
+  recordDecision,
+  updateWork,
+} from "~/lib/db/scoped/work-writes";
 import { makeDate, type PlainDate } from "~/lib/time";
 import { ADELAIDE, LISPENARD, PEOPLE, contextFor } from "../helpers/context";
 
@@ -25,6 +30,16 @@ function freshDueDate(): PlainDate {
   const month = (Math.floor(Math.random() * 12) + 1) as number;
   const day = (Math.floor(Math.random() * 28) + 1) as number;
   return makeDate(2029, month, day);
+}
+
+/** The board votes it through. Required before any assessment can be raised. */
+async function approve(ctx: BuildingContext, workId: string): Promise<void> {
+  const result = await recordDecision(ctx, workId, {
+    decidedOn: makeDate(2028, 3, 14),
+    votesFor: 4,
+    votesAgainst: 1,
+  });
+  if (!result.ok) throw new Error(`could not record the decision: ${result.message}`);
 }
 
 describe("building work", () => {
@@ -74,6 +89,7 @@ describe("building work", () => {
       });
       expect(created.ok).toBe(true);
       if (!created.ok) return;
+      await approve(president, created.data.workId);
 
       const seen = await listWork(shareholder);
       expect(seen.some((item) => item.id === created.data.workId)).toBe(true);
@@ -86,6 +102,7 @@ describe("building work", () => {
       });
       expect(created.ok).toBe(true);
       if (!created.ok) return;
+      await approve(president, created.data.workId);
 
       expect(await getWork(otherBuilding, created.data.workId)).toBeNull();
     });
@@ -102,6 +119,7 @@ describe("building work", () => {
       });
       expect(created.ok).toBe(true);
       if (!created.ok) return;
+      await approve(president, created.data.workId);
 
       // What the interface shows before anything is raised.
       const units = await listUnitsWithShares(treasurer, dueOn);
@@ -144,6 +162,7 @@ describe("building work", () => {
         estimateCents: 900_000,
       });
       if (!created.ok) return;
+      await approve(president, created.data.workId);
 
       const raised = await raiseAssessment(treasurer, created.data.workId, { dueOn });
       expect(raised.ok).toBe(true);
@@ -158,6 +177,138 @@ describe("building work", () => {
     });
   });
 
+  describe("the board's decision", () => {
+    it("refuses to raise an assessment nobody voted on", async () => {
+      // The point of the whole feature: money follows a vote, not a form.
+      const created = await createWork(president, {
+        title: `Unvoted ${randomUUID().slice(0, 8)}`,
+        estimateCents: 500_000,
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+
+      const result = await raiseAssessment(treasurer, created.data.workId, {
+        dueOn: freshDueDate(),
+      });
+
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toEqual("conflict");
+      expect(result.message).toMatch(/decision/i);
+    });
+
+    it("refuses to raise one the board voted down", async () => {
+      const created = await createWork(president, {
+        title: `Voted down ${randomUUID().slice(0, 8)}`,
+        estimateCents: 500_000,
+      });
+      if (!created.ok) return;
+
+      const decision = await recordDecision(president, created.data.workId, {
+        decidedOn: makeDate(2028, 4, 2),
+        votesFor: 1,
+        votesAgainst: 4,
+      });
+      expect(decision.ok).toBe(true);
+      if (!decision.ok) return;
+      expect(decision.data.carried).toBe(false);
+
+      const result = await raiseAssessment(treasurer, created.data.workId, {
+        dueOn: freshDueDate(),
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toEqual("conflict");
+    });
+
+    it("does not let abstentions decide it", async () => {
+      // 2-1 with three abstaining carries: a majority of the votes cast.
+      const created = await createWork(president, {
+        title: `Abstentions ${randomUUID().slice(0, 8)}`,
+        estimateCents: 100_000,
+      });
+      if (!created.ok) return;
+
+      const decision = await recordDecision(president, created.data.workId, {
+        decidedOn: makeDate(2028, 5, 9),
+        votesFor: 2,
+        votesAgainst: 1,
+        votesAbstain: 3,
+      });
+      expect(decision.ok).toBe(true);
+      if (!decision.ok) return;
+      expect(decision.data.carried).toBe(true);
+
+      expect(
+        (
+          await raiseAssessment(treasurer, created.data.workId, {
+            dueOn: freshDueDate(),
+          })
+        ).ok,
+      ).toBe(true);
+    });
+
+    it("refuses a tally with no votes cast either way", async () => {
+      const created = await createWork(president, {
+        title: `Empty tally ${randomUUID().slice(0, 8)}`,
+        estimateCents: 100_000,
+      });
+      if (!created.ok) return;
+
+      const result = await recordDecision(president, created.data.workId, {
+        decidedOn: makeDate(2028, 6, 1),
+        votesFor: 0,
+        votesAgainst: 0,
+        votesAbstain: 5,
+      });
+      expect(result.ok).toBe(false);
+    });
+
+    it("is refused to a plain shareholder", async () => {
+      const created = await createWork(president, {
+        title: `Not theirs ${randomUUID().slice(0, 8)}`,
+        estimateCents: 100_000,
+      });
+      if (!created.ok) return;
+
+      await expect(
+        recordDecision(shareholder, created.data.workId, {
+          decidedOn: makeDate(2028, 7, 1),
+          votesFor: 5,
+          votesAgainst: 0,
+        }),
+      ).rejects.toBeInstanceOf(CapabilityError);
+    });
+
+    it("freezes the decision once money has been raised on it", async () => {
+      const created = await createWork(president, {
+        title: `Frozen ${randomUUID().slice(0, 8)}`,
+        estimateCents: 100_000,
+      });
+      if (!created.ok) return;
+      await approve(president, created.data.workId);
+
+      expect(
+        (
+          await raiseAssessment(treasurer, created.data.workId, {
+            dueOn: freshDueDate(),
+          })
+        ).ok,
+      ).toBe(true);
+
+      // Rewriting the vote afterwards would leave real charges explained by a
+      // tally that has since changed.
+      const result = await recordDecision(president, created.data.workId, {
+        decidedOn: makeDate(2028, 8, 1),
+        votesFor: 0,
+        votesAgainst: 5,
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toEqual("conflict");
+    });
+  });
+
   describe("raising the assessment", () => {
     it("is refused to an officer who is not the treasurer", async () => {
       // The president can record the work and can't turn it into debt.
@@ -166,6 +317,7 @@ describe("building work", () => {
         estimateCents: 120_000,
       });
       if (!created.ok) return;
+      await approve(president, created.data.workId);
 
       await expect(
         raiseAssessment(president, created.data.workId, { dueOn: freshDueDate() }),
@@ -179,6 +331,7 @@ describe("building work", () => {
         estimateCents: 300_000,
       });
       if (!created.ok) return;
+      await approve(president, created.data.workId);
 
       const before = await unitLedger(treasurer, (await anyUnitId(treasurer)) ?? "");
 
@@ -203,6 +356,7 @@ describe("building work", () => {
         estimateCents: 250_000,
       });
       if (!created.ok) return;
+      await approve(president, created.data.workId);
 
       expect(
         (
@@ -225,6 +379,7 @@ describe("building work", () => {
         title: `Unknown cost ${randomUUID().slice(0, 8)}`,
       });
       if (!created.ok) return;
+      await approve(president, created.data.workId);
 
       const result = await raiseAssessment(treasurer, created.data.workId, {
         dueOn: freshDueDate(),
@@ -242,6 +397,7 @@ describe("building work", () => {
         estimateCents: 100_000,
       });
       if (!created.ok) return;
+      await approve(president, created.data.workId);
 
       expect(
         (

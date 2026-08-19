@@ -8,6 +8,7 @@ import { NoSuchBuildingError, NotSignedInError } from "~/lib/db/context";
 import {
   createWork,
   raiseAssessment,
+  recordDecision,
   updateWork,
   type RaiseAssessmentResult,
 } from "~/lib/db/scoped/work-writes";
@@ -87,6 +88,35 @@ export async function updateWorkAction(input: {
     updateWork(ctx, input.workId, {
       ...(estimateCents !== undefined ? { estimateCents } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
+    }),
+  );
+
+  if (result.ok) revalidateWork(input.buildingSlug);
+  return result;
+}
+
+export async function recordDecisionAction(input: {
+  buildingSlug: string;
+  workId: string;
+  decidedOn: string;
+  votesFor: number;
+  votesAgainst: number;
+  votesAbstain?: number;
+  note?: string | null;
+}): Promise<Result<{ carried: boolean }>> {
+  if (!isPlainDate(input.decidedOn)) {
+    return fail("invalid", "That date could not be read.", {
+      decidedOn: "Pick the date the board decided.",
+    });
+  }
+
+  const result = await guard(input.buildingSlug, (ctx) =>
+    recordDecision(ctx, input.workId, {
+      decidedOn: plainDate(input.decidedOn),
+      votesFor: input.votesFor,
+      votesAgainst: input.votesAgainst,
+      votesAbstain: input.votesAbstain ?? 0,
+      note: input.note ?? null,
     }),
   );
 

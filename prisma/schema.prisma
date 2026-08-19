@@ -238,6 +238,7 @@ model Membership {
   proxiesHeld          Proxy[]                  @relation("ProxyHolder")
   workCreated          BuildingWork[]           @relation("WorkCreatedBy")
   workAssessments      BuildingWork[]           @relation("WorkAssessmentRaisedBy")
+  workDecisions        BuildingWork[]           @relation("WorkDecisionRecordedBy")
 
   @@unique([userId, buildingId])
   @@index([buildingId])
@@ -581,6 +582,25 @@ model BuildingWork {
   /// do on its own: a new boiler, the lobby.
   obligationId String? @db.Uuid
 
+  /// The board's decision to go ahead, and the tally behind it.
+  ///
+  /// A special assessment follows a vote in every set of bylaws worth the
+  /// paper, so this is where that vote is written down — before any money is
+  /// raised, and kept next to the charges it authorised. Counted per head:
+  /// directors vote as directors, not as shareholders, which is why these are
+  /// plain vote counts and not the share-weighted tally a Resolution carries.
+  ///
+  /// A meeting is optional. Small boards decide by written consent between
+  /// meetings more often than they meet, and pretending otherwise would mean
+  /// inventing a meeting that never happened.
+  decisionAt           DateTime?
+  decisionFor          Int?
+  decisionAgainst      Int?
+  decisionAbstain      Int?
+  decisionNote         String?
+  decisionMeetingId    String?   @db.Uuid
+  decisionRecordedById String?   @db.Uuid
+
   /// The assessment, once the board has actually raised one. Filled together or
   /// not at all: charges are written in the same transaction that stamps these.
   assessmentRaisedAt   DateTime?
@@ -595,6 +615,8 @@ model BuildingWork {
   building           Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   obligation         Obligation? @relation(fields: [obligationId], references: [id], onDelete: SetNull)
   createdBy          Membership? @relation("WorkCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  decisionMeeting    Meeting?    @relation(fields: [decisionMeetingId], references: [id], onDelete: SetNull)
+  decisionRecordedBy Membership? @relation("WorkDecisionRecordedBy", fields: [decisionRecordedById], references: [id], onDelete: SetNull)
   assessmentRaisedBy Membership? @relation("WorkAssessmentRaisedBy", fields: [assessmentRaisedById], references: [id], onDelete: SetNull)
   charges            Charge[]
 
@@ -1094,10 +1116,11 @@ model Meeting {
   heldAt            DateTime?
   createdAt         DateTime    @default(now())
 
-  building    Building            @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  attendance  MeetingAttendance[]
-  proxies     Proxy[]
-  resolutions Resolution[]
+  building      Building            @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  attendance    MeetingAttendance[]
+  proxies       Proxy[]
+  resolutions   Resolution[]
+  workDecisions BuildingWork[]
 
   @@index([buildingId])
   @@index([buildingId, scheduledFor])

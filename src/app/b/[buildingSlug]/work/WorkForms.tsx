@@ -4,7 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { WorkStatus } from "~/generated/prisma/enums";
 import { Button, Field, inputClass, textareaClass } from "~/components/patterns/Button";
-import { createWorkAction, raiseAssessmentAction, updateWorkAction } from "./actions";
+import {
+  createWorkAction,
+  raiseAssessmentAction,
+  recordDecisionAction,
+  updateWorkAction,
+} from "./actions";
 
 const STATUSES: ReadonlyArray<{ value: WorkStatus; label: string }> = [
   { value: "PROPOSED", label: "Proposed" },
@@ -337,6 +342,146 @@ export function RaiseAssessment({
             setConfirming(false);
           }}
         >
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Writing down what the board decided.
+ *
+ * Not a ballot — nobody is voting in a browser. The board meets, or agrees by
+ * written consent, and this records the tally so the assessment that follows
+ * can point at it. Abstentions are kept but do not decide the outcome: a simple
+ * majority of the votes cast carries it.
+ */
+export function RecordDecision({
+  buildingSlug,
+  workId,
+  defaultDecidedOn,
+}: {
+  buildingSlug: string;
+  workId: string;
+  defaultDecidedOn: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [decidedOn, setDecidedOn] = useState(defaultDecidedOn);
+  const [votesFor, setVotesFor] = useState("");
+  const [votesAgainst, setVotesAgainst] = useState("0");
+  const [votesAbstain, setVotesAbstain] = useState("0");
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [fieldError, setFieldError] = useState<Record<string, string>>({});
+  const [pending, startTransition] = useTransition();
+
+  function submit(): void {
+    setError(null);
+    setFieldError({});
+
+    startTransition(async () => {
+      const result = await recordDecisionAction({
+        buildingSlug,
+        workId,
+        decidedOn,
+        votesFor: Number(votesFor || 0),
+        votesAgainst: Number(votesAgainst || 0),
+        votesAbstain: Number(votesAbstain || 0),
+        note: note || null,
+      });
+
+      if (result.ok) {
+        setOpen(false);
+        setNote("");
+      } else {
+        setError(result.message);
+        setFieldError(result.fields ?? {});
+      }
+    });
+  }
+
+  if (!open) {
+    return (
+      <div>
+        {error ? (
+          <p role="alert" className="text-stamp mb-2 text-sm">
+            {error}
+          </p>
+        ) : null}
+        <Button intent="primary" onClick={() => setOpen(true)}>
+          Record the board&rsquo;s decision
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="sheet px-4 py-4">
+      {error ? (
+        <p role="alert" className="text-stamp mb-3 text-sm">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="grid gap-3 sm:grid-cols-4">
+        <Field label="Decided on" error={fieldError["decidedOn"]}>
+          <input
+            type="date"
+            value={decidedOn}
+            onChange={(event) => setDecidedOn(event.target.value)}
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="In favour" error={fieldError["votesFor"]}>
+          <input
+            inputMode="numeric"
+            value={votesFor}
+            onChange={(event) => setVotesFor(event.target.value)}
+            className={inputClass}
+            placeholder="4"
+          />
+        </Field>
+
+        <Field label="Against">
+          <input
+            inputMode="numeric"
+            value={votesAgainst}
+            onChange={(event) => setVotesAgainst(event.target.value)}
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="Abstained">
+          <input
+            inputMode="numeric"
+            value={votesAbstain}
+            onChange={(event) => setVotesAbstain(event.target.value)}
+            className={inputClass}
+          />
+        </Field>
+      </div>
+
+      <div className="mt-3">
+        <Field
+          label="Note"
+          hint="Where it was decided, and anything a future board should know."
+        >
+          <input
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            className={inputClass}
+            placeholder="March meeting. Agreed to proceed with the cheaper quote."
+          />
+        </Field>
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <Button intent="primary" size="sm" disabled={pending} onClick={submit}>
+          {pending ? "Recording…" : "Record it"}
+        </Button>
+        <Button intent="quiet" size="sm" onClick={() => setOpen(false)}>
           Cancel
         </Button>
       </div>

@@ -8,7 +8,7 @@ import { listUnitsWithShares } from "~/lib/db/scoped/units";
 import { assessmentCharges, getWork } from "~/lib/db/scoped/work";
 import { formatAmount, formatMoney, money } from "~/lib/money";
 import { addMonths, formatDate, today, toPlainDate } from "~/lib/time";
-import { RaiseAssessment, WorkControls } from "../WorkForms";
+import { RaiseAssessment, RecordDecision, WorkControls } from "../WorkForms";
 
 /**
  * One piece of building work, and what it costs each apartment.
@@ -35,6 +35,8 @@ export default async function WorkDetailPage({
   const mayManage = can(ctx, "work.manage");
   const mayRaise = can(ctx, "arrears.postCharge");
   const raised = Boolean(work.assessmentRaisedAt);
+  const decided = Boolean(work.decisionAt);
+  const carried = decided && (work.decisionFor ?? 0) > (work.decisionAgainst ?? 0);
 
   // Shares as of the assessment's due date once raised, so the projection and
   // the record are read on the same basis they were written on.
@@ -101,6 +103,50 @@ export default async function WorkDetailPage({
           />
         </div>
       ) : null}
+
+      <section className="border-limestone mt-8 border-t pt-6">
+        <h2 className="eyebrow mb-3">The board&rsquo;s decision</h2>
+
+        {decided ? (
+          <>
+            <p className="text-ironwork text-sm">
+              Voted {work.decisionFor ?? 0} in favour, {work.decisionAgainst ?? 0}{" "}
+              against
+              {work.decisionAbstain
+                ? `, ${work.decisionAbstain} abstaining`
+                : ""} on{" "}
+              {work.decisionAt ? formatDate(toPlainDate(work.decisionAt)) : "—"}.{" "}
+              {carried ? "Carried." : "Not carried."}
+            </p>
+            {work.decisionNote ? (
+              <p className="text-ironwork-soft mt-1.5 max-w-2xl text-sm">
+                {work.decisionNote}
+              </p>
+            ) : null}
+            <p className="text-ironwork-faint mt-1.5 font-mono text-[0.6875rem]">
+              recorded by{" "}
+              {work.decisionRecordedBy?.user.name ??
+                work.decisionRecordedBy?.user.email ??
+                "the board"}
+              {work.decisionMeeting ? ` · ${work.decisionMeeting.title}` : ""}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-ironwork-soft mb-3 max-w-2xl text-sm">
+              Nothing recorded yet. A special assessment needs a vote behind it, so this
+              has to be written down before any money can be raised.
+            </p>
+            {mayManage ? (
+              <RecordDecision
+                buildingSlug={buildingSlug}
+                workId={work.id}
+                defaultDecidedOn={now}
+              />
+            ) : null}
+          </>
+        )}
+      </section>
 
       <section className="mt-8">
         <h2 className="eyebrow border-limestone mb-3 border-b pb-2">
@@ -182,7 +228,7 @@ export default async function WorkDetailPage({
             "the treasurer"}
           . Correcting one means a reversing entry against it, not an edit.
         </p>
-      ) : mayRaise && estimate > 0 ? (
+      ) : mayRaise && estimate > 0 && carried ? (
         <section className="border-limestone mt-8 border-t pt-6">
           <h2 className="eyebrow mb-3">Raise the assessment</h2>
           <p className="text-ironwork-soft mb-4 max-w-2xl text-sm">
@@ -197,6 +243,12 @@ export default async function WorkDetailPage({
             apartments={units.filter((unit) => unit.shares > 0).length}
           />
         </section>
+      ) : mayRaise && estimate > 0 && !carried ? (
+        <p className="text-ironwork-faint mt-8 max-w-2xl text-xs leading-relaxed">
+          {decided
+            ? "The board voted this down, so there is no assessment to raise. Record it as separate work if it comes back with a different scope or a different price."
+            : "Nothing can be charged until the board's decision is recorded above."}
+        </p>
       ) : !mayRaise && estimate > 0 ? (
         <p className="text-ironwork-faint mt-8 max-w-2xl text-xs leading-relaxed">
           Nothing here has been charged to anyone. Only the treasurer can raise an

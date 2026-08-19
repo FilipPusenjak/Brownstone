@@ -505,3 +505,38 @@ projection recomputed live from the current share register. Raised, it is read
 back from the charges themselves rather than recalculated — shares may have
 moved since, and the bill somebody actually received does not change when their
 neighbour sells.
+
+### The board's vote
+
+**An assessment cannot be raised without a recorded vote that carried.** This is
+the one place the product refuses to proceed on the treasurer's authority alone.
+A special assessment follows a board vote in every set of bylaws worth the
+paper, and software that lets one officer put four thousand dollars on twelve
+neighbours' ledgers without one is software that will eventually be blamed for
+it. The raise control is not merely disabled — it is not on the page until the
+vote is there, and the write path refuses independently, because a disabled
+button is a suggestion.
+
+**Recorded, not held.** Nobody casts a ballot in a browser. The board meets, or
+agrees by written consent, and this writes down the tally so the charges can
+point at it afterwards. Pretending to run the vote would mean pretending the
+software knows who is on the board and who was in the room, which it does not.
+
+**Its own fields on the work, not a `Resolution`.** `Resolution` is
+meeting-bound and share-weighted — the shareholder-vote concept the Meetings
+module will use. A board authorising an assessment is per-capita, and small
+boards decide by written consent between meetings more often than they meet.
+Forcing it through `Resolution` would have meant a nullable `meetingId` and a
+tally whose column names said "shares" while holding director headcounts.
+Rejected: one table meaning two things, with the difference kept in the reader's
+head.
+
+**Abstentions are recorded and do not decide it.** A simple majority of the
+votes actually cast carries it, which is what "the board voted 4–1" means to the
+people who were there. Two for, one against and three abstaining carries; there
+is a test that says so, because the alternative reading is defensible enough
+that somebody will eventually assume it.
+
+**A decision freezes once money is raised on it.** Rewriting the tally
+afterwards would leave real charges explained by a vote that has since changed.
+A vote that went the other way, or a revised scope, is a second piece of work.

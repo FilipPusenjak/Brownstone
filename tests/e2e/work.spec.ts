@@ -104,6 +104,21 @@ test("a treasurer prices a job, sees the split, and raises the assessment", asyn
     99,
   );
 
+  // ---- The vote comes first ------------------------------------------------
+  // No assessment exists until the board has voted, so the raise control is not
+  // even on the page yet.
+  await expect(page.getByRole("button", { name: "Raise this assessment" })).toHaveCount(
+    0,
+  );
+
+  // The rendered label uses a typographic apostrophe, so match loosely.
+  await page.getByRole("button", { name: /Record the board.s decision/ }).click();
+  await page.getByLabel("In favour").fill("4");
+  await page.getByLabel("Against").fill("1");
+  await page.getByRole("button", { name: "Record it" }).click();
+  await expect(page.getByText(/4 in favour, 1 against/)).toBeVisible();
+  await expect(page.getByText(/Carried\./)).toBeVisible();
+
   // ---- Raise it -----------------------------------------------------------
   await page.getByRole("button", { name: "Raise this assessment" }).click();
   await page.getByRole("button", { name: "Raise it" }).click();

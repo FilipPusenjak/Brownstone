@@ -16,10 +16,11 @@ import { postShareWeighted, type ShareWeightedLine } from "./ledger-writes";
  * money owed by twelve neighbours takes `arrears.postCharge`, which is the
  * treasurer's alone.
  *
- * In a real co-op a special assessment follows a board vote. Co-operator does
- * not pretend to hold that vote, but it does refuse to let the estimate quietly
- * become a debt: raising is a separate, deliberate act, recorded with a name
- * against it, and it cannot be done twice.
+ * In a real co-op a special assessment follows a board vote, so the vote is
+ * recorded here and the assessment will not be raised without one that carried.
+ * Co-operator does not run the vote — nobody is casting a ballot in a browser —
+ * it writes down what the board decided and then holds the money to it. Raising
+ * remains a separate, deliberate act, attributed, and it cannot be done twice.
  */
 
 const MAX_CENTS = 100_000_000;
@@ -168,6 +169,113 @@ export async function updateWork(
   });
 }
 
+export interface RecordDecisionInput {
+  readonly decidedOn: PlainDate;
+  readonly votesFor: number;
+  readonly votesAgainst: number;
+  readonly votesAbstain?: number;
+  readonly note?: string | null;
+  /** Optional: the meeting it was decided at, when there was one. */
+  readonly meetingId?: string | null;
+}
+
+/** Whether a recorded tally carried: a simple majority of the votes cast. */
+export function decisionCarried(work: {
+  decisionAt: Date | null;
+  decisionFor: number | null;
+  decisionAgainst: number | null;
+}): boolean {
+  if (!work.decisionAt) return false;
+  return (work.decisionFor ?? 0) > (work.decisionAgainst ?? 0);
+}
+
+/**
+ * Records the board's decision on a piece of work.
+ *
+ * Abstentions are stored but do not count toward the outcome: a simple majority
+ * of the votes actually cast carries it, which is what "the board voted 4–1"
+ * means to the people who were in the room.
+ *
+ * Recording a decision is not the same as raising money, so it stays with
+ * `work.manage` — the secretary who keeps the minutes can write down what the
+ * board decided without also being able to charge anyone for it.
+ */
+export async function recordDecision(
+  ctx: BuildingContext,
+  workId: string,
+  input: RecordDecisionInput,
+): Promise<Result<{ carried: boolean }>> {
+  assertCan(ctx, "work.manage");
+
+  const counts = [input.votesFor, input.votesAgainst, input.votesAbstain ?? 0];
+  if (counts.some((n) => !Number.isInteger(n) || n < 0)) {
+    return fail("invalid", "Vote counts have to be whole numbers.", {
+      votesFor: "Enter how many voted each way.",
+    });
+  }
+  if (input.votesFor + input.votesAgainst === 0) {
+    return fail("invalid", "Nobody voted either way, so there is nothing to record.", {
+      votesFor: "A decision needs at least one vote for or against.",
+    });
+  }
+
+  return withBuildingTx(ctx.building.id, async (tx) => {
+    const work = await tx.buildingWork.findUnique({
+      where: { id: workId },
+      select: { id: true, title: true, assessmentRaisedAt: true },
+    });
+    if (!work) return fail("not_found", "That work could not be found.");
+
+    // The decision authorised the charges. Rewriting it afterwards would leave
+    // real money explained by a vote that has since changed.
+    if (work.assessmentRaisedAt) {
+      return fail(
+        "conflict",
+        "An assessment has already been raised on the strength of this decision, so it is now part of the record.",
+      );
+    }
+
+    if (input.meetingId) {
+      const meeting = await tx.meeting.findUnique({
+        where: { id: input.meetingId },
+        select: { id: true },
+      });
+      if (!meeting) return fail("not_found", "That meeting could not be found.");
+    }
+
+    await tx.buildingWork.update({
+      where: { id: work.id },
+      data: {
+        decisionAt: toDbDate(input.decidedOn),
+        decisionFor: input.votesFor,
+        decisionAgainst: input.votesAgainst,
+        decisionAbstain: input.votesAbstain ?? 0,
+        decisionNote: input.note?.trim() || null,
+        decisionMeetingId: input.meetingId ?? null,
+        decisionRecordedById: ctx.membership.id,
+      },
+    });
+
+    const carried = input.votesFor > input.votesAgainst;
+
+    await recordAudit(tx, ctx, {
+      action: "work.recordDecision",
+      entityType: "BUILDING",
+      entityId: work.id,
+      after: {
+        decidedOn: input.decidedOn,
+        for: input.votesFor,
+        against: input.votesAgainst,
+        abstain: input.votesAbstain ?? 0,
+        carried,
+      },
+      summary: `Board voted ${input.votesFor}–${input.votesAgainst} on ${work.title}${carried ? "" : " (not carried)"}`,
+    });
+
+    return ok({ carried });
+  });
+}
+
 export interface RaiseAssessmentInput {
   readonly dueOn: PlainDate;
   /** Defaults to the recorded estimate when omitted. */
@@ -208,6 +316,9 @@ export async function raiseAssessment(
         title: true,
         estimateCents: true,
         assessmentRaisedAt: true,
+        decisionAt: true,
+        decisionFor: true,
+        decisionAgainst: true,
       },
     });
     if (!work) return fail("not_found", "That work could not be found.");
@@ -216,6 +327,22 @@ export async function raiseAssessment(
       return fail(
         "conflict",
         "An assessment has already been raised for this work. Reverse those charges if they were wrong.",
+      );
+    }
+
+    // The vote comes first. This is the whole reason the decision is recorded
+    // separately: an assessment nobody voted for is one the board cannot defend
+    // at the next meeting, and the software should not be the reason it exists.
+    if (!work.decisionAt) {
+      return fail(
+        "conflict",
+        "Record the board's decision before raising the assessment. A special assessment needs a vote behind it.",
+      );
+    }
+    if (!decisionCarried(work)) {
+      return fail(
+        "conflict",
+        `The board voted this down ${work.decisionFor ?? 0}–${work.decisionAgainst ?? 0}. An assessment cannot be raised on a decision that did not carry.`,
       );
     }
 
