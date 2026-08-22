@@ -19,6 +19,7 @@
     "db:setup": "tsx scripts/setup-db.ts",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
+    "db:deploy:ws": "tsx scripts/deploy-migrations.ts",
     "db:reset": "prisma migrate reset --force",
     "db:seed": "tsx prisma/seed/index.ts",
     "db:studio": "prisma studio",
@@ -58,12 +59,14 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "26.2.0",
     "@types/pg": "^8.21.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "6.0.5",
     "dotenv": "17.4.2",
     "eslint": "9.39.5",
@@ -76,6 +79,7 @@
     "tsx": "4.23.11",
     "typescript": "5.9.3",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "ws": "^8.21.3"
   }
 }

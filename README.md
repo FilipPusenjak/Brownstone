@@ -86,20 +86,39 @@ than decoration — a role that owns the tables ignores them by default.
 | `pnpm test`       | Vitest, including the tenancy isolation suite               |
 | `pnpm test:e2e`   | Playwright browser tests — builds, starts, drives a browser |
 | `pnpm db:migrate` | Apply migrations to the development database                |
+| `pnpm db:deploy`  | Apply migrations to a deployed database                     |
 | `pnpm db:seed`    | Reseed the two fictional buildings                          |
 | `pnpm rules:sync` | Upsert the compliance ruleset without reseeding             |
 
+### Deploying a schema change
+
+The Vercel build runs `prisma generate && next build` and deliberately does not
+migrate — a build that silently rewrites a production schema is a build nobody
+can review. Apply migrations first, then push:
+
+```bash
+DATABASE_OWNER_URL=<owner connection string> pnpm db:deploy
+```
+
+Where outbound TCP to port 5432 is blocked and only HTTPS gets out, `pnpm
+db:deploy:ws` does the same over a WebSocket. It dry-runs by default, applies
+with `APPLY=1`, runs each migration in its own transaction, and fails loudly if
+a migration leaves a tenant table without a row-level security policy.
+
 ### The browser tests
 
-`pnpm test:e2e` runs three paths end to end. A president signs in, invites a
+`pnpm test:e2e` runs six paths end to end. A president signs in, invites a
 neighbour, the neighbour follows the link, signs in as the invited address,
 joins, opens the compliance calendar, puts a requirement on it and files it. A
 treasurer posts a month's maintenance, checks the share-weighted split adds up
 before committing to it, then records a payment and watches the balance move.
-And a treasurer prices a piece of building work, checks that the per-apartment
+A treasurer prices a piece of building work, checks that the per-apartment
 percentages and amounts add up to the job, raises the assessment, and finds the
-resulting charge on an apartment's ledger. Nothing is faked — they read magic
-links out of `./.mail` the way a person reads them out of an inbox.
+resulting charge on an apartment's ledger. And a secretary calls a meeting,
+takes the roster, is refused a vote while the room is a hundred shares short of
+quorum, records it once the shares are there, then adopts the minutes and
+watches every control disappear. Nothing is faked — they read magic links out
+of `./.mail` the way a person reads them out of an inbox.
 
 It builds the app and starts it, so the first run takes a minute. If Playwright
 cannot find a browser, point it at one:
