@@ -151,7 +151,9 @@ Seven, built before any module, each with tests that found real bugs.
    `UnitHolding` records. There is no `shares` column on `Unit`, so a quorum
    computed for a 2021 meeting still uses the 2021 numbers. Thresholds are exact
    fractions compared by cross-multiplication, because two-thirds of 1200 is
-   exactly 800 and basis points make it 801.
+   exactly 800 and basis points make it 801. `fractionThreshold` reads one back
+   out of the database and gives it the name the bylaws use, so the minutes say
+   "carried by a majority" rather than "carried 1/2".
 4. **Ledger** (`primitives/ledger.ts`) — append-only, integer cents, no floats.
    A correction is a reversing entry. Aging applies payments to the oldest
    charge first, and a credit produces all-zero buckets rather than a negative
@@ -226,7 +228,9 @@ The persistent disclaimer is on every page and is not dismissible.
 | `tests/arch/*`                                        | Nothing imports Prisma directly; scaffolds admit what they are |
 | `tests/primitives/*`                                  | Recurrence, shares, ledger, approvals, prerequisites           |
 | `tests/compliance`, `tests/alterations`, `tests/auth` | Module lifecycles against a real database                      |
+| `tests/meetings/lifecycle.test.ts`                    | Quorum, proxies and thresholds against the real share register |
 | `tests/e2e/smoke.spec.ts`                             | Invite → accept → calendar → file, in a real browser           |
+| `tests/e2e/meetings.spec.ts`                          | Roster → quorum refusal → vote → minutes, in a real browser    |
 
 The tenancy suite has been mutation-tested: breaking unit scoping fails eight
 tests, removing the tenant setting fails the seed and the suite, and adding a

@@ -361,10 +361,13 @@ export function RecordDecision({
   buildingSlug,
   workId,
   defaultDecidedOn,
+  meetings = [],
 }: {
   buildingSlug: string;
   workId: string;
   defaultDecidedOn: string;
+  /** Meetings this decision can be attached to, newest first. */
+  meetings?: ReadonlyArray<{ id: string; title: string }>;
 }) {
   const [open, setOpen] = useState(false);
   const [decidedOn, setDecidedOn] = useState(defaultDecidedOn);
@@ -372,6 +375,7 @@ export function RecordDecision({
   const [votesAgainst, setVotesAgainst] = useState("0");
   const [votesAbstain, setVotesAbstain] = useState("0");
   const [note, setNote] = useState("");
+  const [meetingId, setMeetingId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
@@ -389,6 +393,7 @@ export function RecordDecision({
         votesAgainst: Number(votesAgainst || 0),
         votesAbstain: Number(votesAbstain || 0),
         note: note || null,
+        meetingId: meetingId || null,
       });
 
       if (result.ok) {
@@ -463,16 +468,35 @@ export function RecordDecision({
         </Field>
       </div>
 
+      {meetings.length > 0 ? (
+        <div className="mt-3">
+          <Field
+            label="Decided at"
+            hint="Links this vote to the minutes it appears in."
+          >
+            <select
+              value={meetingId}
+              onChange={(event) => setMeetingId(event.target.value)}
+              className={inputClass}
+            >
+              <option value="">Not at a meeting — written consent</option>
+              {meetings.map((meeting) => (
+                <option key={meeting.id} value={meeting.id}>
+                  {meeting.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      ) : null}
+
       <div className="mt-3">
-        <Field
-          label="Note"
-          hint="Where it was decided, and anything a future board should know."
-        >
+        <Field label="Note" hint="Anything a future board should know.">
           <input
             value={note}
             onChange={(event) => setNote(event.target.value)}
             className={inputClass}
-            placeholder="March meeting. Agreed to proceed with the cheaper quote."
+            placeholder="Agreed to proceed with the cheaper quote."
           />
         </Field>
       </div>

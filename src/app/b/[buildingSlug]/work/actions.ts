@@ -103,6 +103,7 @@ export async function recordDecisionAction(input: {
   votesAgainst: number;
   votesAbstain?: number;
   note?: string | null;
+  meetingId?: string | null;
 }): Promise<Result<{ carried: boolean }>> {
   if (!isPlainDate(input.decidedOn)) {
     return fail("invalid", "That date could not be read.", {
@@ -117,10 +118,15 @@ export async function recordDecisionAction(input: {
       votesAgainst: input.votesAgainst,
       votesAbstain: input.votesAbstain ?? 0,
       note: input.note ?? null,
+      meetingId: input.meetingId || null,
     }),
   );
 
-  if (result.ok) revalidateWork(input.buildingSlug);
+  if (result.ok) {
+    revalidateWork(input.buildingSlug);
+    // The meeting page lists the decisions taken at it.
+    revalidatePath("/b/[buildingSlug]/meetings/[meetingId]", "page");
+  }
   return result;
 }
 

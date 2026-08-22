@@ -17,7 +17,9 @@ export const PEOPLE = {
   noraPresident: "nora.whitfield@example.com",
   /** The Adelaide: treasurer. The only officer with building-wide arrears. */
   desmondTreasurer: "desmond.achebe@example.com",
-  /** The Adelaide: plain shareholder in 2R. The unit-scoping subject. */
+  /** The Adelaide: secretary, and shareholder in 3R. Keeps the minutes. */
+  priyaSecretary: "priya.raman@example.com",
+  /** The Adelaide: plain shareholder in the garden apartment. */
   halShareholder: "hal.brenner@example.com",
   /** Active member of BOTH buildings. The cross-tenant subject. */
   martaBoth: "marta.oyelaran@example.com",

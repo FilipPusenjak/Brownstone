@@ -4,6 +4,7 @@ import { PageHeader } from "~/components/patterns/PageHeader";
 import { ShareSplit } from "~/components/patterns/ShareSplit";
 import { can } from "~/lib/auth/capabilities";
 import { getBuildingContext } from "~/lib/auth/current";
+import { listMeetingsForPicker } from "~/lib/db/scoped/meetings";
 import { listUnitsWithShares } from "~/lib/db/scoped/units";
 import { assessmentCharges, getWork } from "~/lib/db/scoped/work";
 import { formatAmount, formatMoney, money } from "~/lib/money";
@@ -43,6 +44,13 @@ export default async function WorkDetailPage({
   const asOf = work.assessmentDueOn ? toPlainDate(work.assessmentDueOn) : now;
   const units = await listUnitsWithShares(ctx, asOf);
   const charges = raised ? await assessmentCharges(ctx, workId) : [];
+
+  // A board decision usually happens at a meeting, so it can be pointed at the
+  // minutes it appears in. Only offered to someone who may see the meetings.
+  const meetings =
+    !decided && mayManage && can(ctx, "meeting.view")
+      ? await listMeetingsForPicker(ctx)
+      : [];
 
   const estimate = work.assessmentTotalCents ?? work.estimateCents ?? 0;
 
@@ -128,7 +136,17 @@ export default async function WorkDetailPage({
               {work.decisionRecordedBy?.user.name ??
                 work.decisionRecordedBy?.user.email ??
                 "the board"}
-              {work.decisionMeeting ? ` · ${work.decisionMeeting.title}` : ""}
+              {work.decisionMeeting ? (
+                <>
+                  {" · "}
+                  <Link
+                    href={`/b/${buildingSlug}/meetings/${work.decisionMeeting.id}`}
+                    className="text-verdigris underline underline-offset-4"
+                  >
+                    {work.decisionMeeting.title}
+                  </Link>
+                </>
+              ) : null}
             </p>
           </>
         ) : (
@@ -142,6 +160,7 @@ export default async function WorkDetailPage({
                 buildingSlug={buildingSlug}
                 workId={work.id}
                 defaultDecidedOn={now}
+                meetings={meetings}
               />
             ) : null}
           </>

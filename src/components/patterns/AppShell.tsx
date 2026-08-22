@@ -43,6 +43,7 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
     items: [
       { label: "Units", href: "/units" },
       { label: "Members", href: "/members" },
+      { label: "Meetings", href: "/meetings", capability: "meeting.view" },
       { label: "Arrears", href: "/arrears" },
       { label: "Audit trail", href: "/audit", capability: "audit.view" },
     ],
@@ -51,7 +52,6 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
     heading: "Not yet built",
     items: [
       { label: "Notices", href: "/notices", capability: "notice.view", stub: true },
-      { label: "Meetings", href: "/meetings", capability: "meeting.view", stub: true },
       { label: "Sublets", href: "/sublets", stub: true },
       { label: "Bookings", href: "/bookings", stub: true },
       { label: "Repairs", href: "/tickets", stub: true },

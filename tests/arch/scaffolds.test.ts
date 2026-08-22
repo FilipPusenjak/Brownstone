@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 /**
  * Keeps each scaffolded module honest.
  *
- * Two claims are made about these seven modules: that the page tells you what
- * is missing, and that the repository does too. Both come from one array, and
+ * Two claims are made about these modules: that the page tells you what is
+ * missing, and that the repository does too. Both come from one array, and
  * this asserts they have not been allowed to drift — a TODO.md maintained by
  * hand goes stale the first time someone builds half a module, and then the
  * next developer trusts a list that is wrong.
@@ -14,14 +14,7 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = join(import.meta.dirname, "..", "..", "src", "app", "b", "[buildingSlug]");
 
-const SCAFFOLDS = [
-  "notices",
-  "meetings",
-  "sublets",
-  "bookings",
-  "tickets",
-  "duty",
-] as const;
+const SCAFFOLDS = ["notices", "sublets", "bookings", "tickets", "duty"] as const;
 
 async function missingFromPage(name: string): Promise<string[]> {
   const source = await readFile(join(ROOT, name, "page.tsx"), "utf8");

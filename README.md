@@ -22,7 +22,7 @@ together and `DECISIONS.md` for what was chosen and what was rejected.
 | Compliance Calendar | built    |
 | Alterations & COIs  | built    |
 | Annual Notices      | scaffold |
-| Meetings & Proxies  | scaffold |
+| Meetings & Proxies  | built    |
 | Sublet Register     | scaffold |
 | Arrears             | built    |
 | Bookings            | scaffold |
@@ -39,6 +39,14 @@ redemption, the members page with outstanding invitations, the share register,
 the document index, the audit trail, and building work — what the building has
 to pay for, with each apartment's share of the cost shown as a percentage and a
 figure, and the assessment that turns it into money owed.
+
+Nothing in Co-operator votes, decides, or predicts. Meetings records what a
+board resolved in a room; building work records what it authorised. The
+software's contribution is the arithmetic nobody can do in their head — quorum
+and thresholds as exact fractions of the share register — and the two or three
+rules that are expensive to get wrong: no business without quorum, no vote from
+an apartment that was not represented, and no editing a record the board has
+adopted.
 
 ## Getting started
 

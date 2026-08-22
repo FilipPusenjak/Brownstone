@@ -801,28 +801,138 @@ async function seedBuildingExtras(
     }
   }
 
-  // --- Meetings (module 3) ----------------------------------------------
-  const meeting = await tx.meeting.create({
+  // --- Meetings & proxies (module 3) ------------------------------------
+  //
+  // Two meetings, because the module has two states worth seeing. Last year's
+  // is closed: minutes adopted, quorum met, one resolution carried, and every
+  // control gone. This year's is called and empty, so the roster can be ticked
+  // and the quorum meter watched as it fills.
+  //
+  // The closed one is built to be argued with. Two-thirds of The Adelaide's
+  // 1,200 shares is exactly 800, four of its six apartments hold only 700
+  // between them, and one apartment votes by proxy — which is where the
+  // arithmetic in `src/lib/primitives/shares.ts` earns its keep.
+  const lastAnnual = await tx.meeting.create({
+    data: {
+      buildingId,
+      title: `${year - 1} annual shareholders meeting`,
+      type: "ANNUAL",
+      scheduledFor: new Date(Date.UTC(year - 1, 10, 12, 0, 30)),
+      location: spec.slug === "adelaide" ? "Parlor floor, 1F" : "Lobby",
+      // Two-thirds, exactly — the most common co-op bylaw threshold.
+      quorumNumerator: 2,
+      quorumDenominator: 3,
+      quorumStrict: false,
+      heldAt: new Date(Date.UTC(year - 1, 10, 12, 0, 30)),
+      createdById: presidentMembership,
+    },
+    select: { id: true },
+  });
+
+  // Everyone but the last apartment; the second-to-last votes by proxy.
+  const attending = units.slice(0, Math.max(units.length - 1, 1));
+  const byProxyUnit = attending[attending.length - 1];
+
+  for (const [, unitId] of attending) {
+    await tx.meetingAttendance.create({
+      data: {
+        buildingId,
+        meetingId: lastAnnual.id,
+        unitId,
+        mode: unitId === byProxyUnit?.[1] ? "PROXY" : "IN_PERSON",
+        representedBy:
+          unitId === byProxyUnit?.[1] ? (spec.people[0]?.name ?? null) : null,
+        recordedById: presidentMembership,
+      },
+    });
+  }
+
+  if (byProxyUnit) {
+    await tx.proxy.create({
+      data: {
+        buildingId,
+        meetingId: lastAnnual.id,
+        unitId: byProxyUnit[1],
+        holderId: presidentMembership,
+        holderName: spec.people[0]?.name ?? "The president",
+        evidence: "Signed proxy form, filed with the secretary",
+        grantedById: presidentMembership,
+        grantedAt: new Date(Date.UTC(year - 1, 10, 10)),
+      },
+    });
+  }
+
+  // The vote: everyone present for it except the garden apartment.
+  const sharesByLabel = new Map(spec.units.map((unit) => [unit.label, unit.shares]));
+  const against = attending[0];
+  let sharesFor = 0;
+  let sharesAgainst = 0;
+
+  const resolution = await tx.resolution.create({
+    data: {
+      buildingId,
+      meetingId: lastAnnual.id,
+      title: "Repoint the rear facade",
+      text: "Resolved, that the corporation engage a mason to repoint the rear facade, at a cost not to exceed $48,000, funded from reserves.",
+      thresholdNumerator: 1,
+      thresholdDenominator: 2,
+      thresholdStrict: true,
+      basis: "VOTED",
+      recordedAt: new Date(Date.UTC(year - 1, 10, 12, 1, 15)),
+      recordedById: presidentMembership,
+    },
+    select: { id: true },
+  });
+
+  for (const [label, unitId] of attending) {
+    const shares = sharesByLabel.get(label) ?? 0;
+    const choice = unitId === against?.[1] ? "AGAINST" : "FOR";
+    if (choice === "FOR") sharesFor += shares;
+    else sharesAgainst += shares;
+
+    await tx.resolutionVote.create({
+      data: {
+        buildingId,
+        resolutionId: resolution.id,
+        unitId,
+        choice,
+        shares,
+        byProxy: unitId === byProxyUnit?.[1],
+      },
+    });
+  }
+
+  await tx.resolution.update({
+    where: { id: resolution.id },
+    data: {
+      sharesFor,
+      sharesAgainst,
+      passed: sharesFor * 2 > sharesFor + sharesAgainst,
+    },
+  });
+
+  await tx.meeting.update({
+    where: { id: lastAnnual.id },
+    data: {
+      minutes: `The president called the meeting to order at 7.35pm. Quorum was confirmed at ${(sharesFor + sharesAgainst).toLocaleString("en-US")} shares of ${spec.units.reduce((sum, unit) => sum + unit.shares, 0).toLocaleString("en-US")}.\n\nThe treasurer reported on the year. The resolution to repoint the rear facade was put and carried. There being no further business the meeting adjourned at 8.40pm.`,
+      minutesAdoptedAt: new Date(Date.UTC(year, 0, 20)),
+      minutesAdoptedById: presidentMembership,
+    },
+  });
+
+  await tx.meeting.create({
     data: {
       buildingId,
       title: `${year} annual shareholders meeting`,
       type: "ANNUAL",
       scheduledFor: new Date(Date.UTC(year, 10, 12, 0, 30)),
       location: spec.slug === "adelaide" ? "Parlor floor, 1F" : "Lobby",
-      // Two-thirds, exactly — the most common co-op bylaw threshold.
       quorumNumerator: 2,
       quorumDenominator: 3,
       quorumStrict: false,
-    },
-    select: { id: true },
-  });
-
-  await tx.resolution.create({
-    data: {
-      buildingId,
-      meetingId: meeting.id,
-      title: "Repoint the rear facade",
-      text: "Resolved, that the corporation engage a mason to repoint the rear facade, at a cost not to exceed $48,000, funded from reserves.",
+      agenda:
+        "1. Minutes of the last annual meeting\n2. Treasurer's report\n3. Election of the board\n4. Any other business",
+      createdById: presidentMembership,
     },
   });
 

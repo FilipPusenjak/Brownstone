@@ -540,3 +540,89 @@ that somebody will eventually assume it.
 **A decision freezes once money is raised on it.** Rewriting the tally
 afterwards would leave real charges explained by a vote that has since changed.
 A vote that went the other way, or a revised scope, is a second piece of work.
+
+## Meetings, quorum and proxies
+
+The module that turns the share register into governance. Everything else in
+Co-operator records facts about a building; this records what its owners
+decided, which is the thing a board is most often asked to prove and least
+often able to.
+
+**Quorum is measured in shares, and the bylaw fraction is stored as a
+fraction.** `quorumNumerator`, `quorumDenominator` and `quorumStrict`, never a
+percentage. Two-thirds of The Adelaide's 1,200 shares is exactly 800; 66.67% of
+them is 801, so a meeting with precisely two-thirds present would be recorded as
+inquorate over a rounding artefact — on the very vote most likely to be
+contested. Comparisons cross-multiply, so nothing is divided anywhere between
+the bylaws and the verdict.
+
+`quorumStrict` separates "more than half" from "at least half". There are two
+tests with identical attendance, identical fractions and opposite outcomes; the
+only difference is the word "more" in the bylaws.
+
+**No business without quorum.** `recordResolution` recomputes quorum from the
+attendance and live proxies and refuses if it is short, naming how many shares
+short. A resolution passed at an inquorate meeting is void, and discovering that
+three years later — when somebody challenges the assessment it authorised — is
+the expensive way to find out. Two related refusals: an apartment that is not
+recorded as present cannot vote, and a vote marked as cast by proxy must have a
+live proxy behind it.
+
+**Only those three refusals.** The temptation is to keep going — quorum lost
+mid-meeting, who may chair, whether notice was properly given. Each is real, and
+each depends on facts the software does not have. Three rules that are always
+right beat a dozen that are usually right and occasionally wrong in a way nobody
+notices until it matters.
+
+**Votes are recorded per apartment; shares are looked up.** A secretary has a
+list of who voted which way, not a share total. Asking them to add 260 and 210
+and 180 under time pressure is asking for the one arithmetic mistake this module
+exists to prevent. `ResolutionVote` holds the apartment and the choice, and the
+share count as it stood on the meeting date is frozen onto the row — a transfer
+next spring must not restate what last autumn's meeting decided. The tally on
+`Resolution` is stored for the same reason, and `outcomeOf` recomputes the
+verdict from it on every render, so a page showing both would show a
+disagreement rather than hide one.
+
+**A threshold per resolution, not per building.** An ordinary motion carries on
+a majority while amending the bylaws takes two-thirds or three-quarters, and the
+two get voted on at the same meeting. `basis` records what the threshold is
+measured against — shares voted, shares present, or all shares outstanding —
+because bylaws differ on whether an abstention is a no, and that difference
+decides close votes. Recording it beats burying an assumption in the arithmetic.
+
+**Proxies supersede rather than replace.** No unique constraint on
+(meeting, unit): granting a second proxy revokes the first and inserts a new
+row, so both grants survive. "Who held my proxy that night" is exactly the
+question asked when a vote is contested, and an `UPDATE` would erase the answer.
+At most one is live at a time, enforced in the write path.
+
+A shareholder may give away their own apartment's vote and no one else's;
+recording a proxy for a neighbour takes `meeting.manage`. Revoking is symmetric:
+the granting apartment always may, anyone else needs the capability. A proxy
+also marks the apartment present in `PROXY` mode, so it counts toward quorum —
+and `computeQuorum` counts an apartment once when it both sends a proxy and
+turns up anyway, which is not hypothetical and would otherwise inflate the
+quorum that authorised the night's business.
+
+**Adoption closes the record.** Once the board adopts the minutes, nothing about
+the meeting can change: no attendance, no proxies, no resolutions, no edits to
+the minutes themselves. A board that finds an error afterwards corrects it at
+the next meeting, and that correction is itself minuted. Letting an officer
+quietly edit adopted minutes would remove the only reason anyone trusts them.
+One gate — `openMeeting` — is checked by every write in the module, so the rule
+cannot be true of five paths and forgotten on the sixth.
+
+**Minutes are text on the meeting, not an uploaded file.** A draft goes through
+several hands before a board adopts it, and a chain of emailed documents is how
+the version that gets adopted stops matching the version anyone read.
+`minutesDocumentId` still holds the signed scan afterwards, for buildings that
+keep one.
+
+**The board's decision on building work can point at the meeting.**
+`BuildingWork.decisionMeetingId` was in the schema when the vote gate was built
+but had no way to be set; the meeting picker now fills it, and both pages link
+to each other. A board's vote to spend $48,000 belongs in the minutes of the
+meeting that took it, not only on the page of the job it paid for. It stays
+optional — small boards decide by written consent between meetings more often
+than they meet.

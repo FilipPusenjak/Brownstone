@@ -166,6 +166,7 @@ model Building {
   meetingAttendance   MeetingAttendance[]
   proxies             Proxy[]
   resolutions         Resolution[]
+  resolutionVotes     ResolutionVote[]
   sublets             SubletRegistration[]
   tickets             Ticket[]
   dutyRotations       DutyRotation[]
@@ -236,9 +237,15 @@ model Membership {
   auditLogs            AuditLog[]
   ticketsReported      Ticket[]                 @relation("TicketReportedBy")
   proxiesHeld          Proxy[]                  @relation("ProxyHolder")
+  proxiesGranted       Proxy[]                  @relation("ProxyGrantedBy")
+  proxiesRevoked       Proxy[]                  @relation("ProxyRevokedBy")
   workCreated          BuildingWork[]           @relation("WorkCreatedBy")
   workAssessments      BuildingWork[]           @relation("WorkAssessmentRaisedBy")
   workDecisions        BuildingWork[]           @relation("WorkDecisionRecordedBy")
+  meetingsCalled       Meeting[]                @relation("MeetingCreatedBy")
+  minutesAdopted       Meeting[]                @relation("MeetingMinutesAdoptedBy")
+  attendanceRecorded   MeetingAttendance[]      @relation("AttendanceRecordedBy")
+  resolutionsRecorded  Resolution[]             @relation("ResolutionRecordedBy")
 
   @@unique([userId, buildingId])
   @@index([buildingId])
@@ -324,6 +331,7 @@ model Unit {
   tickets          Ticket[]
   attendance       MeetingAttendance[]
   proxies          Proxy[]
+  resolutionVotes  ResolutionVote[]
   dutyAssignments  DutyAssignment[]
   dsnyFines        DsnyFine[]
   noticeDeliveries NoticeDelivery[]
@@ -1116,11 +1124,26 @@ model Meeting {
   heldAt            DateTime?
   createdAt         DateTime    @default(now())
 
-  building      Building            @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  attendance    MeetingAttendance[]
-  proxies       Proxy[]
-  resolutions   Resolution[]
-  workDecisions BuildingWork[]
+  agenda             String?
+  /// The minutes as text, editable until adopted.
+  ///
+  /// Kept on the meeting rather than as an uploaded file because a draft goes
+  /// through several hands before a board adopts it, and a chain of emailed
+  /// Word documents is how the version that gets adopted stops matching the
+  /// version anyone read. `minutesDocumentId` still holds the signed scan
+  /// afterwards, when a building keeps one.
+  minutes            String?
+  minutesAdoptedAt   DateTime?
+  minutesAdoptedById String?   @db.Uuid
+  createdById        String?   @db.Uuid
+
+  building       Building            @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  attendance     MeetingAttendance[]
+  proxies        Proxy[]
+  resolutions    Resolution[]
+  workDecisions  BuildingWork[]
+  createdBy      Membership?         @relation("MeetingCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  minutesAdopted Membership?         @relation("MeetingMinutesAdoptedBy", fields: [minutesAdoptedById], references: [id], onDelete: SetNull)
 
   @@index([buildingId])
   @@index([buildingId, scheduledFor])
@@ -1134,9 +1157,16 @@ model MeetingAttendance {
   mode       AttendanceMode @default(IN_PERSON)
   recordedAt DateTime       @default(now())
 
-  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  meeting  Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  unit     Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  /// Who stood up for the apartment, as the secretary would write it in the
+  /// minutes. A unit is represented by a person, and which person turned up
+  /// matters when two shareholders hold one apartment jointly.
+  representedBy String?
+  recordedById  String? @db.Uuid
+
+  building   Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  meeting    Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  unit       Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  recordedBy Membership? @relation("AttendanceRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
 
   @@unique([meetingId, unitId])
   @@index([buildingId])
@@ -1155,12 +1185,22 @@ model Proxy {
   /// evidence that it was granted.
   evidence   String?
 
-  building Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  meeting  Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  unit     Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  holder   Membership? @relation("ProxyHolder", fields: [holderId], references: [id], onDelete: SetNull)
+  grantedById String? @db.Uuid
+  revokedById String? @db.Uuid
 
-  @@unique([meetingId, unitId])
+  building  Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  meeting   Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  unit      Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  holder    Membership? @relation("ProxyHolder", fields: [holderId], references: [id], onDelete: SetNull)
+  grantedBy Membership? @relation("ProxyGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+  revokedBy Membership? @relation("ProxyRevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
+
+  /// Deliberately not unique on (meeting, unit). A shareholder who revokes a
+  /// proxy and gives it to someone else produces two rows, and both have to
+  /// survive: "who held my proxy that night" is exactly the question asked
+  /// when a vote is contested. Only one may be live at a time, which is
+  /// enforced in the write path against the revoked ones.
+  @@index([meetingId, unitId])
   @@index([buildingId])
 }
 
@@ -1170,15 +1210,60 @@ model Resolution {
   meetingId     String   @db.Uuid
   title         String
   text          String
+  /// The tally, frozen at the moment the vote was called. Derived by summing
+  /// the ResolutionVote rows below, and stored rather than recomputed because
+  /// shares move: a transfer next spring must not silently restate what the
+  /// meeting decided last autumn.
   sharesFor     Int      @default(0)
   sharesAgainst Int      @default(0)
   sharesAbstain Int      @default(0)
   passed        Boolean?
   createdAt     DateTime @default(now())
 
-  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  meeting  Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  /// The bylaw threshold this resolution had to clear, as an exact fraction.
+  /// Per-resolution rather than per-building: an ordinary motion carries on a
+  /// majority while amending the bylaws takes two-thirds or three-quarters,
+  /// and the two can be voted on at the same meeting.
+  thresholdNumerator   Int             @default(1)
+  thresholdDenominator Int             @default(2)
+  thresholdStrict      Boolean         @default(true)
+  /// What the threshold is measured against — shares voted, shares present, or
+  /// all shares outstanding. Bylaws differ, and the difference decides close
+  /// votes, so it is recorded rather than assumed.
+  basis                ResolutionBasis @default(VOTED)
+  recordedAt           DateTime?
+  recordedById         String?         @db.Uuid
 
+  building   Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  meeting    Meeting          @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  recordedBy Membership?      @relation("ResolutionRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  votes      ResolutionVote[]
+
+  @@index([buildingId])
+}
+
+/// One apartment's vote on one resolution.
+///
+/// The share count is copied onto the row rather than joined at read time, for
+/// the same reason the tally is stored: the minutes have to keep saying what
+/// they said. A vote recorded as 143 shares stays 143 shares after the
+/// apartment is sold.
+model ResolutionVote {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buildingId   String     @db.Uuid
+  resolutionId String     @db.Uuid
+  unitId       String     @db.Uuid
+  choice       VoteChoice
+  shares       Int
+  /// Whether the vote was cast by a proxy holder rather than the shareholder.
+  byProxy      Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  building   Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  resolution Resolution @relation(fields: [resolutionId], references: [id], onDelete: Cascade)
+  unit       Unit       @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([resolutionId, unitId])
   @@index([buildingId])
 }
 
@@ -1564,6 +1649,23 @@ enum AttendanceMode {
   IN_PERSON
   REMOTE
   PROXY
+}
+
+enum VoteChoice {
+  FOR
+  AGAINST
+  ABSTAIN
+}
+
+/// What a voting threshold is measured against.
+enum ResolutionBasis {
+  /// Shares actually voted for or against. Abstentions ignored.
+  VOTED
+  /// Shares present at the meeting, so an abstention counts as a no.
+  PRESENT
+  /// Every share in the building, whether present or not. Used where bylaws
+  /// require a supermajority of the whole corporation.
+  OUTSTANDING
 }
 
 enum TicketStatus {

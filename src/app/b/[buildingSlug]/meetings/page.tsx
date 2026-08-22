@@ -1,25 +1,22 @@
+import Link from "next/link";
 import { EmptyState, PageHeader } from "~/components/patterns/PageHeader";
-import { ScaffoldNotice } from "~/components/patterns/ScaffoldNotice";
+import { can } from "~/lib/auth/capabilities";
 import { getBuildingContext } from "~/lib/auth/current";
-import { listMeetings } from "~/lib/db/scoped/modules";
+import { listMeetings, quorumThreshold } from "~/lib/db/scoped/meetings";
 import { listUnitsWithShares } from "~/lib/db/scoped/units";
-import { formatBasisPoints, totalShares, weightOf } from "~/lib/primitives/shares";
-import { formatInstant } from "~/lib/time";
-
-export const MISSING = [
-  "Digital proxy collection, and revoking one",
-  "Live quorum as attendance is recorded",
-  "Minutes: drafting, adoption, and the document link",
-  "Resolutions and share-weighted voting",
-];
+import { sharesNeeded, totalShares } from "~/lib/primitives/shares";
+import { addMonths, formatInstant, today } from "~/lib/time";
+import { ScheduleMeeting } from "./MeetingForms";
 
 /**
- * Meetings and proxies — scaffold.
+ * Meetings and proxies.
  *
- * The share-weighted quorum arithmetic is already built and tested in
- * `src/lib/primitives/shares.ts`; what is missing is the workflow around it.
- * The threshold shown here is read from each meeting's stored fraction, so the
- * hard part — two-thirds being exact rather than 66.67% — is already right.
+ * Quorum in a co-op is share-weighted, never counted by apartment, and the
+ * threshold each meeting was called under is stored as an exact fraction rather
+ * than a percentage. Two-thirds of 1,200 shares is exactly 800; 66.67% of them
+ * is 801, and the meeting with precisely two-thirds present would be recorded
+ * as inquorate over a rounding artefact. So every number on this page is read
+ * off the stored fraction, and nothing is divided on the way.
  */
 export default async function MeetingsPage({
   params,
@@ -35,6 +32,7 @@ export default async function MeetingsPage({
   ]);
 
   const total = totalShares(units.map((u) => ({ unitId: u.id, shares: u.shares })));
+  const mayManage = can(ctx, "meeting.manage");
 
   return (
     <>
@@ -42,13 +40,21 @@ export default async function MeetingsPage({
         eyebrow="Meetings & proxies"
         title="Meetings"
         lede={`Quorum in this building is share-weighted against ${total.toLocaleString("en-US")} shares, not counted by apartment.`}
+        actions={
+          mayManage ? (
+            <ScheduleMeeting
+              buildingSlug={buildingSlug}
+              defaultDate={addMonths(today(ctx.building.timezone), 1)}
+            />
+          ) : null
+        }
       />
-
-      <ScaffoldNotice missing={MISSING} />
 
       {meetings.length === 0 ? (
         <EmptyState title="No meetings recorded">
-          Annual meetings, special meetings and board meetings will appear here.
+          {mayManage
+            ? "Call the annual meeting and the roster, the proxies and the resolutions will hang off it."
+            : "Annual meetings, special meetings and board meetings will appear here once the board calls one."}
         </EmptyState>
       ) : (
         <div className="overflow-x-auto">
@@ -69,23 +75,24 @@ export default async function MeetingsPage({
                   Quorum needs
                 </th>
                 <th scope="col" className="eyebrow pb-2 text-right font-normal">
-                  Recorded
+                  Record
                 </th>
               </tr>
             </thead>
             <tbody>
               {meetings.map((meeting) => {
-                const needed = Math.ceil(
-                  (total * meeting.quorumNumerator) / meeting.quorumDenominator,
-                );
-                const present = meeting._count.attendance + meeting._count.proxies;
+                const threshold = quorumThreshold(meeting);
+                const needed = sharesNeeded(total, threshold);
 
                 return (
                   <tr key={meeting.id} className="ledger-row align-baseline">
                     <td className="py-3 pr-4">
-                      <span className="text-ironwork block text-sm font-medium">
+                      <Link
+                        href={`/b/${buildingSlug}/meetings/${meeting.id}`}
+                        className="text-ironwork hover:text-verdigris block text-sm font-medium underline-offset-4 hover:underline"
+                      >
                         {meeting.title}
-                      </span>
+                      </Link>
                       <span className="text-ironwork-faint font-mono text-[0.6875rem]">
                         {meeting.type.toLowerCase()}
                         {meeting.location ? ` · ${meeting.location}` : ""}
@@ -97,11 +104,19 @@ export default async function MeetingsPage({
                     <td className="text-ironwork py-3 pr-4 text-right font-mono text-xs whitespace-nowrap">
                       {needed.toLocaleString("en-US")} sh
                       <span className="text-ironwork-faint block">
-                        {formatBasisPoints(weightOf(needed, total))}
+                        {threshold.label}
                       </span>
                     </td>
                     <td className="text-ironwork-soft py-3 text-right font-mono text-xs">
-                      {present === 0 ? "—" : `${present} units`}
+                      {meeting.minutesAdoptedAt ? (
+                        <span className="text-complete">minutes adopted</span>
+                      ) : meeting._count.resolutions > 0 ? (
+                        `${meeting._count.resolutions} resolution${meeting._count.resolutions === 1 ? "" : "s"}`
+                      ) : meeting._count.attendance > 0 ? (
+                        `${meeting._count.attendance} present`
+                      ) : (
+                        "—"
+                      )}
                     </td>
                   </tr>
                 );

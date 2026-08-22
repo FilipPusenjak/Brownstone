@@ -68,6 +68,56 @@ export function percentThreshold(percent: number, strict = false): Threshold {
   };
 }
 
+/**
+ * The fractions co-op bylaws are actually written in, spelled the way a
+ * secretary would write them in the minutes.
+ *
+ * "a majority" rather than "1/2", because the minutes say "carried by a
+ * majority" and a board member reading the record back should recognise their
+ * own words. The strictness matters as much as the fraction: "a majority" is
+ * more than half, so a 1/2 threshold that is not strict is "half or more",
+ * which is a different rule and is spelled differently.
+ */
+const NAMED_FRACTIONS: ReadonlyArray<{
+  numerator: number;
+  denominator: number;
+  strict: boolean;
+  label: string;
+}> = [
+  { numerator: 1, denominator: 2, strict: true, label: "a majority" },
+  { numerator: 1, denominator: 2, strict: false, label: "half or more" },
+  { numerator: 2, denominator: 3, strict: false, label: "two-thirds" },
+  { numerator: 3, denominator: 4, strict: false, label: "three-quarters" },
+  { numerator: 1, denominator: 3, strict: false, label: "one-third" },
+  { numerator: 4, denominator: 5, strict: false, label: "four-fifths" },
+];
+
+/**
+ * Rebuilds a threshold from the fraction stored against a meeting or a
+ * resolution.
+ *
+ * Fractions go into the database as a numerator, a denominator and a
+ * strictness flag rather than as a percentage, so that two-thirds stays exactly
+ * two-thirds. This reads one back and gives it the name it had in the bylaws.
+ */
+export function fractionThreshold(
+  numerator: number,
+  denominator: number,
+  strict: boolean,
+): Threshold {
+  const named = NAMED_FRACTIONS.find(
+    (f) =>
+      f.numerator === numerator && f.denominator === denominator && f.strict === strict,
+  );
+
+  return {
+    numerator,
+    denominator,
+    strict,
+    label: named?.label ?? `${strict ? "more than " : ""}${numerator}/${denominator}`,
+  };
+}
+
 /** One hundredth of a percent. Used for *display* of a computed weight only. */
 export type BasisPoints = number;
 

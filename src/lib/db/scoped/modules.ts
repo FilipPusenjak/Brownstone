@@ -4,7 +4,7 @@ import { withBuildingTx } from "../tx";
 import { optionalUnitFilter, unitFilter } from "../visibility";
 
 /**
- * Read queries for the seven scaffolded modules.
+ * Read queries for the modules that are still scaffolds.
  *
  * These are real, scoped, capability-checked reads over real seeded data —
  * enough for each module's list view to show the building something true. What
@@ -16,76 +16,7 @@ import { optionalUnitFilter, unitFilter } from "../visibility";
  * do that, which is the point of the exercise.
  */
 
-// --- Meetings & proxies ----------------------------------------------------
-
-export async function listMeetings(ctx: BuildingContext) {
-  assertCan(ctx, "meeting.view");
-
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.meeting.findMany({
-      orderBy: { scheduledFor: "desc" },
-      select: {
-        id: true,
-        buildingId: true,
-        title: true,
-        type: true,
-        scheduledFor: true,
-        location: true,
-        quorumNumerator: true,
-        quorumDenominator: true,
-        quorumStrict: true,
-        heldAt: true,
-        _count: { select: { attendance: true, proxies: true, resolutions: true } },
-      },
-    }),
-  );
-}
-
-export async function listProxies(ctx: BuildingContext) {
-  assertCan(ctx, "meeting.view");
-
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.proxy.findMany({
-      select: {
-        id: true,
-        buildingId: true,
-        meetingId: true,
-        unitId: true,
-        holderName: true,
-        revokedAt: true,
-      },
-    }),
-  );
-}
-
-export async function listMeetingAttendance(ctx: BuildingContext) {
-  assertCan(ctx, "meeting.view");
-
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.meetingAttendance.findMany({
-      select: { id: true, buildingId: true, meetingId: true, unitId: true, mode: true },
-    }),
-  );
-}
-
-export async function listResolutions(ctx: BuildingContext) {
-  assertCan(ctx, "meeting.view");
-
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.resolution.findMany({
-      select: {
-        id: true,
-        buildingId: true,
-        meetingId: true,
-        title: true,
-        sharesFor: true,
-        sharesAgainst: true,
-        sharesAbstain: true,
-        passed: true,
-      },
-    }),
-  );
-}
+// Meetings & proxies were built out; their queries live in `meetings.ts`.
 
 // --- Sublet register -------------------------------------------------------
 
