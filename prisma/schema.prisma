@@ -236,6 +236,9 @@ model Membership {
   bookingsRequested    Booking[]
   auditLogs            AuditLog[]
   ticketsReported      Ticket[]                 @relation("TicketReportedBy")
+  ticketsAssigned      Ticket[]                 @relation("TicketAssignee")
+  ticketsTriaged       Ticket[]                 @relation("TicketTriagedBy")
+  ticketsResolved      Ticket[]                 @relation("TicketResolvedBy")
   proxiesHeld          Proxy[]                  @relation("ProxyHolder")
   proxiesGranted       Proxy[]                  @relation("ProxyGrantedBy")
   proxiesRevoked       Proxy[]                  @relation("ProxyRevokedBy")
@@ -880,6 +883,10 @@ model Charge {
   /// Set when this charge came from a share-weighted assessment for a piece of
   /// building work, so the work can show what it actually raised.
   buildingWorkId   String?  @db.Uuid
+  /// Set when this charge came from a repair the board determined was the
+  /// shareholder's to pay for. The determination is the charge's justification,
+  /// and a bill nobody can trace back to one is a bill that gets disputed.
+  ticketId         String?  @db.Uuid
   createdById      String?  @db.Uuid
   createdAt        DateTime @default(now())
 
@@ -889,6 +896,7 @@ model Charge {
   reverses     Charge?       @relation("ChargeReversal", fields: [reversesChargeId], references: [id], onDelete: SetNull)
   reversedBy   Charge[]      @relation("ChargeReversal")
   buildingWork BuildingWork? @relation(fields: [buildingWorkId], references: [id], onDelete: SetNull)
+  ticket       Ticket?       @relation(fields: [ticketId], references: [id], onDelete: SetNull)
 
   @@index([buildingId])
   @@index([buildingId, unitId, dueOn])
@@ -1306,10 +1314,32 @@ model Ticket {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
+  /// Triage: who is actually going to look at it. Either a member — in these
+  /// buildings, the super — or an outside contractor, who has no login and
+  /// never will, so the name and number are recorded as plain text rather than
+  /// pretending a vendor is a user.
+  assigneeId  String?   @db.Uuid
+  vendorName  String?
+  vendorPhone String?
+  triagedAt   DateTime?
+  triagedById String?   @db.Uuid
+
+  /// What was actually done, and what it cost. The note is the part that
+  /// survives: three years on, "replaced the flush valve, not the whole tank"
+  /// is what tells the next board whether this is the same fault recurring.
+  resolutionNote String?
+  costCents      Int?
+  resolvedById   String?   @db.Uuid
+  closedAt       DateTime?
+
   building   Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   unit       Unit?            @relation(fields: [unitId], references: [id], onDelete: SetNull)
   reportedBy Membership       @relation("TicketReportedBy", fields: [reportedById], references: [id], onDelete: Cascade)
   approval   ApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: SetNull)
+  assignee   Membership?      @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  triagedBy  Membership?      @relation("TicketTriagedBy", fields: [triagedById], references: [id], onDelete: SetNull)
+  resolvedBy Membership?      @relation("TicketResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+  charges    Charge[]
 
   @@index([buildingId])
   @@index([buildingId, status])

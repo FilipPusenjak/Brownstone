@@ -26,7 +26,7 @@ together and `DECISIONS.md` for what was chosen and what was rejected.
 | Sublet Register     | scaffold |
 | Arrears             | built    |
 | Bookings            | scaffold |
-| Repair Tickets      | scaffold |
+| Repair Tickets      | built    |
 | Duty Rotation       | scaffold |
 
 A scaffold has real tables, real scoped queries and a list view over real
@@ -107,7 +107,7 @@ a migration leaves a tenant table without a row-level security policy.
 
 ### The browser tests
 
-`pnpm test:e2e` runs six paths end to end. A president signs in, invites a
+`pnpm test:e2e` runs eight paths end to end. A president signs in, invites a
 neighbour, the neighbour follows the link, signs in as the invited address,
 joins, opens the compliance calendar, puts a requirement on it and files it. A
 treasurer posts a month's maintenance, checks the share-weighted split adds up
@@ -117,8 +117,12 @@ percentages and amounts add up to the job, raises the assessment, and finds the
 resulting charge on an apartment's ledger. And a secretary calls a meeting,
 takes the roster, is refused a vote while the room is a hundred shares short of
 quorum, records it once the shares are there, then adopts the minutes and
-watches every control disappear. Nothing is faked — they read magic links out
-of `./.mail` the way a person reads them out of an inbox.
+watches every control disappear. A shareholder reports a repair and the
+treasurer is refused a bill for it until the board records who pays — then, once
+they have, bills it and finds the charge on the ledger. And a neighbour is
+turned away from a repair inside somebody else's apartment, by URL as well as by
+list. Nothing is faked — they read magic links out of `./.mail` the way a person
+reads them out of an inbox.
 
 It builds the app and starts it, so the first run takes a minute. If Playwright
 cannot find a browser, point it at one:

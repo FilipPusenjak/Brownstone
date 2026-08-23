@@ -13,6 +13,7 @@ import * as documents from "~/lib/db/scoped/documents";
 import * as ledger from "~/lib/db/scoped/ledger";
 import * as meetings from "~/lib/db/scoped/meetings";
 import * as modules from "~/lib/db/scoped/modules";
+import * as tickets from "~/lib/db/scoped/tickets";
 import * as notifications from "~/lib/db/scoped/notifications";
 import * as units from "~/lib/db/scoped/units";
 import {
@@ -197,7 +198,11 @@ const READERS: Array<{ name: string; tables: string[]; read: Reader }> = [
     tables: ["BookingPrerequisiteCheck"],
     read: modules.listBookingChecks,
   },
-  { name: "modules.listTickets", tables: ["Ticket"], read: modules.listTickets },
+  {
+    name: "tickets.listTicketsForTenancyCheck",
+    tables: ["Ticket"],
+    read: tickets.listTicketsForTenancyCheck,
+  },
   {
     name: "modules.listDutyRotations",
     tables: ["DutyRotation"],

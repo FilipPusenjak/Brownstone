@@ -2,8 +2,11 @@
 
 import { useRef, useState, useTransition } from "react";
 import type { DocumentType, EntityType } from "~/generated/prisma/enums";
-import { Button } from "~/components/patterns/Button";
-import { attachDocumentAction, requestUploadAction } from "./actions";
+import { Button } from "./Button";
+import {
+  attachDocumentAction,
+  requestUploadAction,
+} from "~/app/b/[buildingSlug]/documents/actions";
 
 /**
  * Uploading a file.

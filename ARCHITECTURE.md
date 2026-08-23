@@ -229,8 +229,10 @@ The persistent disclaimer is on every page and is not dismissible.
 | `tests/primitives/*`                                  | Recurrence, shares, ledger, approvals, prerequisites           |
 | `tests/compliance`, `tests/alterations`, `tests/auth` | Module lifecycles against a real database                      |
 | `tests/meetings/lifecycle.test.ts`                    | Quorum, proxies and thresholds against the real share register |
+| `tests/tickets/lifecycle.test.ts`                     | Repair responsibility, unit scoping, and the gate on billing   |
 | `tests/e2e/smoke.spec.ts`                             | Invite → accept → calendar → file, in a real browser           |
 | `tests/e2e/meetings.spec.ts`                          | Roster → quorum refusal → vote → minutes, in a real browser    |
+| `tests/e2e/tickets.spec.ts`                           | Report → refusal → determination → bill, in a real browser     |
 
 The tenancy suite has been mutation-tested: breaking unit scoping fails eight
 tests, removing the tenant setting fails the seed and the suite, and adding a

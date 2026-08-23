@@ -10,7 +10,7 @@ import { formatMoney, money } from "~/lib/money";
 import { AlterationPanel, CommentBox } from "../AlterationPanel";
 import { ApprovalChip } from "../ApprovalChip";
 import { CertificateForm } from "../CertificateForm";
-import { DocumentLink, UploadField } from "../UploadField";
+import { DocumentLink, UploadField } from "~/components/patterns/UploadField";
 
 export default async function AlterationPage({
   params,

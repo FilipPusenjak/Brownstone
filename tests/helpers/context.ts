@@ -21,6 +21,8 @@ export const PEOPLE = {
   priyaSecretary: "priya.raman@example.com",
   /** The Adelaide: plain shareholder in the garden apartment. */
   halShareholder: "hal.brenner@example.com",
+  /** The Adelaide: the super. Holds the repair work and none of the money. */
+  salSuper: "sal.ferrante@example.com",
   /** Active member of BOTH buildings. The cross-tenant subject. */
   martaBoth: "marta.oyelaran@example.com",
   /** Lispenard House: president. Never a member of The Adelaide. */

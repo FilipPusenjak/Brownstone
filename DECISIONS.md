@@ -626,3 +626,88 @@ to each other. A board's vote to spend $48,000 belongs in the minutes of the
 meeting that took it, not only on the page of the job it paid for. It stays
 optional — small boards decide by written consent between meetings more often
 than they meet.
+
+## Repair tickets, and who pays
+
+The module residents actually open. Everything else in Co-operator is something
+a board does; this is something a shareholder does, and the design follows from
+that — one control for reporting, and every other control belonging to whoever
+has to deal with it.
+
+**The rule the module exists for: a shareholder cannot be billed for a repair
+until the board has determined, in writing and under a name, that they are the
+one who pays.** Who is responsible for a leak — the corporation, whose riser is
+behind the wall, or the shareholder, whose fixture failed — is the argument
+every co-op repair turns into. It is answered by reading a proprietary lease,
+not by whoever holds the chequebook that week. `chargeTicketToUnit` refuses
+without a determination, refuses when the determination says the corporation
+pays, and refuses a second bill. Enforced in the write path, because a disabled
+button is a suggestion.
+
+**The determination runs through the shared approval workflow.** It gets a
+comment thread the shareholder can argue in, a decision with a named officer and
+a stated basis, and the state machine's rule that a decision cannot be edited,
+only superseded. `Resolution` was the wrong vehicle — that is meeting-bound and
+share-weighted — but `ApprovalRequest` already meant "somebody asks, the board
+looks, an officer decides, and it is recorded", which is exactly this.
+
+**There is no "deny".** Every repair has somebody responsible for it, so
+approving means naming who pays, and a board that disagrees with a proposed
+answer records the answer it does agree with. Denial would leave the question
+open while the record looked settled — the worst of both. `decideResponsibility`
+refuses the action explicitly rather than letting the shared machine offer it.
+
+**Anyone who can see the ticket can open the determination, including the
+shareholder.** Being able to make the board answer in writing is the point of
+the feature from their side, not only from the board's.
+
+**Triage is optional; going backwards is not.** The super who tightens a
+handrail the same afternoon should not have to record that he considered it
+first — a workflow that insists on ceremony for a five-minute job is a workflow
+people stop using, and a repair log nobody updates is worse than none. What the
+transition table refuses is a resolved repair becoming untriaged, and resolving
+a closed one without reopening it. Reopening is first-class: a fault that comes
+back three weeks later is the same fault, it clears `resolvedAt` because the
+repair plainly did not hold, and it keeps the note about what was tried. Forcing
+a second ticket would lose exactly the history that makes the pattern obvious.
+
+**Resolution requires saying what was done.** A ticket closed with no account of
+the work teaches the next board nothing. "Replaced the flush valve, not the whole
+tank" is what tells them, two years on, whether this is the same fault recurring.
+
+**A ticket with no apartment is everyone's.** `optionalUnitFilter`, not
+`unitFilter`: the front door and the boiler are the whole building's business
+while a leak in 3R is private to 3R and the officers. `getTicket` returns null
+rather than a forbidden error for a neighbour's ticket, because "it exists but is
+not yours" is itself a disclosure in a building where everyone knows everyone.
+
+**Assignment is a member or a plain-text vendor.** An outside plumber has no
+login and never will, and modelling one as a user in order to assign a ticket
+would put a fictional person in the members list. Both fields exist rather than
+one, because "Sal will meet the plumber" is a real arrangement and a system that
+refuses to record it gets worked around in a notes field.
+
+**The charge points at the ticket, not the other way round.** `Charge.ticketId`,
+following `Charge.buildingWorkId`: the money points at its justification, so a
+bill can always be traced back to the determination that authorised it, and a
+reversal is just another charge row rather than a nulled foreign key.
+
+### Two things this module changed elsewhere
+
+**The upload path moved out of alterations.** Repair tickets were the second
+caller of "sign a PUT, send the bytes, record that they landed", and two copies
+of an upload path is two places for the permission check to drift. It now lives
+in `documents/actions.ts` with `UploadField` in `components/patterns`. The
+capability check never moved — it has always been one `canAttachTo` that every
+path asks, and a new entity type has to add its case there deliberately rather
+than inheriting access by omission.
+
+**`Field` associates its label explicitly.** It used to wrap the control in a
+`<label>`, which meant the accessible name was the label's entire text content.
+For a `<select>` that includes every option, so a field announced as "Where
+Somewhere shared GARDEN 1F 2F…"; with a hint it announced as "Where Your
+apartment, or blank for somewhere shared". Now the label uses `htmlFor` and the
+hint is attached with `aria-describedby`, which is announced after the name and
+can be skipped — which is what a hint is. Found by a browser test that could not
+locate a field by its own label, which is the same problem a screen reader user
+would have had.

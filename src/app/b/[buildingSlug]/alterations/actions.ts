@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { DocumentType, EntityType } from "~/generated/prisma/enums";
 import { CapabilityError } from "~/lib/auth/capabilities";
 import { getBuildingContext } from "~/lib/auth/current";
 import {
@@ -13,11 +12,6 @@ import {
   type RecordCoiInput,
   type SubmitAlterationInput,
 } from "~/lib/db/scoped/alteration-writes";
-import {
-  attachDocument,
-  requestUpload,
-  type UploadTicket,
-} from "~/lib/db/scoped/document-writes";
 import { NoSuchBuildingError, NotSignedInError } from "~/lib/db/context";
 import type { ApprovalAction } from "~/lib/primitives/approvals";
 import { fail, type Result } from "~/lib/result";
@@ -131,38 +125,5 @@ export async function verifyCertificateAction(input: {
     }),
   );
   if (result.ok) refresh(input.buildingSlug);
-  return result;
-}
-
-export async function requestUploadAction(input: {
-  buildingSlug: string;
-  entityType: EntityType;
-  entityId: string;
-  filename: string;
-  contentType: string;
-  sizeBytes: number;
-}): Promise<Result<UploadTicket>> {
-  const { buildingSlug, ...rest } = input;
-  return guard(buildingSlug, (ctx) => requestUpload(ctx, rest));
-}
-
-export async function attachDocumentAction(input: {
-  buildingSlug: string;
-  key: string;
-  entityType: EntityType;
-  entityId: string;
-  type: DocumentType;
-  title: string;
-  contentType: string;
-  sizeBytes: number;
-}): Promise<Result<{ documentId: string }>> {
-  const { buildingSlug, ...rest } = input;
-  const result = await guard(buildingSlug, (ctx) => attachDocument(ctx, rest));
-  if (result.ok) {
-    refresh(
-      buildingSlug,
-      rest.entityType === "ALTERATION_REQUEST" ? rest.entityId : undefined,
-    );
-  }
   return result;
 }

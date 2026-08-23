@@ -1,7 +1,7 @@
 import { assertCan } from "~/lib/auth/capabilities";
 import type { BuildingContext } from "../context";
 import { withBuildingTx } from "../tx";
-import { optionalUnitFilter, unitFilter } from "../visibility";
+import { unitFilter } from "../visibility";
 
 /**
  * Read queries for the modules that are still scaffolds.
@@ -11,9 +11,10 @@ import { optionalUnitFilter, unitFilter } from "../visibility";
  * is missing from each module is written down in its `TODO.md`; nothing here
  * pretends to be finished.
  *
- * When one of these modules is built out, its queries move to a module of their
- * own. Nothing about tenancy, capabilities or the primitives needs to change to
- * do that, which is the point of the exercise.
+ * As each module is built out its queries move to a file of their own, and the
+ * markers below are what is left behind. Nothing about tenancy, capabilities or
+ * the primitives has had to change to do that once, which is the point of the
+ * exercise.
  */
 
 // Meetings & proxies were built out; their queries live in `meetings.ts`.
@@ -104,35 +105,7 @@ export async function listBookingChecks(ctx: BuildingContext) {
   );
 }
 
-// --- Repair tickets --------------------------------------------------------
-
-export async function listTickets(ctx: BuildingContext) {
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.ticket.findMany({
-      // Tickets for the stoop or the boiler room belong to no unit and are
-      // everyone's business; unit-linked ones follow the usual scoping.
-      where: optionalUnitFilter(ctx, "ticket"),
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        buildingId: true,
-        unitId: true,
-        title: true,
-        detail: true,
-        area: true,
-        status: true,
-        priority: true,
-        responsibility: true,
-        createdAt: true,
-        resolvedAt: true,
-        unit: { select: { id: true, label: true } },
-        reportedBy: {
-          select: { id: true, user: { select: { name: true, email: true } } },
-        },
-      },
-    }),
-  );
-}
+// Repair tickets were built out; their queries live in `tickets.ts`.
 
 // --- Duty rotation ---------------------------------------------------------
 

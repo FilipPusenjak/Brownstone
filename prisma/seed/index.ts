@@ -1005,33 +1005,121 @@ async function seedBuildingExtras(
     },
   });
 
-  // --- Tickets (module 8) -----------------------------------------------
-  await tx.ticket.createMany({
+  // --- Repair tickets (module 8) ----------------------------------------
+  //
+  // Three, because the module has three states worth seeing: something shared
+  // that the corporation obviously pays for, something in an apartment that
+  // nobody has decided yet — which is the state that stalls a repair, since
+  // until it is settled nobody wants to arrange the work — and one that ran the
+  // whole way to a bill on a shareholder's ledger.
+  const superMembership = membershipIds.get(
+    spec.people.find((p) => p.roles.includes("SUPER"))?.email ?? "",
+  );
+
+  await tx.ticket.create({
+    data: {
+      buildingId,
+      unitId: null,
+      reportedById: submitter,
+      title: "Front door latch not catching",
+      detail:
+        "The door bounces back unless you pull it hard. Getting worse in the damp.",
+      area: "Entry",
+      status: "TRIAGED",
+      priority: "URGENT",
+      responsibility: "COOPERATIVE",
+      assigneeId: superMembership ?? null,
+      triagedAt: new Date(Date.UTC(year, 6, 3)),
+      triagedById: presidentMembership,
+    },
+  });
+
+  await tx.ticket.create({
+    data: {
+      buildingId,
+      unitId: firstUnit,
+      reportedById: submitter,
+      title: "Radiator knocking overnight",
+      detail: "Loud banging from about 5am when the heat comes up.",
+      area: "Heating",
+      status: "OPEN",
+      priority: "NORMAL",
+      responsibility: "UNDETERMINED",
+    },
+  });
+
+  // The one that went all the way: asked, argued, decided, fixed, billed.
+  const determination = await tx.approvalRequest.create({
+    data: {
+      buildingId,
+      kind: "TICKET_RESPONSIBILITY",
+      status: "APPROVED",
+      submittedById: submitter,
+      submittedAt: new Date(Date.UTC(year, 5, 12)),
+      decidedAt: new Date(Date.UTC(year, 5, 19)),
+      decidedById: presidentMembership,
+      decisionNote:
+        "Fixture inside the apartment, not the riser. Paragraph 18 of the proprietary lease puts it on the shareholder.",
+    },
+    select: { id: true },
+  });
+
+  await tx.approvalComment.createMany({
     data: [
       {
         buildingId,
-        unitId: null,
-        reportedById: submitter,
-        title: "Front door latch not catching",
-        detail:
-          "The door bounces back unless you pull it hard. Getting worse in the damp.",
-        area: "Entry",
-        status: "TRIAGED",
-        priority: "URGENT",
-        responsibility: "COOPERATIVE",
+        requestId: determination.id,
+        authorId: submitter,
+        body: "The leak is behind the wall so I assumed it was the building's riser.",
+        visibility: "SHARED",
       },
       {
         buildingId,
-        unitId: firstUnit,
-        reportedById: submitter,
-        title: "Radiator knocking overnight",
-        detail: "Loud banging from about 5am when the heat comes up.",
-        area: "Heating",
-        status: "OPEN",
-        priority: "NORMAL",
-        responsibility: "UNDETERMINED",
+        requestId: determination.id,
+        authorId: presidentMembership,
+        body: "Plumber's note says the failure is at the supply stop inside the wall cavity, on the apartment side of the riser tee.",
+        visibility: "SHARED",
       },
     ],
+  });
+
+  const billed = await tx.ticket.create({
+    data: {
+      buildingId,
+      unitId: secondUnit,
+      reportedById: submitter,
+      title: "Bathroom supply stop leaking",
+      detail: "Damp patch spreading on the wall behind the sink pedestal.",
+      area: "Plumbing",
+      status: "RESOLVED",
+      priority: "URGENT",
+      responsibility: "SHAREHOLDER",
+      approvalRequestId: determination.id,
+      vendorName: "Brennan Plumbing",
+      vendorPhone: "718-555-0148",
+      triagedAt: new Date(Date.UTC(year, 5, 12)),
+      triagedById: presidentMembership,
+      resolutionNote:
+        "Replaced the supply stop and the braided line. Wall cavity dried and left open for a week before patching.",
+      costCents: 42_500,
+      resolvedAt: new Date(Date.UTC(year, 5, 26)),
+      resolvedById: presidentMembership,
+    },
+    select: { id: true, unitId: true },
+  });
+
+  await tx.charge.create({
+    data: {
+      buildingId,
+      unitId: billed.unitId!,
+      kind: "OTHER",
+      amountCents: 42_500,
+      dueOn: toDbDate(makeDate(year, 7, 1)),
+      postedOn: toDbDate(makeDate(year, 7, 1)),
+      memo: "Repair: Bathroom supply stop leaking",
+      ticketId: billed.id,
+      createdById: ctx.treasurerMembership,
+    },
   });
 
   // --- Duty rotation (module 9) -----------------------------------------

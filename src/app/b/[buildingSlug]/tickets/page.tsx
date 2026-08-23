@@ -1,25 +1,20 @@
+import Link from "next/link";
 import { EmptyState, PageHeader } from "~/components/patterns/PageHeader";
-import { ScaffoldNotice } from "~/components/patterns/ScaffoldNotice";
+import { can } from "~/lib/auth/capabilities";
 import { getBuildingContext } from "~/lib/auth/current";
-import { listTickets } from "~/lib/db/scoped/modules";
+import { listTickets } from "~/lib/db/scoped/tickets";
+import { listUnits } from "~/lib/db/scoped/units";
 import { formatDate, toPlainDate } from "~/lib/time";
-
-export const MISSING = [
-  "Reporting a ticket, with photos",
-  "Triage: assigning to the super or a vendor",
-  "The responsibility determination, through the approval workflow",
-  "Resolution and the record of what was done",
-];
+import { ResponsibilityChip } from "./ResponsibilityChip";
+import { ReportTicket } from "./TicketForms";
 
 /**
- * Repair tickets — scaffold.
+ * Repair tickets.
  *
- * The responsibility column is the interesting one and the reason this module
- * exists. Every repair in a co-op turns into the same argument — is this the
- * shareholder's or the corporation's? — and the answer needs to be a written
- * determination with an officer's name on it rather than a conversation nobody
- * can reconstruct two boards later. It will run through the same approval
- * workflow as alterations.
+ * The heading counts what is waiting on a decision rather than what is open,
+ * because an undetermined repair is the one that stalls: nobody wants to pay
+ * for it, so nobody arranges it. Open work sorts to the top and, within that,
+ * the loudest first — an emergency below the fold is an emergency nobody sees.
  */
 export default async function TicketsPage({
   params,
@@ -28,11 +23,19 @@ export default async function TicketsPage({
 }) {
   const { buildingSlug } = await params;
   const ctx = await getBuildingContext(buildingSlug);
-  const tickets = await listTickets(ctx);
+
+  const [tickets, allUnits] = await Promise.all([listTickets(ctx), listUnits(ctx)]);
 
   const undetermined = tickets.filter(
     (t) => t.responsibility === "UNDETERMINED" && t.status !== "CLOSED",
   ).length;
+
+  // A shareholder may report for their own apartment or somewhere shared;
+  // officers who already see every unit may file on a neighbour's behalf.
+  const mayFileForOthers = can(ctx, "ticket.viewAll");
+  const units = mayFileForOthers
+    ? allUnits
+    : allUnits.filter((unit) => ctx.unitIds.includes(unit.id));
 
   return (
     <>
@@ -44,9 +47,14 @@ export default async function TicketsPage({
             : `${undetermined} ${undetermined === 1 ? "repair needs" : "repairs need"} a responsibility decision`
         }
         lede="Who pays is the question every repair turns into, so it's recorded rather than remembered."
+        actions={
+          <ReportTicket
+            buildingSlug={buildingSlug}
+            units={units.map((unit) => ({ id: unit.id, label: unit.label }))}
+            canReportForOthers={mayFileForOthers}
+          />
+        }
       />
-
-      <ScaffoldNotice missing={MISSING} />
 
       {tickets.length === 0 ? (
         <EmptyState title="No open repairs">
@@ -80,9 +88,12 @@ export default async function TicketsPage({
               {tickets.map((ticket) => (
                 <tr key={ticket.id} className="ledger-row align-baseline">
                   <td className="py-3 pr-4">
-                    <span className="text-ironwork block text-sm font-medium">
+                    <Link
+                      href={`/b/${buildingSlug}/tickets/${ticket.id}`}
+                      className="text-ironwork hover:text-verdigris block text-sm font-medium underline-offset-4 hover:underline"
+                    >
                       {ticket.title}
-                    </span>
+                    </Link>
                     <span className="text-ironwork-faint font-mono text-[0.6875rem]">
                       {ticket.status.toLowerCase().replace("_", " ")}
                       {ticket.priority === "URGENT" ||
@@ -91,6 +102,14 @@ export default async function TicketsPage({
                           {" · "}
                           {ticket.priority.toLowerCase()}
                         </span>
+                      ) : null}
+                      {ticket.assignee || ticket.vendorName ? (
+                        <>
+                          {" · "}
+                          {ticket.vendorName ??
+                            ticket.assignee?.user.name ??
+                            ticket.assignee?.user.email}
+                        </>
                       ) : null}
                     </span>
                   </td>
@@ -110,32 +129,5 @@ export default async function TicketsPage({
         </div>
       )}
     </>
-  );
-}
-
-function ResponsibilityChip({ value }: { value: string }) {
-  const styles: Record<string, { label: string; className: string }> = {
-    UNDETERMINED: {
-      label: "Not decided",
-      className: "border-started-line bg-started-soft text-started",
-    },
-    SHAREHOLDER: {
-      label: "Shareholder",
-      className: "border-limestone-deep text-ironwork",
-    },
-    COOPERATIVE: {
-      label: "The co-op",
-      className: "border-limestone-deep text-ironwork",
-    },
-    SHARED: { label: "Shared", className: "border-limestone-deep text-ironwork" },
-  };
-  const style = styles[value] ?? styles["UNDETERMINED"];
-
-  return (
-    <span
-      className={`rounded-chip inline-flex shrink-0 items-center border px-1.5 py-0.5 font-mono text-[0.6875rem] tracking-wider uppercase ${style?.className ?? ""}`}
-    >
-      {style?.label}
-    </span>
   );
 }

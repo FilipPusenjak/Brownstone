@@ -1,3 +1,4 @@
+import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { twMerge } from "tailwind-merge";
 
@@ -39,6 +40,21 @@ export function Button({ intent, size, className, ...props }: ButtonProps) {
   return <button className={twMerge(button({ intent, size }), className)} {...props} />;
 }
 
+/**
+ * A labelled form control.
+ *
+ * The label is associated by `htmlFor`, not by wrapping, and the hint sits
+ * outside it attached with `aria-describedby`. Both details are about what a
+ * screen reader actually announces.
+ *
+ * A wrapping `<label>` takes its accessible name from everything inside it. For
+ * a `<select>` that includes every option, so the field announces as "Where
+ * Somewhere shared GARDEN 1F 2F…"; for a field with a hint it announces as
+ * "Where Your apartment, or blank for somewhere shared", the label and the
+ * aside run together. Explicit association keeps the name to the label, and
+ * described-by text is announced afterwards and can be skipped — which is what
+ * a hint is for.
+ */
 export function Field({
   label,
   hint,
@@ -50,18 +66,44 @@ export function Field({
   error?: string;
   children: React.ReactNode;
 }) {
+  const generated = React.useId();
+  const noteId = `${generated}-note`;
+  const note = error ?? hint;
+
+  // Respect an id the caller already set; otherwise supply one so the label has
+  // something to point at.
+  const child = React.isValidElement<{ id?: string; "aria-describedby"?: string }>(
+    children,
+  )
+    ? children
+    : null;
+  const controlId = child?.props.id ?? generated;
+
   return (
-    <label className="block">
-      <span className="eyebrow mb-1.5 block">{label}</span>
-      {children}
+    <div className="block">
+      <label htmlFor={controlId} className="eyebrow mb-1.5 block">
+        {label}
+      </label>
+
+      {child
+        ? React.cloneElement(child, {
+            id: controlId,
+            ...(note ? { "aria-describedby": noteId } : {}),
+          })
+        : children}
+
       {/* Errors say what happened and how to fix it, in the interface's voice.
           They never apologise and are never vague. */}
       {error ? (
-        <span className="text-stamp mt-1 block text-xs">{error}</span>
+        <span id={noteId} className="text-stamp mt-1 block text-xs">
+          {error}
+        </span>
       ) : hint ? (
-        <span className="text-ironwork-faint mt-1 block text-xs">{hint}</span>
+        <span id={noteId} className="text-ironwork-faint mt-1 block text-xs">
+          {hint}
+        </span>
       ) : null}
-    </label>
+    </div>
   );
 }
 
