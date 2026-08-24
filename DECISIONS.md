@@ -1003,3 +1003,74 @@ is exactly what nobody notices until the movers are at the door.
 and so no shareholder capabilities, and they are precisely the person who needs
 to put a contractor's van on the calendar. Requiring the shareholder capability
 would leave the one person who runs the building unable to book anything in it.
+
+---
+
+## Annual notices, and what silence means
+
+**An apartment that never replied is not an apartment that said no.** This is
+the module, and it is the thing buildings get wrong. Under the window guard rule
+an owner who hears nothing must treat the apartment as though a child lives
+there — inspect it, fit the guards. The usual failure is to send twelve notices,
+receive nine forms, and file the other three as "no children", which is the one
+reading the law does not allow. So the number the page leads with is not how
+many replied; it is how many apartments the building now owes work to, and after
+the reply-by date the silent ones are in it.
+
+**Closing a campaign is what converts silence into work**, rather than the
+system doing it quietly on a date. Each silent apartment gets a follow-up on the
+compliance calendar carrying the reason — "Never answered. An apartment that
+does not answer is treated as though a child lives there" — so a board three
+years later can see not just that the guards went in but why they had to.
+Rejected: deriving the follow-ups lazily at read time. The obligation has to be
+a row a reminder can fire on, and a board has to be able to point at the moment
+somebody decided.
+
+**Closing is refused before the reply-by date**, because silence on the fifth of
+February is a neighbour who has not got round to it. And **refused while any
+apartment has not been sent the notice at all**, which is the guard worth
+stating: an apartment nobody wrote to has neither consented nor ignored you, and
+closing the campaign around it would record a conclusion nobody is entitled to
+draw in either direction.
+
+**"Asked for it" is its own answer**, not a flavour of no. A resident with no
+children who wants window guards is entitled to them; folding that into `NO`
+loses the obligation, and folding it into `YES` loses what the form actually
+said.
+
+**A response that cannot be parsed reads as no answer, never as a no.** The
+column is JSON because different notices ask different questions, and a row
+mangled by a bad migration has to fall on the safe side of the line the whole
+module exists to draw — "no answer" leaves the apartment on the list of work,
+"no" quietly takes it off.
+
+**Delivery is per apartment, not per campaign.** The two households with no
+address on file are exactly the ones somebody walks a paper copy to, on a
+different day, and the send reports them as a count rather than swallowing them.
+Recording a hand delivery is a separate act with its own date and a slot for the
+proof; recording _email_ by hand is refused, because that would let a row claim
+a message went out with nothing in the notification log to show for it.
+
+**Sending is idempotent on (campaign, unit).** Not on the date, not on the
+address. Two presses of the button a second apart produce the same dedupe key
+and the second loses the insert race inside `sendNotice` rather than arriving in
+somebody's inbox. A building that double-sends its January notices teaches
+twelve people to ignore its email, and after that the notices stop working at
+all. The `sentAt` filter catches the ordinary second press; the key is what
+catches two requests that both read the row before either wrote to it.
+
+**The standing is public; the answers are not.** How many apartments the
+building owes work to is a compliance fact about the building and goes to every
+member. Which apartment has a child under six in it is not, and is blanked at
+the query layer for anyone but that apartment and the board — along with the
+notification log, which carries every address the notices went to.
+
+**A shareholder may answer for their own apartment.** Most of these come back on
+paper and an officer types them in, but a member who is already signed in should
+not have to print a form to say no.
+
+**The last scaffold going means the scaffold machinery goes too.**
+`scoped/modules.ts`, the `ScaffoldNotice` banner, `tests/arch/scaffolds.test.ts`
+and `scripts/write-module-todos.ts` existed to keep five half-built modules
+honest about being half-built. With none left they are code that describes a
+state the repository is no longer in, which is worse than no code at all.

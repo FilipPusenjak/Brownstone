@@ -248,6 +248,8 @@ model Membership {
   bookingsRequested    Booking[]
   bookingsConfirmed    Booking[]            @relation("BookingConfirmedBy")
   bookingsCancelled    Booking[]            @relation("BookingCancelledBy")
+  noticesClosed        NoticeCampaign[]     @relation("NoticeClosedBy")
+  noticeResponses      NoticeDelivery[]     @relation("NoticeRecordedBy")
   auditLogs            AuditLog[]
   ticketsReported      Ticket[]                 @relation("TicketReportedBy")
   ticketsAssigned      Ticket[]                 @relation("TicketAssignee")
@@ -584,6 +586,7 @@ model Obligation {
   certificates    CertificateOfInsurance[]
   dutyAssignments DutyAssignment[]
   noticeCampaigns NoticeCampaign[]
+  noticeFollowUps NoticeDelivery[]         @relation("NoticeFollowUp")
   buildingWork    BuildingWork[]
 
   @@index([buildingId])
@@ -1521,10 +1524,22 @@ model NoticeCampaign {
   dueOn        DateTime   @db.Date
   obligationId String?    @db.Uuid
   sentAt       DateTime?
-  createdAt    DateTime   @default(now())
+
+  /// The day households have until. Silence before it is a household still
+  /// thinking; silence after it is work the building owes, and the difference
+  /// is the whole module.
+  respondBy DateTime? @db.Date
+
+  /// Set when the board closed the campaign out, which is the act that turns
+  /// every unanswered apartment into a follow-up on the compliance calendar.
+  closedAt     DateTime?
+  closedById   String?   @db.Uuid
+
+  createdAt DateTime @default(now())
 
   building   Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   obligation Obligation?      @relation(fields: [obligationId], references: [id], onDelete: SetNull)
+  closedBy   Membership?      @relation("NoticeClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
   deliveries NoticeDelivery[]
 
   @@unique([buildingId, noticeType, year])
@@ -1542,17 +1557,42 @@ model NoticeDelivery {
   /// Proof of delivery — the signed return card, the photo of the notice under
   /// the door. The reason the module exists.
   documentId     String?   @db.Uuid
-  respondedAt    DateTime?
-  response       Json?
-  createdAt      DateTime  @default(now())
 
-  building Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  campaign NoticeCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  unit     Unit           @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  document Document?      @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  /// How it went out, and when. Per apartment rather than per campaign,
+  /// because the two households with no email address on file are exactly the
+  /// ones somebody walks a paper copy to on a different day.
+  method NoticeDeliveryMethod?
+  sentAt DateTime?
+
+  respondedAt  DateTime?
+  response     Json?
+  /// Who wrote the answer down. A form that comes back on paper is recorded by
+  /// an officer, and a board asked three years later needs to know which one.
+  recordedById String?   @db.Uuid
+
+  /// The follow-up this apartment's answer created — install the guards,
+  /// inspect for lead. Set for an apartment that answered yes, asked for it, or
+  /// never answered at all.
+  obligationId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  building   Building             @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  campaign   NoticeCampaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  unit       Unit                 @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  document   Document?            @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  recordedBy Membership?          @relation("NoticeRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  obligation Obligation?          @relation("NoticeFollowUp", fields: [obligationId], references: [id], onDelete: SetNull)
 
   @@unique([campaignId, unitId])
   @@index([buildingId])
+}
+
+enum NoticeDeliveryMethod {
+  EMAIL
+  HAND
+  MAIL
+  POSTED
 }
 
 // ---------------------------------------------------------------------------

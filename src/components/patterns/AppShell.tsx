@@ -18,8 +18,6 @@ interface NavItem {
   label: string;
   href: string;
   capability?: Capability;
-  /** Scaffolded modules are marked so nobody mistakes a stub for a feature. */
-  stub?: boolean;
 }
 
 const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
@@ -49,14 +47,9 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
       { label: "Sublets", href: "/sublets" },
       { label: "Duty rotation", href: "/duty", capability: "duty.view" },
       { label: "Bookings", href: "/bookings", capability: "booking.request" },
+      { label: "Notices", href: "/notices", capability: "notice.view" },
       { label: "Arrears", href: "/arrears" },
       { label: "Audit trail", href: "/audit", capability: "audit.view" },
-    ],
-  },
-  {
-    heading: "Not yet built",
-    items: [
-      { label: "Notices", href: "/notices", capability: "notice.view", stub: true },
     ],
   },
 ];

@@ -89,6 +89,28 @@ function isoDaysFromNow(days: number): string {
  * The board can book for any apartment, which is what lets one signed-in
  * session set up both halves of the run below.
  */
+/**
+ * Finds a day the moves resource has at least two free slots on, and lands
+ * there.
+ *
+ * A booking is a real row that stays, so a test that takes slots has to find
+ * its own room rather than assume a day is empty. Starts somewhere random so
+ * repeated runs spread out instead of walking further each time.
+ */
+async function findADayWithTwoSlotsFree(page: Page): Promise<string> {
+  const start = 120 + Math.floor(Math.random() * 200);
+
+  for (let offset = 0; offset < 200; offset += 1) {
+    const day = isoDaysFromNow(start + offset);
+    await page.goto(`/b/adelaide/bookings?date=${day}`);
+    await page.getByRole("link", { name: MOVES, exact: true }).click();
+
+    const free = await page.getByText("free", { exact: true }).count();
+    if (free >= 2) return day;
+  }
+  throw new Error("No day with two free slots in the next two hundred");
+}
+
 async function hold(page: Page, date: string, unitLabel: string): Promise<void> {
   await page.goto(`/b/adelaide/bookings?date=${date}`);
   await page.getByRole("link", { name: MOVES, exact: true }).click();
@@ -176,14 +198,12 @@ test("a slot somebody holds cannot be taken, and the next one along can", async 
 }) => {
   test.slow();
   const base = baseURL ?? "http://localhost:3000";
-  // A day far enough out that re-running the suite does not collide with a
-  // slot a previous run took.
-  const day = isoDaysFromNow(120 + (Date.now() % 90));
 
   await signIn(page, SHAREHOLDER, base);
-  await page.goto(`/b/adelaide/bookings?date=${day}`);
-  await page.getByRole("link", { name: MOVES, exact: true }).click();
-
+  // Each run of this test takes two of the day's three slots, so a fixed day —
+  // or a random one out of ninety — eventually finds a day a previous run
+  // filled. Walk until there are two going spare.
+  const day = await findADayWithTwoSlotsFree(page);
   await page.getByRole("button", { name: "Ask for a slot" }).click();
   const slots = page.getByLabel("Which slot");
   const first = (await slots.locator("option").allTextContents())[1]!;

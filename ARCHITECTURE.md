@@ -32,7 +32,7 @@ src/
       visibility.ts         building-wide vs unit-scoped, as where-fragments
       scoped/               every query in the system
     primitives/             obligations, shares, ledger, approvals, prerequisites,
-                            sublets, duty, bookings
+                            sublets, duty, bookings, notices
     compliance/             the applicability DSL and the generator
     email/                  mailer drivers, and send.ts which logs before sending
     storage/                presigned PUT/GET behind an interface
@@ -138,11 +138,13 @@ is the most socially explosive fact the system holds.
 
 ## The primitives
 
-Ten, each with tests that found real bugs. Seven were built before any module;
-`sublets.ts`, `duty.ts` and `bookings.ts` were extracted when their modules
-turned out to rest on arithmetic with a boundary — the cap that must never
-produce 1.2 apartments, the period rollover that decides which neighbour a fine
-belongs to, and the slot boundary that decides whether two moves collide.
+Eleven, each with tests that found real bugs. Seven were built before any
+module; `sublets.ts`, `duty.ts`, `bookings.ts` and `notices.ts` were extracted
+when their modules turned out to rest on a rule with a boundary — the cap that
+must never produce 1.2 apartments, the period rollover that decides which
+neighbour a fine belongs to, the slot boundary that decides whether two moves
+collide, and the date after which an unanswered notice stops being a household
+still thinking about it.
 
 1. **Obligations** (`primitives/obligations/recurrence.ts`) — four explicit
    recurrence types (`NONE`, `FIXED_INTERVAL`, `CYCLICAL_BY_YEAR`,
@@ -191,6 +193,11 @@ belongs to, and the slot boundary that decides whether two moves collide.
     half-open, so a move running to noon does not block the one starting at
     noon, and no slot run can straddle midnight — "which day was it booked?"
     has to have one answer.
+11. **Notices** (`primitives/notices.ts`) — what each annual notice asks, and
+    what an answer obliges. The rule the file exists for is that an apartment
+    which never replied is not an apartment that said no: after the reply-by
+    date, silence obliges the building exactly as a yes does, and a response
+    that cannot be parsed reads as no answer rather than as a no.
 
 Plus an **audit log**: every state change writes an entry naming the actor, the
 action (the same dotted string as the capability that authorised it), and a
@@ -243,23 +250,23 @@ The persistent disclaimer is on every page and is not dismissible.
 
 ## Testing
 
-| Suite                                                 | What it proves                                                 |
-| ----------------------------------------------------- | -------------------------------------------------------------- |
-| `tests/tenancy/isolation.test.ts`                     | The scoped query layer never crosses buildings                 |
-| `tests/tenancy/rls.test.ts`                           | The database refuses too, via raw SQL as the app role          |
-| `tests/tenancy/coverage.test.ts`                      | Every tenant table has a policy                                |
-| `tests/arch/*`                                        | Nothing imports Prisma directly; scaffolds admit what they are |
-| `tests/primitives/*`                                  | Recurrence, shares, ledger, approvals, prerequisites, slots    |
-| `tests/compliance`, `tests/alterations`, `tests/auth` | Module lifecycles against a real database                      |
-| `tests/meetings/lifecycle.test.ts`                    | Quorum, proxies and thresholds against the real share register |
-| `tests/tickets/lifecycle.test.ts`                     | Repair responsibility, unit scoping, and the gate on billing   |
-| `tests/sublets/lifecycle.test.ts`                     | The cap as a building-wide invariant, checked at approval      |
-| `tests/duty/lifecycle.test.ts`                        | Whose week it was, swaps included, and the fine that follows   |
-| `tests/e2e/smoke.spec.ts`                             | Invite → accept → calendar → file, in a real browser           |
-| `tests/e2e/meetings.spec.ts`                          | Roster → quorum refusal → vote → minutes, in a real browser    |
-| `tests/e2e/tickets.spec.ts`                           | Report → refusal → determination → bill, in a real browser     |
-| `tests/e2e/sublets.spec.ts`                           | Cap refusal, then approval once a slot frees, in a browser     |
-| `tests/e2e/duty.spec.ts`                              | Swap a week, log a summons, watch it name the right flat       |
+| Suite                                                 | What it proves                                                       |
+| ----------------------------------------------------- | -------------------------------------------------------------------- |
+| `tests/tenancy/isolation.test.ts`                     | The scoped query layer never crosses buildings                       |
+| `tests/tenancy/rls.test.ts`                           | The database refuses too, via raw SQL as the app role                |
+| `tests/tenancy/coverage.test.ts`                      | Every tenant table has a policy                                      |
+| `tests/arch/*`                                        | Nothing imports Prisma directly                                      |
+| `tests/primitives/*`                                  | Recurrence, shares, ledger, approvals, prerequisites, slots, notices |
+| `tests/compliance`, `tests/alterations`, `tests/auth` | Module lifecycles against a real database                            |
+| `tests/meetings/lifecycle.test.ts`                    | Quorum, proxies and thresholds against the real share register       |
+| `tests/tickets/lifecycle.test.ts`                     | Repair responsibility, unit scoping, and the gate on billing         |
+| `tests/sublets/lifecycle.test.ts`                     | The cap as a building-wide invariant, checked at approval            |
+| `tests/duty/lifecycle.test.ts`                        | Whose week it was, swaps included, and the fine that follows         |
+| `tests/e2e/smoke.spec.ts`                             | Invite → accept → calendar → file, in a real browser                 |
+| `tests/e2e/meetings.spec.ts`                          | Roster → quorum refusal → vote → minutes, in a real browser          |
+| `tests/e2e/tickets.spec.ts`                           | Report → refusal → determination → bill, in a real browser           |
+| `tests/e2e/sublets.spec.ts`                           | Cap refusal, then approval once a slot frees, in a browser           |
+| `tests/e2e/duty.spec.ts`                              | Swap a week, log a summons, watch it name the right flat             |
 
 The tenancy suite has been mutation-tested: breaking unit scoping fails eight
 tests, removing the tenant setting fails the seed and the suite, and adding a

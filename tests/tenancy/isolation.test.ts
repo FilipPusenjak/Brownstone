@@ -14,7 +14,7 @@ import * as documents from "~/lib/db/scoped/documents";
 import * as duty from "~/lib/db/scoped/duty";
 import * as ledger from "~/lib/db/scoped/ledger";
 import * as meetings from "~/lib/db/scoped/meetings";
-import * as modules from "~/lib/db/scoped/modules";
+import * as notices from "~/lib/db/scoped/notices";
 import * as sublets from "~/lib/db/scoped/sublets";
 import * as tickets from "~/lib/db/scoped/tickets";
 import * as notifications from "~/lib/db/scoped/notifications";
@@ -230,14 +230,14 @@ const READERS: Array<{ name: string; tables: string[]; read: Reader }> = [
     read: duty.listFinesForTenancyCheck,
   },
   {
-    name: "modules.listNoticeCampaigns",
+    name: "notices.listCampaignsForTenancyCheck",
     tables: ["NoticeCampaign"],
-    read: modules.listNoticeCampaigns,
+    read: notices.listCampaignsForTenancyCheck,
   },
   {
-    name: "modules.listNoticeDeliveries",
+    name: "notices.listDeliveriesForTenancyCheck",
     tables: ["NoticeDelivery"],
-    read: modules.listNoticeDeliveries,
+    read: notices.listDeliveriesForTenancyCheck,
   },
 ];
 

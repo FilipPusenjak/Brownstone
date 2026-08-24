@@ -1395,29 +1395,77 @@ async function seedBuildingExtras(
     });
   }
 
-  // --- Notices (module 2) ------------------------------------------------
-  const campaign = await tx.noticeCampaign.create({
-    data: {
-      buildingId,
-      noticeType: "WINDOW_GUARD",
-      year,
-      dueOn: toDbDate(makeDate(year, 1, 15)),
-      sentAt: new Date(Date.UTC(year, 0, 4)),
-    },
-    select: { id: true },
-  });
+  // --- Annual notices (module 2) -----------------------------------------
+  //
+  // Two campaigns, in the two states worth seeing.
+  //
+  // The window guard notice went out in January and most of the building
+  // answered. One apartment said yes, one never replied at all, and one has no
+  // address on file and had a paper copy put under its door. Nobody has closed
+  // it out — which is the state the module is about, because the apartment that
+  // never replied is not an apartment that said no, and until somebody closes
+  // the campaign the building is quietly carrying work it has not written down.
+  //
+  // The lead paint notice is opened and not yet sent, which is what January
+  // looks like before anybody presses the button.
+  const noticeSpec: Array<{
+    type: "WINDOW_GUARD" | "LEAD_PAINT";
+    sent: boolean;
+  }> = [
+    { type: "WINDOW_GUARD", sent: true },
+    { type: "LEAD_PAINT", sent: false },
+  ];
 
-  for (const [label, unitId] of units) {
-    const spec_ = spec.units.find((u) => u.label === label);
-    await tx.noticeDelivery.create({
+  for (const notice of noticeSpec) {
+    const campaign = await tx.noticeCampaign.create({
       data: {
         buildingId,
-        campaignId: campaign.id,
-        unitId,
-        recipientName: spec_?.holder ?? label,
-        respondedAt: label === "3R" ? null : new Date(Date.UTC(year, 0, 22)),
+        noticeType: notice.type,
+        year,
+        dueOn: toDbDate(makeDate(year, 1, 15)),
+        respondBy: toDbDate(makeDate(year, 2, 14)),
+        sentAt: notice.sent ? new Date(Date.UTC(year, 0, 4)) : null,
       },
+      select: { id: true },
     });
+
+    for (const [label, unitId] of units) {
+      const spec_ = spec.units.find((u) => u.label === label);
+      const person = spec.people.find((p) => p.units.includes(label));
+
+      // 4F has nobody's address on file, so its copy went under the door.
+      const byHand = label === "4F";
+      const answer = label === "2F" ? "YES" : label === "3R" ? null : ("NO" as const);
+
+      await tx.noticeDelivery.create({
+        data: {
+          buildingId,
+          campaignId: campaign.id,
+          unitId,
+          recipientName: spec_?.holder ?? label,
+          recipientEmail: byHand ? null : (person?.email ?? null),
+          ...(notice.sent
+            ? {
+                method: byHand ? ("HAND" as const) : ("EMAIL" as const),
+                sentAt: new Date(Date.UTC(year, 0, 4)),
+              }
+            : {}),
+          ...(notice.sent && answer
+            ? {
+                respondedAt: new Date(Date.UTC(year, 0, 22)),
+                response: {
+                  answer,
+                  note:
+                    answer === "YES"
+                      ? "Two children, 4 and 7. The back windows have no guards."
+                      : null,
+                },
+                recordedById: presidentMembership,
+              }
+            : {}),
+        },
+      });
+    }
   }
 
   // --- Audit trail -------------------------------------------------------
