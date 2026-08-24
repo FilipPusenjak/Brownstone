@@ -246,6 +246,8 @@ model Membership {
   chargesCreated       Charge[]
   paymentsRecorded     Payment[]
   bookingsRequested    Booking[]
+  bookingsConfirmed    Booking[]            @relation("BookingConfirmedBy")
+  bookingsCancelled    Booking[]            @relation("BookingCancelledBy")
   auditLogs            AuditLog[]
   ticketsReported      Ticket[]                 @relation("TicketReportedBy")
   ticketsAssigned      Ticket[]                 @relation("TicketAssignee")
@@ -1054,8 +1056,15 @@ model Resource {
   name        String
   kind        ResourceKind
   slotMinutes Int          @default(240)
-  active      Boolean      @default(true)
-  createdAt   DateTime     @default(now())
+
+  /// Opening hours as minutes past local midnight, so the calendar is a row
+  /// rather than a constant — the roof deck opens later than the freight
+  /// elevator and closes earlier, and neither should need code.
+  opensMinute  Int @default(480)
+  closesMinute Int @default(1200)
+
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
 
   building      Building               @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   prerequisites ResourcePrerequisite[]
@@ -1092,13 +1101,35 @@ model Booking {
   endsAt        DateTime
   status        BookingStatus @default(HELD)
   note          String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+
+  confirmedAt      DateTime?
+  confirmedById    String?   @db.Uuid
+  cancelledAt      DateTime?
+  cancelledById    String?   @db.Uuid
+  cancelledReason  String?
+
+  /// The deposit, recorded on the booking rather than posted to the ledger.
+  /// A charge means "this apartment owes us"; a deposit means "we are holding
+  /// their cheque", and putting the second in the arrears report makes the one
+  /// number a board actually acts on wrong. Damage beyond the deposit is a
+  /// repair the board determines is the shareholder's, and that is billed
+  /// through Ticket.
+  depositCents         Int?
+  depositReceivedOn    DateTime? @db.Date
+  depositReference     String?
+  depositReturnedOn    DateTime? @db.Date
+  depositWithheldCents Int?
+  depositNote          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   building    Building                   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   resource    Resource                   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
   unit        Unit                       @relation(fields: [unitId], references: [id], onDelete: Cascade)
   requestedBy Membership                 @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+  confirmedBy Membership?                @relation("BookingConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  cancelledBy Membership?                @relation("BookingCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
   checks      BookingPrerequisiteCheck[]
 
   @@index([buildingId])

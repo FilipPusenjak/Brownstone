@@ -915,3 +915,91 @@ changeover day, which is not a rare case — set-out happens the night before
 collection, and collection days are when rotations turn over. A test walks a
 year of days and asserts the periods tile the calendar exactly, which is also
 where millisecond arithmetic would slip a day across a daylight-saving change.
+
+---
+
+## Bookings, and what it takes to confirm one
+
+**A slot is held, not confirmed.** Asking for the freight elevator takes the
+time off the calendar immediately; confirming is a separate act that runs the
+resource's conditions and records what it found. Collapsing the two gives you
+one of two failures: confirmations whose conditions are not met, or a slot left
+open while a shareholder chases a certificate — and the second is how two
+families hire movers for the same Saturday.
+
+**The conditions are read against the day of the move, never against today.**
+This is the module's whole reason for existing. A booking is made three weeks
+out; the mover's certificate has to be current when the truck arrives, not when
+the form was submitted. The primitive was written that way from the start
+(`primitives/prerequisites.ts` takes a `bookingDate`), and the seed now
+demonstrates it: The Adelaide's mover is insured today and lapses in five days,
+before the move that apartment has booked.
+
+**Nothing can be double-booked, and the database is what says so.** The write
+path checks for a clash first, because that is what produces a refusal naming
+who has the slot. It cannot be the only check: two people pressing the same slot
+in the same second both read an empty calendar and both insert. So there is a
+Postgres exclusion constraint over `tstamp` ranges scoped to one resource,
+covering only bookings that still hold their slot — a cancelled booking must
+give its time back. `btree_gist` is what allows a uuid equality and a range
+overlap in one index. A test inserts an overlapping row directly, going around
+the write path, to prove the constraint is real rather than decorative.
+
+**A booking is a run of slots on a day, not a pair of timestamps.** The request
+action takes a date, a slot index and a count; the window is derived on the far
+side from the resource's own hours. A booking that starts at ten past nine, runs
+past closing, or crosses midnight is not a validation error — it is not
+expressible. Overlap is half-open, so a move running to noon does not block the
+one starting at noon, which is the normal case for a long move split across
+slots.
+
+**Opening hours are rows.** `Resource.slotMinutes`, `opensMinute` and
+`closesMinute`, so the roof deck opening at ten and closing at ten is data. That
+is the same claim the prerequisite registry makes about conditions, extended to
+the calendar: adding something bookable is a row and a few checkboxes, and
+nothing in the checking, the calendar or the confirmation path knows what a roof
+deck is.
+
+**When a slot is taken is public; what it is for is not.** Every other
+unit-scoped module hides the record itself. This one deliberately does not: a
+calendar that hides its bookings is not a calendar, and a neighbour planning
+their own move has to be able to see that Saturday morning is gone — they will
+see the truck anyway. The note, the deposit and the conditions are blanked at
+the query layer for anyone but the apartment and the board, rather than in the
+page, so a component added later cannot render a field it was never handed.
+
+**The deposit never touches the maintenance ledger.** A charge means "this
+apartment owes us"; a deposit means "we are holding their cheque". Posting the
+second as the first makes the arrears report wrong, and the arrears report is
+the one number a volunteer board actually acts on. So the deposit lives on the
+booking: received, reference, returned, and anything withheld with a reason.
+Rejected: `ChargeKind.DEPOSIT` plus a reversing charge, which reads neatly and
+inflates every affected apartment's balance for the fortnight it is outstanding.
+Damage costing more than the deposit is a different thing entirely — a repair
+the board determines is the shareholder's, billed through the repairs module
+where the determination sits next to the bill.
+
+**Returning it requires the booking to have happened.** A deposit exists to
+cover what occurs during the move; handing it back in advance is the same as not
+taking one. The exception is a cancelled booking, where there is nothing left to
+cover. Withholding any part of it requires a reason, because a deduction nobody
+explained is the one that gets disputed.
+
+**Retiring a resource does not cancel what is booked on it.** Taking the roof
+deck off the list is a decision about the list, not a decision to cancel the
+party somebody arranged three weeks ago. The audit entry records how many
+bookings were left standing.
+
+**Confirming reports every unmet condition at once**, and writes down the
+failures as well as the passes. Somebody missing a deposit and a certificate
+should be told both now rather than discovering the second after fixing the
+first, and a shareholder who was refused should be able to read which check
+failed and when it ran instead of being told "not yet" by a board member who has
+moved on. The detail page then re-evaluates live and says so when a recorded
+check no longer reads the same — a certificate that expired after confirmation
+is exactly what nobody notices until the movers are at the door.
+
+**The super can book without holding `booking.request`.** They have no apartment
+and so no shareholder capabilities, and they are precisely the person who needs
+to put a contractor's van on the calendar. Requiring the shareholder capability
+would leave the one person who runs the building unable to book anything in it.

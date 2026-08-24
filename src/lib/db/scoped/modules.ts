@@ -21,69 +21,7 @@ import { unitFilter } from "../visibility";
 
 // The sublet register was built out; its queries live in `sublets.ts`.
 
-// --- Bookings --------------------------------------------------------------
-
-export async function listResources(ctx: BuildingContext) {
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.resource.findMany({
-      where: { active: true },
-      orderBy: { name: "asc" },
-      select: {
-        id: true,
-        buildingId: true,
-        name: true,
-        kind: true,
-        slotMinutes: true,
-        prerequisites: { select: { id: true, type: true, config: true } },
-      },
-    }),
-  );
-}
-
-export async function listBookings(ctx: BuildingContext) {
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.booking.findMany({
-      orderBy: { startsAt: "desc" },
-      select: {
-        id: true,
-        buildingId: true,
-        resourceId: true,
-        unitId: true,
-        startsAt: true,
-        endsAt: true,
-        status: true,
-        note: true,
-        unit: { select: { id: true, label: true } },
-        resource: { select: { id: true, name: true, kind: true } },
-        checks: {
-          select: { id: true, prerequisiteId: true, satisfied: true, note: true },
-        },
-      },
-    }),
-  );
-}
-
-export async function listResourcePrerequisites(ctx: BuildingContext) {
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.resourcePrerequisite.findMany({
-      select: {
-        id: true,
-        buildingId: true,
-        resourceId: true,
-        type: true,
-        config: true,
-      },
-    }),
-  );
-}
-
-export async function listBookingChecks(ctx: BuildingContext) {
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.bookingPrerequisiteCheck.findMany({
-      select: { id: true, buildingId: true, bookingId: true, satisfied: true },
-    }),
-  );
-}
+// Bookings were built out; their queries live in `bookings.ts`.
 
 // Repair tickets were built out; their queries live in `tickets.ts`.
 

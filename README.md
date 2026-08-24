@@ -25,14 +25,14 @@ together and `DECISIONS.md` for what was chosen and what was rejected.
 | Meetings & Proxies  | built    |
 | Sublet Register     | built    |
 | Arrears             | built    |
-| Bookings            | scaffold |
+| Bookings            | built    |
 | Repair Tickets      | built    |
 | Duty Rotation       | built    |
 
-A scaffold has real tables, real scoped queries and a list view over real
-seeded data, and writes nothing. Each one carries a `TODO.md` saying exactly
-what is missing; `tests/arch/scaffolds.test.ts` fails if that file and the
-banner on the page ever disagree.
+One scaffold is left. A scaffold has real tables, real scoped queries and a
+list view over real seeded data, and writes nothing. It carries a `TODO.md`
+saying exactly what is missing; `tests/arch/scaffolds.test.ts` fails if that
+file and the banner on the page ever disagree.
 
 Outside the module list, the following are built: sign-in and invitation
 redemption, the members page with outstanding invitations, the share register,
@@ -47,7 +47,8 @@ and thresholds as exact fractions of the share register — and the two or three
 rules that are expensive to get wrong: no business without quorum, no vote from
 an apartment that was not represented, no repair billed to a shareholder the
 board has not held responsible, no sublet approved that would put the building
-over its cap, and no editing a record the board has adopted. What it will not
+over its cap, no booking confirmed whose conditions are not met on the day of
+the move, and no editing a record the board has adopted. What it will not
 do is guess: a sanitation summons the rota does not cover is left unattributed
 rather than pinned on somebody plausible.
 
@@ -130,7 +131,7 @@ a migration leaves a tenant table without a row-level security policy.
 
 ### The browser tests
 
-`pnpm test:e2e` runs fourteen paths end to end. A president signs in, invites a
+`pnpm test:e2e` runs nineteen paths end to end. A president signs in, invites a
 neighbour, the neighbour follows the link, signs in as the invited address,
 joins, opens the compliance calendar, puts a requirement on it and files it. A
 treasurer posts a month's maintenance, checks the share-weighted split adds up
@@ -148,7 +149,12 @@ list. And the board is refused a sublet that would put the building over its
 twenty per cent cap, records the running one ending early, and watches the same
 refusal turn into an approval. And two neighbours swap a week on the bin rota,
 a summons is logged with nothing but its date, and the building names the
-apartment that actually took the turn. Nothing is faked — they read magic links out of `./.mail` the way a person
+apartment that actually took the turn. And a move is refused because the
+deposit is missing and the mover's certificate — current today — lapses before
+the day of the move, then confirmed once both hold; a slot somebody is holding
+cannot be taken; and the roof deck is added as a row, with its own hours and
+its own conditions, and books like everything else. And a neighbour makes an
+account from an invitation link, without an email ever arriving. Nothing is faked — they read magic links out of `./.mail` the way a person
 reads them out of an inbox.
 
 It builds the app and starts it, so the first run takes a minute. If Playwright
@@ -169,7 +175,7 @@ an officer role to an invitation additionally requires `member.manage`, so
 
 ## Reading order for a new developer
 
-1. `ARCHITECTURE.md` — tenancy, capabilities, the nine primitives.
+1. `ARCHITECTURE.md` — tenancy, capabilities, the ten primitives.
 2. `prisma/schema.prisma` — the domain, in one file.
 3. `src/lib/db/scoped/` — every query in the system.
 4. `tests/tenancy/` — what the isolation guarantee actually asserts.

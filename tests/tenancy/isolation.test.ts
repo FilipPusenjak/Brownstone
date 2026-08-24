@@ -7,6 +7,7 @@ import {
 } from "~/lib/db/context";
 import * as alterations from "~/lib/db/scoped/alterations";
 import * as audit from "~/lib/db/scoped/audit";
+import * as bookings from "~/lib/db/scoped/bookings";
 import * as work from "~/lib/db/scoped/work";
 import * as compliance from "~/lib/db/scoped/compliance";
 import * as documents from "~/lib/db/scoped/documents";
@@ -188,17 +189,25 @@ const READERS: Array<{ name: string; tables: string[]; read: Reader }> = [
     tables: ["SubletRegistration"],
     read: sublets.listSubletsForTenancyCheck,
   },
-  { name: "modules.listResources", tables: ["Resource"], read: modules.listResources },
   {
-    name: "modules.listResourcePrerequisites",
-    tables: ["ResourcePrerequisite"],
-    read: modules.listResourcePrerequisites,
+    name: "bookings.listResourcesForTenancyCheck",
+    tables: ["Resource"],
+    read: bookings.listResourcesForTenancyCheck,
   },
-  { name: "modules.listBookings", tables: ["Booking"], read: modules.listBookings },
   {
-    name: "modules.listBookingChecks",
+    name: "bookings.listPrerequisitesForTenancyCheck",
+    tables: ["ResourcePrerequisite"],
+    read: bookings.listPrerequisitesForTenancyCheck,
+  },
+  {
+    name: "bookings.listBookingsForTenancyCheck",
+    tables: ["Booking"],
+    read: bookings.listBookingsForTenancyCheck,
+  },
+  {
+    name: "bookings.listBookingChecksForTenancyCheck",
     tables: ["BookingPrerequisiteCheck"],
-    read: modules.listBookingChecks,
+    read: bookings.listBookingChecksForTenancyCheck,
   },
   {
     name: "tickets.listTicketsForTenancyCheck",

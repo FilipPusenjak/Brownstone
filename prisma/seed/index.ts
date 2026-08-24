@@ -29,7 +29,15 @@ import {
   nextDueDate,
   reminderDates,
 } from "../../src/lib/primitives/obligations/recurrence";
-import { addDays, makeDate, toDbDate, today, type PlainDate } from "../../src/lib/time";
+import {
+  addDays,
+  instantAt,
+  makeDate,
+  NYC,
+  toDbDate,
+  today,
+  type PlainDate,
+} from "../../src/lib/time";
 import { RULESET } from "./rules/ruleset";
 
 const TODAY = today();
@@ -734,8 +742,17 @@ async function seedBuildingExtras(
         verifiedAt: new Date(),
       },
       {
-        // Expiring soon on purpose: the COI expiry alert is the entire value of
-        // tracking these, so the seed should demonstrate one.
+        // Two defects in one row, both deliberate.
+        //
+        // It expires in five days, which is the COI alert's entire reason for
+        // existing — and which is *before* the move this apartment has booked.
+        // A certificate that is current the day it is filed and lapsed the day
+        // the truck arrives is the failure the booking module checks against
+        // the day of the move rather than against today.
+        //
+        // And it does not name the corporation as an additional insured, the
+        // commonest defect in a co-op COI and the one that makes an otherwise
+        // valid certificate worthless to the building.
         buildingId,
         holderKind: "MOVER",
         holderName: "Vanguard Moving & Storage",
@@ -744,7 +761,7 @@ async function seedBuildingExtras(
         policyNumber: "CMP-8830145",
         coverageCents: 100_000_000,
         effectiveOn: toDbDate(makeDate(year - 1, 9, 1)),
-        expiresOn: toDbDate(makeDate(year, Number(TODAY.slice(5, 7)), 28)),
+        expiresOn: toDbDate(addDays(TODAY, 5)),
         additionalInsuredVerified: false,
       },
     ],
@@ -951,6 +968,11 @@ async function seedBuildingExtras(
       name: spec.hasElevator ? "Freight elevator" : "Stoop and hallway (moves)",
       kind: spec.hasElevator ? "FREIGHT_ELEVATOR" : "COMMON_ROOM",
       slotMinutes: 240,
+      // Three slots a day: eight to twelve, twelve to four, four to eight. A
+      // move that starts at seven in the morning is a complaint from every
+      // apartment above it.
+      opensMinute: 8 * 60,
+      closesMinute: 20 * 60,
     },
     select: { id: true },
   });
@@ -1086,16 +1108,70 @@ async function seedBuildingExtras(
   });
 
   // --- Bookings (module 7) ------------------------------------------------
+  //
+  // Three, because the module has three states worth seeing, and the middle one
+  // is the whole point.
+  //
+  // The first apartment is *blocked*: no deposit recorded, and its mover's
+  // certificate — which is on file, and current — does not name the corporation
+  // as an additional insured. That is the commonest defect in a co-op COI and
+  // the one that makes an otherwise valid certificate worthless. Trying to
+  // confirm it says both things at once.
+  //
+  // The second is *clear*: the deposit is recorded and its contractor is
+  // properly insured, so pressing confirm works and the board can see what was
+  // checked and when.
+  //
+  // The third already happened and its deposit has gone back.
+  const bookingDay = (offset: number) => addDays(TODAY, offset);
+  const slot = (date: PlainDate, index: number) => ({
+    startsAt: instantAt(date, `${String(8 + index * 4).padStart(2, "0")}:00:00`, NYC),
+    endsAt: instantAt(date, `${String(12 + index * 4).padStart(2, "0")}:00:00`, NYC),
+  });
+
+  await tx.booking.create({
+    data: {
+      buildingId,
+      resourceId: resource.id,
+      unitId: firstUnit,
+      requestedById: submitter,
+      ...slot(bookingDay(9), 0),
+      status: "HELD",
+      note: "Move-out. Vanguard are doing it.",
+    },
+  });
+
   await tx.booking.create({
     data: {
       buildingId,
       resourceId: resource.id,
       unitId: secondUnit,
       requestedById: submitter,
-      startsAt: new Date(Date.UTC(year, new Date().getUTCMonth(), 22, 13, 0)),
-      endsAt: new Date(Date.UTC(year, new Date().getUTCMonth(), 22, 17, 0)),
+      ...slot(bookingDay(12), 1),
       status: "HELD",
-      note: "Move-in. Deposit not yet recorded.",
+      note: "Kitchen delivery — Bergen Street are carrying it up.",
+      depositCents: 50_000,
+      depositReceivedOn: toDbDate(addDays(TODAY, -2)),
+      depositReference: "chq 1043",
+    },
+  });
+
+  await tx.booking.create({
+    data: {
+      buildingId,
+      resourceId: resource.id,
+      unitId: firstUnit,
+      requestedById: submitter,
+      ...slot(bookingDay(-21), 1),
+      status: "COMPLETED",
+      note: "Move-in.",
+      confirmedById: presidentMembership,
+      confirmedAt: toDbDate(addDays(TODAY, -28)),
+      depositCents: 50_000,
+      depositReceivedOn: toDbDate(addDays(TODAY, -28)),
+      depositReference: "chq 0997",
+      depositReturnedOn: toDbDate(addDays(TODAY, -18)),
+      depositWithheldCents: 0,
     },
   });
 

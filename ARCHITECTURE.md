@@ -28,10 +28,11 @@ src/
     auth/                   sessions, passwords, capabilities, invitations
     db/
       context.ts            slug + user → BuildingContext
-      tx.ts                 the four transaction scopes
+      tx.ts                 the five transaction scopes
       visibility.ts         building-wide vs unit-scoped, as where-fragments
       scoped/               every query in the system
-    primitives/             obligations, shares, ledger, approvals, prerequisites
+    primitives/             obligations, shares, ledger, approvals, prerequisites,
+                            sublets, duty, bookings
     compliance/             the applicability DSL and the generator
     email/                  mailer drivers, and send.ts which logs before sending
     storage/                presigned PUT/GET behind an interface
@@ -81,7 +82,7 @@ tables — `AuditLog`, `Charge`, `Payment` — are enforced by withholding UPDAT
 and DELETE from that role, so "append-only" survives a developer reaching for
 `prisma.auditLog.update` at 11pm.
 
-### The four transaction scopes
+### The five transaction scopes
 
 All of them live in `src/lib/db/tx.ts`, and they are the only code that sets a
 Postgres GUC. Everything uses `SET LOCAL`, so a setting dies with its
@@ -137,10 +138,11 @@ is the most socially explosive fact the system holds.
 
 ## The primitives
 
-Nine, each with tests that found real bugs. Seven were built before any module;
-`sublets.ts` and `duty.ts` were extracted when their modules turned out to rest
-on arithmetic with a boundary — the cap that must never produce 1.2 apartments,
-and the period rollover that decides which neighbour a fine belongs to.
+Ten, each with tests that found real bugs. Seven were built before any module;
+`sublets.ts`, `duty.ts` and `bookings.ts` were extracted when their modules
+turned out to rest on arithmetic with a boundary — the cap that must never
+produce 1.2 apartments, the period rollover that decides which neighbour a fine
+belongs to, and the slot boundary that decides whether two moves collide.
 
 1. **Obligations** (`primitives/obligations/recurrence.ts`) — four explicit
    recurrence types (`NONE`, `FIXED_INTERVAL`, `CYCLICAL_BY_YEAR`,
@@ -183,6 +185,12 @@ and the period rollover that decides which neighbour a fine belongs to.
    rollover is the whole point: a seven-day turn starting Monday puts the
    following Monday in the _next_ period, and getting that off by one blames the
    wrong neighbour every time a summons lands on a changeover day.
+10. **Slots** (`primitives/bookings.ts`) — a resource's day, built from the
+    wall clock rather than from elapsed milliseconds, so the freight elevator
+    still opens at eight on the two Sundays a year the clocks move. Overlap is
+    half-open, so a move running to noon does not block the one starting at
+    noon, and no slot run can straddle midnight — "which day was it booked?"
+    has to have one answer.
 
 Plus an **audit log**: every state change writes an entry naming the actor, the
 action (the same dotted string as the capability that authorised it), and a
@@ -241,7 +249,7 @@ The persistent disclaimer is on every page and is not dismissible.
 | `tests/tenancy/rls.test.ts`                           | The database refuses too, via raw SQL as the app role          |
 | `tests/tenancy/coverage.test.ts`                      | Every tenant table has a policy                                |
 | `tests/arch/*`                                        | Nothing imports Prisma directly; scaffolds admit what they are |
-| `tests/primitives/*`                                  | Recurrence, shares, ledger, approvals, prerequisites           |
+| `tests/primitives/*`                                  | Recurrence, shares, ledger, approvals, prerequisites, slots    |
 | `tests/compliance`, `tests/alterations`, `tests/auth` | Module lifecycles against a real database                      |
 | `tests/meetings/lifecycle.test.ts`                    | Quorum, proxies and thresholds against the real share register |
 | `tests/tickets/lifecycle.test.ts`                     | Repair responsibility, unit scoping, and the gate on billing   |
