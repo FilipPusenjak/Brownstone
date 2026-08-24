@@ -19,27 +19,7 @@ import { unitFilter } from "../visibility";
 
 // Meetings & proxies were built out; their queries live in `meetings.ts`.
 
-// --- Sublet register -------------------------------------------------------
-
-export async function listSublets(ctx: BuildingContext) {
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.subletRegistration.findMany({
-      where: unitFilter(ctx, "sublet"),
-      orderBy: { termEnd: "asc" },
-      select: {
-        id: true,
-        buildingId: true,
-        unitId: true,
-        subtenantName: true,
-        termStart: true,
-        termEnd: true,
-        feeCents: true,
-        unit: { select: { id: true, label: true } },
-        approval: { select: { id: true, status: true, decidedAt: true } },
-      },
-    }),
-  );
-}
+// The sublet register was built out; its queries live in `sublets.ts`.
 
 // --- Bookings --------------------------------------------------------------
 

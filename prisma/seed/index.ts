@@ -964,7 +964,13 @@ async function seedBuildingExtras(
     ],
   });
 
-  // --- Sublets (module 5) ------------------------------------------------
+  // --- Sublet register (module 5) ----------------------------------------
+  //
+  // One approved sublet running now, and one application the board has not
+  // decided. In The Adelaide that pairing is the whole module: six apartments
+  // at a twenty per cent cap means exactly one may be sublet at a time, so the
+  // pending application is one the board will have to refuse until the running
+  // term ends. That is the state the register exists to make visible.
   const subletApproval = await tx.approvalRequest.create({
     data: {
       buildingId,
@@ -979,15 +985,95 @@ async function seedBuildingExtras(
     select: { id: true },
   });
 
-  await tx.subletRegistration.create({
+  const subletUnitLabel = units[units.length - 1]?.[0] ?? "The apartment";
+  const subletUnitId = units[units.length - 1]?.[1] ?? firstUnit;
+  const subtenant = spec.slug === "adelaide" ? "Delphine Okaro" : "Tomas Reyes";
+
+  const runningSublet = await tx.subletRegistration.create({
     data: {
       buildingId,
-      unitId: units[units.length - 1]?.[1] ?? firstUnit,
+      unitId: subletUnitId,
       approvalRequestId: subletApproval.id,
-      subtenantName: spec.slug === "adelaide" ? "Delphine Okaro" : "Tomas Reyes",
+      subtenantName: subtenant,
+      subtenantContact: `${subtenant.split(" ")[0]?.toLowerCase()}@example.com`,
       termStart: toDbDate(makeDate(year, 4, 1)),
       termEnd: toDbDate(makeDate(year + 1, 3, 31)),
       feeCents: 120_000,
+      createdById: submitter,
+    },
+    select: { id: true },
+  });
+
+  // The term's end goes on the compliance calendar, the same way a certificate
+  // of insurance does. An expiry nobody is reminded of is worth nothing, and a
+  // sublet quietly running past its term is the corporation's problem.
+  const subletExpiry = await tx.obligation.create({
+    data: {
+      buildingId,
+      kind: "SUBLET_EXPIRY",
+      title: `${subletUnitLabel} sublet ends`,
+      detail: `${subtenant} is in occupation until this date. Renew it or take the apartment back.`,
+      dueOn: toDbDate(makeDate(year + 1, 3, 31)),
+      recurrenceType: "NONE",
+      reminderOffsets: [60, 30, 7],
+      subjectType: "SUBLET_REGISTRATION",
+      subjectId: runningSublet.id,
+      state: "OPEN",
+    },
+    select: { id: true },
+  });
+
+  await tx.subletRegistration.update({
+    where: { id: runningSublet.id },
+    data: { obligationId: subletExpiry.id },
+  });
+
+  await tx.charge.create({
+    data: {
+      buildingId,
+      unitId: subletUnitId,
+      kind: "SUBLET_FEE",
+      amountCents: 120_000,
+      dueOn: toDbDate(makeDate(year, 4, 1)),
+      postedOn: toDbDate(makeDate(year, 4, 1)),
+      memo: `Sublet fee — ${subtenant}`,
+      subletId: runningSublet.id,
+      createdById: ctx.treasurerMembership,
+    },
+  });
+
+  // The one waiting on the board, for a term overlapping the running one.
+  const pendingSublet = await tx.approvalRequest.create({
+    data: {
+      buildingId,
+      kind: "SUBLET",
+      status: "SUBMITTED",
+      submittedById: submitter,
+      submittedAt: new Date(Date.UTC(year, 8, 14)),
+    },
+    select: { id: true },
+  });
+
+  await tx.subletRegistration.create({
+    data: {
+      buildingId,
+      unitId: secondUnit,
+      approvalRequestId: pendingSublet.id,
+      subtenantName: spec.slug === "adelaide" ? "Priyanka Shah" : "Noor Haddad",
+      termStart: toDbDate(makeDate(year, 11, 1)),
+      termEnd: toDbDate(makeDate(year + 1, 10, 31)),
+      feeCents: 120_000,
+      createdById: submitter,
+    },
+  });
+
+  await tx.approvalComment.create({
+    data: {
+      buildingId,
+      requestId: pendingSublet.id,
+      authorId: submitter,
+      body: "Posted abroad for a year from November. Intending to come back to the apartment afterwards.",
+      visibility: "SHARED",
     },
   });
 

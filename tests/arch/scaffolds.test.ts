@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = join(import.meta.dirname, "..", "..", "src", "app", "b", "[buildingSlug]");
 
-const SCAFFOLDS = ["notices", "sublets", "bookings", "duty"] as const;
+const SCAFFOLDS = ["notices", "bookings", "duty"] as const;
 
 async function missingFromPage(name: string): Promise<string[]> {
   const source = await readFile(join(ROOT, name, "page.tsx"), "utf8");

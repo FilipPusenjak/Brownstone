@@ -711,3 +711,81 @@ hint is attached with `aria-describedby`, which is announced after the name and
 can be skipped — which is what a hint is. Found by a browser test that could not
 locate a field by its own label, which is the same problem a screen reader user
 would have had.
+
+## The sublet register, and the cap
+
+The third module through the shared approval workflow, after alterations and
+repair responsibility determinations. Three callers is what makes that a
+primitive rather than a coincidence, and nothing about it had to change to take
+the third — which was the point of extracting it before there was a second.
+
+**The cap is a different kind of rule from the other two gates.** An assessment
+needs a vote behind it and a repair bill needs a determination: both are
+_authorisations_, questions about who decided. The sublet cap is a
+**building-wide invariant** — not more than twenty per cent of the apartments
+may be sublet at once — and the question it answers is not "who said so" but
+"would this put the corporation over its own lease".
+
+The stakes are not only the house rules. A co-op over its cap can lose lending
+eligibility for every shareholder trying to sell, because secondary lenders
+limit how much of a building may be non-owner-occupied. It is the number a
+volunteer board most reliably loses across a turnover.
+
+**Checked at approval, not at application.** The count moves underneath a
+pending application: two shareholders apply in March, the board approves the
+first in April, and by the time it reaches the second the building is full.
+Checking on the way in would have let both through. Being at the cap today is
+also not a reason to refuse to _look_ at an application for a term starting in
+six months, by which time somebody's term will have run out.
+
+**Counted as of the term's start date, not today.** The question is whether the
+building will be over its limit when this subtenant actually moves in. The page
+shows the same reading, computed from the same function against the same date,
+so the warning a board reads and the refusal they get are the same arithmetic.
+
+**Exact fractions again.** Twenty per cent of six apartments is 1.2, and "may a
+second apartment be sublet" has to be answered without ever producing 1.2 —
+cross-multiplied, `count * 100 <= totalUnits * capPercent`. "Not more than" is
+inclusive, so twenty per cent of ten apartments is exactly two and two is
+allowed. There is a test that walks every cap from 1% to 100% across building
+sizes 1–40 and asserts the largest allowed count is exactly the count that
+passes the comparison; if the two ever disagree, one of them has started doing
+float arithmetic.
+
+**Whether a sublet is running is derived, never stored.** No status column: the
+decision lives on the approval, and the dates plus an optional early end answer
+"is this apartment sublet on the 3rd of June". A status column would be a second
+source of truth for a fact the dates already carry, and the day the two disagree
+is the day somebody is refused a sublet the register says there is room for.
+
+**Ending early is a first-class act, because it frees a slot.** A subtenant who
+leaves in September makes the neighbour whose application was refused in June
+approvable — and nobody will think to look unless the register says the
+apartment is free. It also closes the expiry reminder, since that date is no
+longer coming.
+
+**A renewal is a new registration, not an extended term.** Most proprietary
+leases make a renewal a fresh application, and they are right to: the cap has to
+be re-checked and the board has to be able to say no the second time. Rewriting
+the end date in place would lose the fact that they said yes twice, and would
+slip an extra year past the cap check. `renewedFromId` links them, and the
+renewal picks up the day after the previous term ends — starting it the same day
+would overlap, and the application would refuse itself.
+
+**Approval puts the term's end on the compliance calendar.** The same machinery
+a certificate of insurance uses, for the same reason: a date filed and forgotten
+is worth nothing, and being told sixty days out is the product. A sublet running
+past its term is a subtenant in occupation without permission, which is the
+corporation's problem rather than the shareholder's.
+
+**The fee is a separate, deliberate act by the treasurer.** Like every other way
+money reaches a ledger here. Refused before approval — billing a shareholder for
+permission they have not been given is the wrong order — and refused twice,
+because a correction is a reversing entry.
+
+**The count is public; the names are not.** The register is unit-scoped like
+arrears, so a shareholder sees their own applications and an officer sees the
+building's. The cap reading at the top of the page is building-wide and shown to
+everybody, because how much of the corporation is sublet governs whether they
+may apply and is the first thing a buyer's lender asks. That asymmetry is
+deliberate rather than an oversight.

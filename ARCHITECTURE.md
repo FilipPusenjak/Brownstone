@@ -136,7 +136,9 @@ is the most socially explosive fact the system holds.
 
 ## The primitives
 
-Seven, built before any module, each with tests that found real bugs.
+Eight, each with tests that found real bugs. Seven were built before any module;
+`sublets.ts` was extracted when the register needed the cap arithmetic and the
+boundary turned out to have the same exact-fraction trap as quorum.
 
 1. **Obligations** (`primitives/obligations/recurrence.ts`) — four explicit
    recurrence types (`NONE`, `FIXED_INTERVAL`, `CYCLICAL_BY_YEAR`,
@@ -166,8 +168,14 @@ Seven, built before any module, each with tests that found real bugs.
    legally required notice was sent, so it must survive the provider being down.
    `dedupeKey` carries idempotency.
 7. **Approvals** (`primitives/approvals.ts`) — one state machine with an
-   explicit transition table, shared by alterations, sublets and anything else
-   that needs a decision with a reason attached.
+   explicit transition table, now shared by three modules: alterations, repair
+   responsibility determinations and sublet applications. Three callers is what
+   makes it a primitive rather than a coincidence.
+8. **Sublet cap** (`primitives/sublets.ts`) — how many apartments the lease
+   allows to be sublet at once, compared by cross-multiplication so twenty per
+   cent of six apartments never produces 1.2 on the way to an answer. Plus term
+   overlap, which decides whether an apartment already has a subtenant on a
+   given day.
 
 Plus an **audit log**: every state change writes an entry naming the actor, the
 action (the same dotted string as the capability that authorised it), and a
@@ -230,9 +238,11 @@ The persistent disclaimer is on every page and is not dismissible.
 | `tests/compliance`, `tests/alterations`, `tests/auth` | Module lifecycles against a real database                      |
 | `tests/meetings/lifecycle.test.ts`                    | Quorum, proxies and thresholds against the real share register |
 | `tests/tickets/lifecycle.test.ts`                     | Repair responsibility, unit scoping, and the gate on billing   |
+| `tests/sublets/lifecycle.test.ts`                     | The cap as a building-wide invariant, checked at approval      |
 | `tests/e2e/smoke.spec.ts`                             | Invite → accept → calendar → file, in a real browser           |
 | `tests/e2e/meetings.spec.ts`                          | Roster → quorum refusal → vote → minutes, in a real browser    |
 | `tests/e2e/tickets.spec.ts`                           | Report → refusal → determination → bill, in a real browser     |
+| `tests/e2e/sublets.spec.ts`                           | Cap refusal, then approval once a slot frees, in a browser     |
 
 The tenancy suite has been mutation-tested: breaking unit scoping fails eight
 tests, removing the tenant setting fails the seed and the suite, and adding a

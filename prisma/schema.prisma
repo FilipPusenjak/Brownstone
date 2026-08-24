@@ -239,6 +239,8 @@ model Membership {
   ticketsAssigned      Ticket[]                 @relation("TicketAssignee")
   ticketsTriaged       Ticket[]                 @relation("TicketTriagedBy")
   ticketsResolved      Ticket[]                 @relation("TicketResolvedBy")
+  subletsCreated       SubletRegistration[]     @relation("SubletCreatedBy")
+  subletsEnded         SubletRegistration[]     @relation("SubletEndedBy")
   proxiesHeld          Proxy[]                  @relation("ProxyHolder")
   proxiesGranted       Proxy[]                  @relation("ProxyGrantedBy")
   proxiesRevoked       Proxy[]                  @relation("ProxyRevokedBy")
@@ -887,16 +889,19 @@ model Charge {
   /// shareholder's to pay for. The determination is the charge's justification,
   /// and a bill nobody can trace back to one is a bill that gets disputed.
   ticketId         String?  @db.Uuid
+  /// Set when this charge is the fee for an approved sublet.
+  subletId         String?  @db.Uuid
   createdById      String?  @db.Uuid
   createdAt        DateTime @default(now())
 
-  building     Building      @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  unit         Unit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  createdBy    Membership?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  reverses     Charge?       @relation("ChargeReversal", fields: [reversesChargeId], references: [id], onDelete: SetNull)
-  reversedBy   Charge[]      @relation("ChargeReversal")
-  buildingWork BuildingWork? @relation(fields: [buildingWorkId], references: [id], onDelete: SetNull)
-  ticket       Ticket?       @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+  building     Building            @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit         Unit                @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  createdBy    Membership?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  reverses     Charge?             @relation("ChargeReversal", fields: [reversesChargeId], references: [id], onDelete: SetNull)
+  reversedBy   Charge[]            @relation("ChargeReversal")
+  buildingWork BuildingWork?       @relation(fields: [buildingWorkId], references: [id], onDelete: SetNull)
+  ticket       Ticket?             @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+  sublet       SubletRegistration? @relation(fields: [subletId], references: [id], onDelete: SetNull)
 
   @@index([buildingId])
   @@index([buildingId, unitId, dueOn])
@@ -1287,12 +1292,39 @@ model SubletRegistration {
   obligationId      String?  @db.Uuid
   createdAt         DateTime @default(now())
 
-  building Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  unit     Unit             @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  approval ApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: SetNull)
+  /// How the building reaches the subtenant. They are not a member and never
+  /// will be — they have no login, no vote and no ledger — so this is plain
+  /// text rather than a shadow account.
+  subtenantContact String?
+
+  /// Set when a sublet ended before its term ran out. Not a status column: the
+  /// decision lives on the approval and whether a sublet is running today is
+  /// derived from the dates, so there is nothing here that can drift out of
+  /// agreement with the record. An early end frees a slot under the cap, which
+  /// is the whole reason it has to be recordable.
+  endedOn     DateTime? @db.Date
+  endedReason String?
+  endedById   String?   @db.Uuid
+
+  /// A renewal is a new registration pointing back at the one it follows, not
+  /// an edited term. Most proprietary leases make a renewal a fresh
+  /// application, and rewriting the dates in place would lose the fact that the
+  /// board approved it twice.
+  renewedFromId String? @db.Uuid
+  createdById   String? @db.Uuid
+
+  building    Building             @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit        Unit                 @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  approval    ApprovalRequest?     @relation(fields: [approvalRequestId], references: [id], onDelete: SetNull)
+  endedBy     Membership?          @relation("SubletEndedBy", fields: [endedById], references: [id], onDelete: SetNull)
+  createdBy   Membership?          @relation("SubletCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  renewedFrom SubletRegistration?  @relation("SubletRenewal", fields: [renewedFromId], references: [id], onDelete: SetNull)
+  renewals    SubletRegistration[] @relation("SubletRenewal")
+  charges     Charge[]
 
   @@index([buildingId])
   @@index([buildingId, termEnd])
+  @@index([buildingId, unitId])
 }
 
 model Ticket {

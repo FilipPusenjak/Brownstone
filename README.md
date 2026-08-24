@@ -23,7 +23,7 @@ together and `DECISIONS.md` for what was chosen and what was rejected.
 | Alterations & COIs  | built    |
 | Annual Notices      | scaffold |
 | Meetings & Proxies  | built    |
-| Sublet Register     | scaffold |
+| Sublet Register     | built    |
 | Arrears             | built    |
 | Bookings            | scaffold |
 | Repair Tickets      | built    |
@@ -45,8 +45,9 @@ board resolved in a room; building work records what it authorised. The
 software's contribution is the arithmetic nobody can do in their head — quorum
 and thresholds as exact fractions of the share register — and the two or three
 rules that are expensive to get wrong: no business without quorum, no vote from
-an apartment that was not represented, and no editing a record the board has
-adopted.
+an apartment that was not represented, no repair billed to a shareholder the
+board has not held responsible, no sublet approved that would put the building
+over its cap, and no editing a record the board has adopted.
 
 ## Getting started
 
@@ -107,7 +108,7 @@ a migration leaves a tenant table without a row-level security policy.
 
 ### The browser tests
 
-`pnpm test:e2e` runs eight paths end to end. A president signs in, invites a
+`pnpm test:e2e` runs eleven paths end to end. A president signs in, invites a
 neighbour, the neighbour follows the link, signs in as the invited address,
 joins, opens the compliance calendar, puts a requirement on it and files it. A
 treasurer posts a month's maintenance, checks the share-weighted split adds up
@@ -121,7 +122,9 @@ watches every control disappear. A shareholder reports a repair and the
 treasurer is refused a bill for it until the board records who pays — then, once
 they have, bills it and finds the charge on the ledger. And a neighbour is
 turned away from a repair inside somebody else's apartment, by URL as well as by
-list. Nothing is faked — they read magic links out of `./.mail` the way a person
+list. And the board is refused a sublet that would put the building over its
+twenty per cent cap, records the running one ending early, and watches the same
+refusal turn into an approval. Nothing is faked — they read magic links out of `./.mail` the way a person
 reads them out of an inbox.
 
 It builds the app and starts it, so the first run takes a minute. If Playwright
@@ -142,7 +145,7 @@ an officer role to an invitation additionally requires `member.manage`, so
 
 ## Reading order for a new developer
 
-1. `ARCHITECTURE.md` — tenancy, capabilities, the seven primitives.
+1. `ARCHITECTURE.md` — tenancy, capabilities, the eight primitives.
 2. `prisma/schema.prisma` — the domain, in one file.
 3. `src/lib/db/scoped/` — every query in the system.
 4. `tests/tenancy/` — what the isolation guarantee actually asserts.
