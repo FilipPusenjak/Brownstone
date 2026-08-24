@@ -28,10 +28,15 @@ import {
   nextDueDate,
   reminderDates,
 } from "../../src/lib/primitives/obligations/recurrence";
-import { makeDate, toDbDate, today } from "../../src/lib/time";
+import { addDays, makeDate, toDbDate, today, type PlainDate } from "../../src/lib/time";
 import { RULESET } from "./rules/ruleset";
 
 const TODAY = today();
+
+/** Days since the most recent Monday, so a weekly rota starts on one. */
+function dayOfWeekOffset(date: PlainDate): number {
+  return (toDbDate(date).getUTCDay() + 6) % 7;
+}
 
 // ---------------------------------------------------------------------------
 // Building specifications
@@ -1209,6 +1214,11 @@ async function seedBuildingExtras(
   });
 
   // --- Duty rotation (module 9) -----------------------------------------
+  //
+  // A rota that started this year and runs a few weeks either side of today,
+  // one swapped week, and a summons dated inside that swapped week. The last
+  // of those is the module in one row: the rotation says one apartment, the
+  // record says the neighbour who covered, and the fine follows the record.
   const rotation = await tx.dutyRotation.create({
     data: {
       buildingId,
@@ -1221,28 +1231,90 @@ async function seedBuildingExtras(
     select: { id: true },
   });
 
-  await tx.dutyAssignment.create({
-    data: {
-      buildingId,
-      rotationId: rotation.id,
-      unitId: firstUnit,
-      periodStart: toDbDate(TODAY),
-      periodEnd: toDbDate(
-        makeDate(Number(TODAY.slice(0, 4)), Number(TODAY.slice(5, 7)), 28),
-      ),
-    },
-  });
+  // Turns from four weeks back to four ahead, so the page has a past to
+  // attribute a fine into and a future to swap in.
+  const rotaStart = addDays(TODAY, -28 - dayOfWeekOffset(TODAY));
+  const dutyTurns: Array<{ id: string; unitId: string; start: PlainDate }> = [];
 
-  await tx.dsnyFine.create({
-    data: {
-      buildingId,
-      unitId: secondUnit,
-      ticketNumber: spec.slug === "adelaide" ? "0093441882" : "0093441883",
-      issuedOn: toDbDate(makeDate(year, Math.max(1, new Date().getUTCMonth()), 14)),
-      violation: "Receptacle set out before 6pm",
-      amountCents: 5_000,
-    },
-  });
+  for (let week = 0; week < 9; week += 1) {
+    const periodStart = addDays(rotaStart, week * 7);
+    const periodEnd = addDays(periodStart, 6);
+    const unitId = units[week % units.length]?.[1] ?? firstUnit;
+    const label = units[week % units.length]?.[0] ?? "";
+
+    const obligation = await tx.obligation.create({
+      data: {
+        buildingId,
+        kind: "DUTY",
+        title: `${label} — trash and recycling set-out`,
+        detail: `Bins out for the week of ${periodStart}.`,
+        dueOn: toDbDate(periodStart),
+        recurrenceType: "NONE",
+        reminderOffsets: [2, 0],
+        subjectType: "DUTY_ASSIGNMENT",
+        state: "OPEN",
+      },
+      select: { id: true },
+    });
+
+    const assignment = await tx.dutyAssignment.create({
+      data: {
+        buildingId,
+        rotationId: rotation.id,
+        unitId,
+        originalUnitId: unitId,
+        periodStart: toDbDate(periodStart),
+        periodEnd: toDbDate(periodEnd),
+        obligationId: obligation.id,
+      },
+      select: { id: true },
+    });
+
+    await tx.obligation.update({
+      where: { id: obligation.id },
+      data: { subjectId: assignment.id },
+    });
+
+    dutyTurns.push({ id: assignment.id, unitId, start: periodStart });
+  }
+
+  // Two neighbours traded the weeks three and two back. The summons below is
+  // dated inside the first of them.
+  const swapA = dutyTurns[1];
+  const swapB = dutyTurns[2];
+  if (swapA && swapB && swapA.unitId !== swapB.unitId) {
+    const swappedAt = new Date(Date.UTC(year, new Date().getUTCMonth(), 1));
+
+    await tx.dutyAssignment.update({
+      where: { id: swapA.id },
+      data: {
+        unitId: swapB.unitId,
+        swappedWithId: swapB.id,
+        swappedAt,
+        swappedById: presidentMembership,
+      },
+    });
+    await tx.dutyAssignment.update({
+      where: { id: swapB.id },
+      data: { unitId: swapA.unitId, swappedAt, swappedById: presidentMembership },
+    });
+
+    await tx.dsnyFine.create({
+      data: {
+        buildingId,
+        // Whoever took the week, not whoever the rotation named.
+        unitId: swapB.unitId,
+        dutyAssignmentId: swapA.id,
+        ticketNumber: spec.slug === "adelaide" ? "0093441882" : "0093441883",
+        issuedOn: toDbDate(addDays(swapA.start, 2)),
+        violation: "Receptacle set out before 6pm",
+        amountCents: 5_000,
+        hearingOn: toDbDate(addDays(swapA.start, 32)),
+        note: "Inspector photographed the bins at 5.40pm. That week had been swapped.",
+        recordedById: presidentMembership,
+      },
+    });
+  }
 
   // --- Notices (module 2) ------------------------------------------------
   const campaign = await tx.noticeCampaign.create({

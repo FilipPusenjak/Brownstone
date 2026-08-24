@@ -87,65 +87,7 @@ export async function listBookingChecks(ctx: BuildingContext) {
 
 // Repair tickets were built out; their queries live in `tickets.ts`.
 
-// --- Duty rotation ---------------------------------------------------------
-
-export async function listDutyRotations(ctx: BuildingContext) {
-  assertCan(ctx, "duty.view");
-
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.dutyRotation.findMany({
-      where: { active: true },
-      select: {
-        id: true,
-        buildingId: true,
-        name: true,
-        kind: true,
-        unitOrder: true,
-        startsOn: true,
-        periodDays: true,
-      },
-    }),
-  );
-}
-
-export async function listDutyAssignments(ctx: BuildingContext) {
-  assertCan(ctx, "duty.view");
-
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.dutyAssignment.findMany({
-      orderBy: { periodStart: "desc" },
-      select: {
-        id: true,
-        buildingId: true,
-        rotationId: true,
-        unitId: true,
-        periodStart: true,
-        periodEnd: true,
-        unit: { select: { id: true, label: true } },
-      },
-    }),
-  );
-}
-
-export async function listDsnyFines(ctx: BuildingContext) {
-  assertCan(ctx, "duty.view");
-
-  return withBuildingTx(ctx.building.id, (tx) =>
-    tx.dsnyFine.findMany({
-      orderBy: { issuedOn: "desc" },
-      select: {
-        id: true,
-        buildingId: true,
-        unitId: true,
-        ticketNumber: true,
-        issuedOn: true,
-        violation: true,
-        amountCents: true,
-        paidOn: true,
-      },
-    }),
-  );
-}
+// The duty rotation was built out; its queries live in `duty.ts`.
 
 // --- Annual notices --------------------------------------------------------
 

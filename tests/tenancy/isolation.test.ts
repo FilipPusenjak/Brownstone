@@ -10,6 +10,7 @@ import * as audit from "~/lib/db/scoped/audit";
 import * as work from "~/lib/db/scoped/work";
 import * as compliance from "~/lib/db/scoped/compliance";
 import * as documents from "~/lib/db/scoped/documents";
+import * as duty from "~/lib/db/scoped/duty";
 import * as ledger from "~/lib/db/scoped/ledger";
 import * as meetings from "~/lib/db/scoped/meetings";
 import * as modules from "~/lib/db/scoped/modules";
@@ -205,16 +206,20 @@ const READERS: Array<{ name: string; tables: string[]; read: Reader }> = [
     read: tickets.listTicketsForTenancyCheck,
   },
   {
-    name: "modules.listDutyRotations",
+    name: "duty.listRotationsForTenancyCheck",
     tables: ["DutyRotation"],
-    read: modules.listDutyRotations,
+    read: duty.listRotationsForTenancyCheck,
   },
   {
-    name: "modules.listDutyAssignments",
+    name: "duty.listAssignmentsForTenancyCheck",
     tables: ["DutyAssignment"],
-    read: modules.listDutyAssignments,
+    read: duty.listAssignmentsForTenancyCheck,
   },
-  { name: "modules.listDsnyFines", tables: ["DsnyFine"], read: modules.listDsnyFines },
+  {
+    name: "duty.listFinesForTenancyCheck",
+    tables: ["DsnyFine"],
+    read: duty.listFinesForTenancyCheck,
+  },
   {
     name: "modules.listNoticeCampaigns",
     tables: ["NoticeCampaign"],

@@ -136,9 +136,10 @@ is the most socially explosive fact the system holds.
 
 ## The primitives
 
-Eight, each with tests that found real bugs. Seven were built before any module;
-`sublets.ts` was extracted when the register needed the cap arithmetic and the
-boundary turned out to have the same exact-fraction trap as quorum.
+Nine, each with tests that found real bugs. Seven were built before any module;
+`sublets.ts` and `duty.ts` were extracted when their modules turned out to rest
+on arithmetic with a boundary — the cap that must never produce 1.2 apartments,
+and the period rollover that decides which neighbour a fine belongs to.
 
 1. **Obligations** (`primitives/obligations/recurrence.ts`) — four explicit
    recurrence types (`NONE`, `FIXED_INTERVAL`, `CYCLICAL_BY_YEAR`,
@@ -176,6 +177,11 @@ boundary turned out to have the same exact-fraction trap as quorum.
    cent of six apartments never produces 1.2 on the way to an answer. Plus term
    overlap, which decides whether an apartment already has a subtenant on a
    given day.
+9. **Duty periods** (`primitives/duty.ts`) — which turn a date falls in, on
+   whole-day arithmetic so a year of periods tiles the calendar exactly. The
+   rollover is the whole point: a seven-day turn starting Monday puts the
+   following Monday in the _next_ period, and getting that off by one blames the
+   wrong neighbour every time a summons lands on a changeover day.
 
 Plus an **audit log**: every state change writes an entry naming the actor, the
 action (the same dotted string as the capability that authorised it), and a
@@ -239,10 +245,12 @@ The persistent disclaimer is on every page and is not dismissible.
 | `tests/meetings/lifecycle.test.ts`                    | Quorum, proxies and thresholds against the real share register |
 | `tests/tickets/lifecycle.test.ts`                     | Repair responsibility, unit scoping, and the gate on billing   |
 | `tests/sublets/lifecycle.test.ts`                     | The cap as a building-wide invariant, checked at approval      |
+| `tests/duty/lifecycle.test.ts`                        | Whose week it was, swaps included, and the fine that follows   |
 | `tests/e2e/smoke.spec.ts`                             | Invite → accept → calendar → file, in a real browser           |
 | `tests/e2e/meetings.spec.ts`                          | Roster → quorum refusal → vote → minutes, in a real browser    |
 | `tests/e2e/tickets.spec.ts`                           | Report → refusal → determination → bill, in a real browser     |
 | `tests/e2e/sublets.spec.ts`                           | Cap refusal, then approval once a slot frees, in a browser     |
+| `tests/e2e/duty.spec.ts`                              | Swap a week, log a summons, watch it name the right flat       |
 
 The tenancy suite has been mutation-tested: breaking unit scoping fails eight
 tests, removing the tenant setting fails the seed and the suite, and adding a

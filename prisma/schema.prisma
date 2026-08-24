@@ -241,6 +241,8 @@ model Membership {
   ticketsResolved      Ticket[]                 @relation("TicketResolvedBy")
   subletsCreated       SubletRegistration[]     @relation("SubletCreatedBy")
   subletsEnded         SubletRegistration[]     @relation("SubletEndedBy")
+  dutySwaps            DutyAssignment[]         @relation("DutySwapArrangedBy")
+  dsnyFinesRecorded    DsnyFine[]               @relation("DsnyFineRecordedBy")
   proxiesHeld          Proxy[]                  @relation("ProxyHolder")
   proxiesGranted       Proxy[]                  @relation("ProxyGrantedBy")
   proxiesRevoked       Proxy[]                  @relation("ProxyRevokedBy")
@@ -891,6 +893,9 @@ model Charge {
   ticketId         String?  @db.Uuid
   /// Set when this charge is the fee for an approved sublet.
   subletId         String?  @db.Uuid
+  /// Set when a sanitation fine was recharged to the apartment whose turn it
+  /// was. Only ever with a duty assignment behind it.
+  dsnyFineId       String?  @db.Uuid
   createdById      String?  @db.Uuid
   createdAt        DateTime @default(now())
 
@@ -902,6 +907,7 @@ model Charge {
   buildingWork BuildingWork?       @relation(fields: [buildingWorkId], references: [id], onDelete: SetNull)
   ticket       Ticket?             @relation(fields: [ticketId], references: [id], onDelete: SetNull)
   sublet       SubletRegistration? @relation(fields: [subletId], references: [id], onDelete: SetNull)
+  dsnyFine     DsnyFine?           @relation(fields: [dsnyFineId], references: [id], onDelete: SetNull)
 
   @@index([buildingId])
   @@index([buildingId, unitId, dueOn])
@@ -1406,10 +1412,23 @@ model DutyAssignment {
   obligationId String?  @db.Uuid
   createdAt    DateTime @default(now())
 
-  building   Building     @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  rotation   DutyRotation @relation(fields: [rotationId], references: [id], onDelete: Cascade)
-  unit       Unit         @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  obligation Obligation?  @relation(fields: [obligationId], references: [id], onDelete: SetNull)
+  /// The apartment the rotation itself picked, kept when a swap moves the turn
+  /// to someone else. "3R's week, taken by 4F" is the sentence a fine three
+  /// weeks later has to be answerable with, and an overwritten unitId cannot
+  /// say it.
+  originalUnitId String?   @db.Uuid
+  swappedWithId  String?   @unique @db.Uuid
+  swappedAt      DateTime?
+  swappedById    String?   @db.Uuid
+
+  building    Building        @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  rotation    DutyRotation    @relation(fields: [rotationId], references: [id], onDelete: Cascade)
+  unit        Unit            @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  obligation  Obligation?     @relation(fields: [obligationId], references: [id], onDelete: SetNull)
+  swappedBy   Membership?     @relation("DutySwapArrangedBy", fields: [swappedById], references: [id], onDelete: SetNull)
+  swappedWith DutyAssignment? @relation("DutySwap", fields: [swappedWithId], references: [id], onDelete: SetNull)
+  swapOf      DutyAssignment? @relation("DutySwap")
+  fines       DsnyFine[]
 
   @@unique([rotationId, periodStart])
   @@index([buildingId])
@@ -1428,10 +1447,27 @@ model DsnyFine {
   note         String?
   createdAt    DateTime  @default(now())
 
-  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  unit     Unit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  /// The turn the violation date fell in. Derived when the summons is logged
+  /// rather than typed from memory — a summons arrives weeks after the fact,
+  /// by which time nobody is sure whose week it was.
+  dutyAssignmentId String? @db.Uuid
+
+  /// The answer-by date printed on the summons. Put on the compliance calendar
+  /// when it is known, because missing the window is how a contestable fine
+  /// becomes an unarguable one.
+  hearingOn    DateTime? @db.Date
+  obligationId String?   @db.Uuid
+  outcome      String?
+  recordedById String?   @db.Uuid
+
+  building       Building        @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit           Unit?           @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  dutyAssignment DutyAssignment? @relation(fields: [dutyAssignmentId], references: [id], onDelete: SetNull)
+  recordedBy     Membership?     @relation("DsnyFineRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  charges        Charge[]
 
   @@index([buildingId])
+  @@index([buildingId, issuedOn])
 }
 
 model NoticeCampaign {

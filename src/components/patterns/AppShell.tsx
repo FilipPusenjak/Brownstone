@@ -46,6 +46,7 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
       { label: "Meetings", href: "/meetings", capability: "meeting.view" },
       { label: "Repairs", href: "/tickets" },
       { label: "Sublets", href: "/sublets" },
+      { label: "Duty rotation", href: "/duty", capability: "duty.view" },
       { label: "Arrears", href: "/arrears" },
       { label: "Audit trail", href: "/audit", capability: "audit.view" },
     ],
@@ -55,7 +56,6 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
     items: [
       { label: "Notices", href: "/notices", capability: "notice.view", stub: true },
       { label: "Bookings", href: "/bookings", stub: true },
-      { label: "Duty rotation", href: "/duty", capability: "duty.view", stub: true },
     ],
   },
 ];

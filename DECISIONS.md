@@ -789,3 +789,64 @@ building's. The cap reading at the top of the page is building-wide and shown to
 everybody, because how much of the corporation is sublet governs whether they
 may apply and is the first thing a buyer's lender asks. That asymmetry is
 deliberate rather than an oversight.
+
+## Duty rotation, and whose week it was
+
+The most mundane module in the product, and the one that answers a question
+nobody else can. Trash set-out is not hard; remembering, three weeks later,
+whose week it was when the summons was issued is — and that memory decides
+whether the corporation absorbs a fine or a neighbour pays it.
+
+**The rota is materialised, not computed on demand.** A `DutyAssignment` row per
+period, each with an obligation behind it. The formula in
+`primitives/duty.ts` generates them and then stops being the source of truth,
+because a rotation nobody is reminded of is a rota on a fridge door — and
+because the rows are where swaps live.
+
+**The record beats the formula, always.** `turnForDate` prefers a recorded
+assignment and only falls back to the arithmetic for a period that was never
+generated. A caller reaching for the formula when a row exists names the wrong
+neighbour on exactly the weeks somebody did somebody else a favour, which is the
+one case where being wrong is socially expensive. There is a mutation test for
+it: swap the preference and one test fails by name.
+
+**A swap keeps both names.** `unitId` is who has the turn; `originalUnitId` is
+who the rotation picked. Overwriting one would make "3R's week, taken by 4F"
+unsayable, and that is the sentence a fine three weeks later needs. A
+shareholder may swap a turn that is theirs — consent from the other side is a
+social matter the software cannot verify, and pretending otherwise would just
+mean the swap happens by text message and never gets recorded. Past turns cannot
+be swapped: the week has happened, and rewriting it would move a fine onto
+somebody who was away.
+
+**The fine is attributed from its date, and the form never asks.** `logFine`
+takes the summons number, the date, the violation and the amount, looks up the
+turn the date fell in, and reports the apartment back. Asking would be asking
+for a guess, and a guess with a bill attached is worse than no answer.
+
+**No answer is a real answer.** A summons dated outside the rota is left
+unattributed, and `chargeFineToUnit` refuses one. A building with no rotation on
+record has nobody the bill honestly belongs to, and picking somebody plausible
+is the failure mode this whole module exists to prevent.
+
+**The answer-by date comes off the summons, not out of the software.** The
+window to contest a DSNY violation is the most expensive thing here — miss it
+and a contestable fine becomes an unarguable one — but the deadline is printed
+on the ticket and depends on the violation. So the form asks for that date and
+puts it on the compliance calendar, and the obligation says in as many words
+that the date is the one on the summons rather than one Co-operator worked out.
+Guessing a legal deadline would be exactly the kind of confident wrong answer
+the compliance ruleset already refuses to give.
+
+**Recharging is a decision, not a consequence.** The page says so: many boards
+absorb a first summons and recharge a repeat. Attribution and billing are
+separate acts by separate people — the super runs the rota and holds no money,
+the treasurer bills and does not keep the rota.
+
+**Periods are whole-day arithmetic and roll over on the eighth day.** A
+seven-day turn starting Monday puts the following Monday in the _next_ period.
+Off by one there blames the wrong neighbour every time a fine lands on a
+changeover day, which is not a rare case — set-out happens the night before
+collection, and collection days are when rotations turn over. A test walks a
+year of days and asserts the periods tile the calendar exactly, which is also
+where millisecond arithmetic would slip a day across a daylight-saving change.
