@@ -68,10 +68,29 @@ Sign in at http://localhost:3000 as any seeded member — `nora.whitfield@exampl
 is the president of The Adelaide, `ivan.petrosyan@example.com` the president of
 Lispenard House, and `marta.oyelaran@example.com` belongs to both.
 
-With `EMAIL_DRIVER=catcher` (the default) no mail leaves the machine. Magic
+There are two ways in, and each is the other's recovery path. A password, and a
+link in email. Seeded members have no password, so start with the link; to sign
+in with a password instead, give one to an account:
+
+```bash
+pnpm auth:password nora.whitfield@example.com   # prints a generated password
+```
+
+New members never need either. An invitation link is the whole of sign-up: open
+it, pick a name and a password, and you are in the building — no second email to
+wait for. That is deliberate, and it is why a board can text the link to a
+neighbour whose mail is bouncing. There is no open sign-up form; an account
+exists to hold a membership, and memberships come from invitations.
+
+With `EMAIL_DRIVER=catcher` (the default) no mail leaves the machine. Sign-in
 links, invitations and notices are written to `./.mail` as `.eml` files; open
 the newest one and follow the link. Seed data uses plausible addresses at real
 domains, which is exactly why the default never opens a socket.
+
+On a hosted instance, set `SEED_DEVELOPER_EMAIL` to your own address before
+reseeding. The seed truncates every table, including `User`, and without this it
+would delete the account you sign in with; with it, your name and password
+digest are carried across.
 
 ### Two database roles
 
@@ -82,16 +101,17 @@ than decoration — a role that owns the tables ignores them by default.
 
 ## Commands
 
-| Command           | What it does                                                |
-| ----------------- | ----------------------------------------------------------- |
-| `pnpm dev`        | Development server                                          |
-| `pnpm verify`     | Typecheck, lint and unit tests — run this before committing |
-| `pnpm test`       | Vitest, including the tenancy isolation suite               |
-| `pnpm test:e2e`   | Playwright browser tests — builds, starts, drives a browser |
-| `pnpm db:migrate` | Apply migrations to the development database                |
-| `pnpm db:deploy`  | Apply migrations to a deployed database                     |
-| `pnpm db:seed`    | Reseed the two fictional buildings                          |
-| `pnpm rules:sync` | Upsert the compliance ruleset without reseeding             |
+| Command                      | What it does                                                |
+| ---------------------------- | ----------------------------------------------------------- |
+| `pnpm dev`                   | Development server                                          |
+| `pnpm verify`                | Typecheck, lint and unit tests — run this before committing |
+| `pnpm test`                  | Vitest, including the tenancy isolation suite               |
+| `pnpm test:e2e`              | Playwright browser tests — builds, starts, drives a browser |
+| `pnpm db:migrate`            | Apply migrations to the development database                |
+| `pnpm db:deploy`             | Apply migrations to a deployed database                     |
+| `pnpm db:seed`               | Reseed the two fictional buildings                          |
+| `pnpm rules:sync`            | Upsert the compliance ruleset without reseeding             |
+| `pnpm auth:password <email>` | Set a password on an existing account                       |
 
 ### Deploying a schema change
 

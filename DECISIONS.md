@@ -197,6 +197,71 @@ real address during a seeded dev run is an account takeover.
 
 ---
 
+## Passwords, and why there are two ways in
+
+Co-operator shipped with emailed links and nothing else, on the reasoning that a
+three-person board will not configure OAuth and that a password is one more
+thing to lose. What that missed is the day the mail does not arrive — an
+unverified sending domain, a spam filter, an address that bounces — which is a
+board locked out of its own building's record with no way back in. A link is a
+fine convenience and a poor sole key. So both exist, and each is the other's
+recovery path.
+
+**Password sign-in writes the `Session` row itself** rather than using Auth.js's
+`Credentials` provider, which is documented as requiring the JWT session
+strategy. Database sessions are not negotiable here: a membership revoked when
+somebody sells their apartment has to stop working now, not when a token
+expires. `src/lib/auth/sessions.ts` therefore issues the row and sets the same
+cookie Auth.js would, and everything downstream reads the same table and cannot
+tell which door was used. The two constants that have to match Auth.js — the
+cookie's name and the thirty-day idle expiry — are pinned by test.
+
+**scrypt from `node:crypto`**, at OWASP's baseline parameters, rather than
+bcrypt or argon2. Both of those arrive as native modules that must compile for
+the deployment target; scrypt is memory-hard, ships with the platform, and adds
+nothing to the supply chain. Each digest records the parameters it was made
+with, so raising the cost later does not invalidate every password already set.
+
+**There is no open sign-up.** An account exists to hold a membership, and
+memberships come from invitations, so the invitation is where the account gets
+made — one page, a name and a password, no second email to wait for. A public
+sign-up form would also be a way to claim an address before the board invites
+it: register the incoming owner's address today, and the email binding in
+`acceptInvitation` hands over their apartment tomorrow.
+
+**An invitation may create an account and may never touch an existing one**, not
+even one with no password set. A board in one building can invite any address it
+likes; if that address already belongs to a member of another building, letting
+the token set a password on it would be a cross-building takeover with a form in
+front of it. The rule is flat and needs no case analysis.
+
+**A wrong password costs time and never locks the account.** Lockout is a denial
+of service anybody can trigger by knowing an address. Five consecutive failures
+are free, and after that the wait grows to a fifteen-minute cap — four attempts
+an hour against a scrypt digest is not a rate that finds a twelve-character
+password, and the real owner waits minutes at worst. `signInFailures` and
+`signInBlockedTill` live on `User` because a serverless deployment has no
+in-process memory to keep them in.
+
+**Setting the first password does not ask for a current one**, because the
+session that got here came from an emailed link — the same proof a reset email
+would demand. Changing one does, because an unattended laptop is how a session
+ends up in the wrong hands. Either way every _other_ session is ended and this
+one is left alone: deleting the caller's own row and issuing a replacement looks
+equivalent and is not, since the rest of the request still carries the old token
+and the page behind the form decides nobody is signed in.
+
+**`pnpm auth:password <email>` is the ops door.** Every route to a password in
+the application needs something the person already holds — an invitation token,
+or a session from a link. That leaves one gap: the first account on a fresh
+deployment, and whoever is locked out because the mail is not working yet. It is
+a terminal command rather than a page because it needs the database URL, which
+is not something a visitor can present. Relatedly, `SEED_DEVELOPER_EMAIL` makes
+the seed carry one real account's password digest across a reseed, since
+otherwise reseeding a hosted instance locks its owner out of it.
+
+---
+
 ## Alterations, documents and certificates (M5)
 
 **A decision is a record, not a setting.** Once approved or denied, an

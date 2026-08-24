@@ -6,11 +6,22 @@ import { mailer } from "~/lib/email/mailer";
 import { env } from "~/lib/env";
 
 /**
- * Authentication: email magic link, and nothing else.
+ * Authentication: the emailed link half.
  *
- * A three-person board in a twelve-unit brownstone will not configure an OAuth
- * app, and asking them to choose a password produces one shared password taped
- * inside the boiler room door. A link in email is the whole flow.
+ * This was once the whole of it. A three-person board in a twelve-unit
+ * brownstone will not configure an OAuth app, and a link in email asks them to
+ * remember nothing. What that missed is the day the link does not arrive — an
+ * unverified sending domain, a spam filter, an address that bounces — and then
+ * the board is locked out of its own building's record with no way back in. A
+ * link is a fine convenience and a poor sole key.
+ *
+ * So there are two ways in now, and this file holds one of them. The password
+ * half is `src/lib/auth/accounts.ts`, and it deliberately does not appear here:
+ * Auth.js's `Credentials` provider is documented as requiring the JWT session
+ * strategy, and this application needs database sessions for the reason below.
+ * Password sign-in therefore writes the `Session` row itself — see
+ * `src/lib/auth/sessions.ts` — and everything downstream reads the same row
+ * from the same table and cannot tell which door it came through.
  *
  * Sessions are database-backed rather than JWT. A membership can be revoked
  * when someone sells their apartment, and that revocation has to take effect

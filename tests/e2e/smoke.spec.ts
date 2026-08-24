@@ -17,15 +17,19 @@ import {
  * that writes, and the derived status that comes back.
  *
  * It runs against a real build, a real Postgres and real email — the catcher
- * driver writes `.eml` files to `./.mail`, and this test reads the magic links
- * out of them exactly as a person would read them out of their inbox. Nothing
- * here reaches into the database to fake a session.
+ * driver writes `.eml` files to `./.mail`, and this test reads the links out of
+ * them exactly as a person would read them out of their inbox. Nothing here
+ * reaches into the database to fake a session.
+ *
+ * The board member signs in by emailed link and the neighbour makes an account
+ * from the invitation, which is both ways in exercised in one run.
  */
 
 const MAIL_DIR = ".mail";
 
 /** A fresh address per run, so the run is repeatable against a seeded database. */
 const joinerEmail = `sofia.reyes.${Date.now().toString(36)}@example.com`;
+const joinerPassword = "cornice-parapet-transom-41";
 
 interface Mail {
   readonly body: string;
@@ -180,21 +184,23 @@ test.describe("a neighbour joins and files something", () => {
     joiner = await browser.newContext();
     const neighbour = await joiner.newPage();
 
-    // Signed out, the link sends them to sign in and carries itself through.
+    // The link is the whole of sign-up: a name, a password, and they are in.
+    // The address is not a field, because the invitation already names it —
+    // holding the link is what proves it is theirs.
     await neighbour.goto(onBaseUrl(inviteLink, base));
-    await expect(neighbour).toHaveURL(/\/sign-in\?invite=/);
-
-    await signIn(neighbour, joinerEmail, base, neighbour.url());
-    // Straight back to the invitation, not to a building list they have no
-    // membership in — the sign-in page carried the token through.
-    await expect(neighbour).toHaveURL(/\/invite\//);
-
-    // Accepting is a click, never automatic: a mail client that prefetches the
-    // link must not consume the invitation before anyone sees it.
     await expect(
       neighbour.getByRole("heading", { name: "Join The Adelaide" }),
     ).toBeVisible();
-    await neighbour.getByRole("button", { name: "Join The Adelaide" }).click();
+    await expect(neighbour.getByLabel("Email address")).toHaveValue(joinerEmail);
+
+    // Nothing is redeemed by loading the page — a mail client that prefetches
+    // the link must not consume the invitation before anyone sees it.
+    await neighbour.getByLabel("Your name").fill("A New Neighbour");
+    await neighbour.getByLabel("Choose a password").fill(joinerPassword);
+    await neighbour.getByLabel("And again").fill(joinerPassword);
+    await neighbour
+      .getByRole("button", { name: /^Create the account and join/ })
+      .click();
 
     await expect(neighbour).toHaveURL(/\/b\/adelaide$/);
 

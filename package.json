@@ -24,7 +24,8 @@
     "db:seed": "tsx prisma/seed/index.ts",
     "db:studio": "prisma studio",
     "rules:sync": "tsx scripts/sync-rules.ts",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test"
+    "verify": "pnpm typecheck && pnpm lint && pnpm test",
+    "auth:password": "tsx scripts/set-password.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed/index.ts"

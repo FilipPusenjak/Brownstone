@@ -19,6 +19,7 @@
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
+import { hashPassword, passwordProblem } from "../../src/lib/auth/passwords";
 import {
   evaluate,
   type BuildingAttributes,
@@ -380,7 +381,7 @@ function attributesOf(spec: BuildingSpec): BuildingAttributes {
 async function seedBuilding(
   spec: BuildingSpec,
   usersByEmail: Map<string, string>,
-): Promise<void> {
+): Promise<string> {
   const buildingId = randomUUID();
   const attributes = attributesOf(spec);
 
@@ -605,6 +606,8 @@ async function seedBuilding(
   });
 
   console.info(`  ${spec.name} (${spec.slug}) — ${spec.units.length} units`);
+
+  return buildingId;
 }
 
 interface ExtrasContext {
@@ -1354,7 +1357,104 @@ async function seedBuildingExtras(
   });
 }
 
+// ---------------------------------------------------------------------------
+// The account that survives a reseed
+// ---------------------------------------------------------------------------
+
+/**
+ * Everyone in the seed has an `@example.com` address, which no mail server will
+ * ever deliver to. That is correct for fixtures and catastrophic for whoever is
+ * running the deployment: reseeding wipes the `User` table, and the one real
+ * account on it — theirs — goes with it, along with the password they sign in
+ * with. On a hosted instance that is a reseed followed by a lockout.
+ *
+ * So one address, named by `SEED_DEVELOPER_EMAIL`, is carried across: its name
+ * and its password digest are read before the truncate and written back after,
+ * and it is made an officer of the first building so there is something to look
+ * at. The digest is moved, never inspected — this code cannot learn the
+ * password and does not want to.
+ *
+ * Unset the variable and nothing here runs, which is the right default for a
+ * laptop.
+ */
+interface PreservedAccount {
+  readonly email: string;
+  readonly name: string | null;
+  readonly passwordHash: string | null;
+  readonly passwordSetAt: Date | null;
+}
+
+async function capturePreserved(): Promise<PreservedAccount | null> {
+  const email = process.env["SEED_DEVELOPER_EMAIL"]?.trim().toLowerCase();
+  if (!email) return null;
+
+  const existing = await withUntenantedTx((tx) =>
+    tx.user.findUnique({
+      where: { email },
+      select: { name: true, passwordHash: true, passwordSetAt: true },
+    }),
+  );
+
+  return {
+    email,
+    name: existing?.name ?? null,
+    passwordHash: existing?.passwordHash ?? null,
+    passwordSetAt: existing?.passwordSetAt ?? null,
+  };
+}
+
+async function restorePreserved(
+  account: PreservedAccount,
+  buildingId: string,
+): Promise<void> {
+  const supplied = process.env["SEED_DEVELOPER_PASSWORD"];
+  if (supplied) {
+    const problem = passwordProblem(supplied);
+    if (problem) throw new Error(`SEED_DEVELOPER_PASSWORD: ${problem}`);
+  }
+
+  const passwordHash = supplied ? await hashPassword(supplied) : account.passwordHash;
+  const passwordSetAt = supplied ? new Date() : account.passwordSetAt;
+
+  const userId = await withUntenantedTx(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        email: account.email,
+        name: account.name,
+        emailVerified: new Date(),
+        passwordHash,
+        passwordSetAt,
+      },
+      select: { id: true },
+    });
+    return user.id;
+  });
+
+  await withBuildingTx(buildingId, async (tx) => {
+    await tx.membership.create({
+      data: {
+        buildingId,
+        userId,
+        roles: ["SHAREHOLDER", "PRESIDENT", "TREASURER", "SECRETARY"],
+        status: "ACTIVE",
+        title: "Developer",
+        joinedOn: toDbDate(TODAY),
+      },
+    });
+  });
+
+  const state = passwordHash
+    ? supplied
+      ? "password set from SEED_DEVELOPER_PASSWORD"
+      : "password carried over from before the reseed"
+    : "no password yet — run pnpm auth:password " + account.email;
+  console.info(`Restored ${account.email} (${state}).`);
+}
+
 async function main(): Promise<void> {
+  // Read before the truncate; written back after the buildings exist.
+  const preserved = await capturePreserved();
+
   console.info("Clearing existing data…");
   await truncateAll();
 
@@ -1365,8 +1465,10 @@ async function main(): Promise<void> {
   const users = await upsertUsers([ADELAIDE, LISPENARD]);
 
   console.info("Seeding buildings:");
-  await seedBuilding(ADELAIDE, users);
+  const adelaideId = await seedBuilding(ADELAIDE, users);
   await seedBuilding(LISPENARD, users);
+
+  if (preserved) await restorePreserved(preserved, adelaideId);
 
   console.info(
     [

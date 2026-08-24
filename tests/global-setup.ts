@@ -17,6 +17,12 @@ export default async function setup(): Promise<void> {
     NODE_ENV: "test",
     EMAIL_DRIVER: "catcher",
     STORAGE_DRIVER: "local",
+    // The seed carries one real account across a reseed when this is set, which
+    // is right for a deployment and wrong here: an extra membership in The
+    // Adelaide would fail the tenancy suite's row counts for a reason that has
+    // nothing to do with tenancy. Blank rather than absent, so a value in `.env`
+    // does not fill it back in — dotenv leaves a key that already exists alone.
+    SEED_DEVELOPER_EMAIL: "",
   };
 
   const run = (args: string[]) =>

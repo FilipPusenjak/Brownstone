@@ -1,11 +1,22 @@
-import { signIn } from "~/lib/auth/config";
+import Link from "next/link";
+import { sessionUserId } from "~/lib/auth/current";
+import { withUntenantedTx } from "~/lib/db/tx";
+import { SignInForm } from "./SignInForm";
 
 /**
  * Sign in.
  *
- * One field. A three-person board in a twelve-unit brownstone will not set up
- * an OAuth app, and asking them to choose a password produces one shared
- * password taped inside the boiler room door.
+ * Two ways, and the reason there are two is worth stating. Co-operator shipped
+ * with emailed links alone, on the reasoning that a three-person board will not
+ * configure OAuth and that a password is one more thing to lose. What that
+ * reasoning missed is what happens when the mail does not arrive — an
+ * unverified sending domain, a spam filter, an address that bounces — which is
+ * a board locked out of its own building's record with no way back in.
+ *
+ * So a password is the everyday key and the link is the spare. An account is
+ * created from an invitation rather than from a form here: membership in a
+ * building comes from being invited to it, and an account without one would be
+ * a sign-in that leads to an empty room.
  */
 
 /**
@@ -29,14 +40,17 @@ export default async function SignInPage({
   const { invite } = await searchParams;
   const token = safeInviteToken(invite);
 
-  async function requestLink(formData: FormData): Promise<void> {
-    "use server";
-    const email = String(formData.get("email") ?? "").trim();
-    if (!email) return;
-    // Land back on the invitation rather than the building list, which the
-    // invited person is not yet a member of.
-    await signIn("email", { email, redirectTo: token ? `/invite/${token}` : "/" });
-  }
+  // Somebody already signed in still gets the form. Redirecting them away would
+  // break the one case that brings a signed-in person here on purpose: an
+  // invitation sent to their other address, where the way forward is to sign in
+  // as somebody else. The note below says who they currently are, because
+  // signing in "again" and landing somewhere unexpected is the confusing half.
+  const userId = await sessionUserId();
+  const signedInAs = userId
+    ? await withUntenantedTx((tx) =>
+        tx.user.findUnique({ where: { id: userId }, select: { email: true } }),
+      )
+    : null;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-16">
@@ -47,33 +61,35 @@ export default async function SignInPage({
         </h1>
         <p className="text-ironwork-soft mt-3 text-sm">
           {token
-            ? "Use the address your invitation was sent to — it only works for that one. We’ll email you a link, and you’ll come straight back here."
-            : "We’ll email you a link. No password to remember, and nothing to set up."}
+            ? "Use the address your invitation was sent to — it only works for that one. You’ll come straight back here."
+            : "Your email address and your password."}
         </p>
 
-        <form action={requestLink} className="mt-6">
-          <label htmlFor="email" className="eyebrow mb-1.5 block">
-            Email address
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="rounded-sheet border-limestone-deep text-ironwork placeholder:text-ironwork-faint w-full border bg-white px-3 py-2.5 font-mono text-sm"
-            placeholder="you@example.com"
-          />
-          <button
-            type="submit"
-            className="rounded-sheet bg-verdigris hover:bg-verdigris/90 mt-4 w-full px-4 py-2.5 text-sm font-semibold text-white"
-          >
-            Email me a link
-          </button>
-        </form>
+        {signedInAs ? (
+          <div className="border-limestone-deep bg-paper-sunk mt-4 border-l-2 px-3 py-2">
+            <p className="text-ironwork-soft text-sm">
+              You&rsquo;re already signed in as{" "}
+              <span className="text-ironwork font-mono">{signedInAs.email}</span>.{" "}
+              <Link
+                href={token ? `/invite/${token}` : "/"}
+                className="text-verdigris underline underline-offset-4"
+              >
+                Carry on as them
+              </Link>
+              , or sign in below as somebody else.
+            </p>
+          </div>
+        ) : null}
+
+        <SignInForm invite={token} />
       </div>
 
       <p className="text-ironwork-faint mt-6 text-xs leading-relaxed">
+        No account yet? A Co-operator account comes with an invitation from your board —
+        ask them to send you one, and you&rsquo;ll choose a password on the way in.
+      </p>
+
+      <p className="text-ironwork-faint mt-3 text-xs leading-relaxed">
         Co-operator is a tracking tool, not legal advice. The board remains responsible
         for the building&rsquo;s filings.
       </p>

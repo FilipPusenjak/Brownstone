@@ -45,6 +45,18 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // A scrypt digest, never a password. Nullable because an account may exist
+  // without one — everyone who signed in by emailed link before passwords, and
+  // anyone who still prefers to. See src/lib/auth/passwords.ts.
+  passwordHash  String?
+  passwordSetAt DateTime?
+
+  // Brute-force throttling. A password form on a public URL is guessed at, and
+  // scrypt alone only slows that to a few attempts a second. See
+  // src/lib/auth/accounts.ts for why this delays rather than locks.
+  signInFailures    Int       @default(0)
+  signInBlockedTill DateTime?
+
   accounts    Account[]
   sessions    Session[]
   memberships Membership[]

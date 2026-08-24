@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { BuildingContext } from "~/lib/db/context";
 import type { Capability } from "~/lib/auth/capabilities";
 import { can } from "~/lib/auth/capabilities";
@@ -114,12 +115,15 @@ export function AppShell({
           })}
         </div>
 
-        <div className="border-t border-white/12 px-4 py-3">
+        <Link
+          href="/account"
+          className="block border-t border-white/12 px-4 py-3 hover:bg-white/5"
+        >
           <p className="text-plaster/90 text-sm">{ctx.user.name ?? ctx.user.email}</p>
           <p className="text-plaster/50 mt-0.5 font-mono text-[0.6875rem]">
             {ctx.membership.title ?? titleFromRoles(ctx)}
           </p>
-        </div>
+        </Link>
       </nav>
 
       <div className="min-w-0 flex-1">

@@ -72,8 +72,11 @@ export function InviteForm({
           <p className="text-ironwork text-sm">Invitation sent to {sentTo}.</p>
           {link ? (
             <p className="text-ironwork-soft mt-1 text-xs">
-              If their mail bounces, you can pass this on by hand:{" "}
-              <span className="font-mono break-all">{link}</span>
+              If their mail bounces, you can pass this on by hand — they&rsquo;ll pick a
+              password and be in without waiting for anything:{" "}
+              <span data-testid="invitation-link" className="font-mono break-all">
+                {link}
+              </span>
             </p>
           ) : null}
         </div>

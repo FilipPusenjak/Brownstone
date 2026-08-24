@@ -8,7 +8,7 @@ _why_ each of these is the way it is, including what was rejected.
 ## The shape of the thing
 
 A Next.js App Router application, TypeScript in strict mode, Prisma against
-PostgreSQL, Auth.js with email magic links, deployed to Vercel. No AI anywhere
+PostgreSQL, Auth.js with a password or an emailed link, deployed to Vercel. No AI anywhere
 in the product: no drafted minutes, no extracted certificate fields, no
 summaries. A board acting on a filing deadline needs a record it can point at,
 not a paraphrase.
@@ -17,14 +17,15 @@ not a paraphrase.
 src/
   app/                      routes only — no queries, no business rules
     b/[buildingSlug]/       everything tenant-scoped lives under here
-    invite/[token]/         redemption, the one pre-membership page
+    invite/[token]/         redemption and sign-up, the one pre-membership page
+    account/                your name, your password, the door out
     api/cron/run/           the single daily job
     api/webhooks/resend/    delivery receipts
   components/
     elevation/              the building as a live object
     patterns/               shell, header, buttons, status chip
   lib/
-    auth/                   session, capabilities, invitations
+    auth/                   sessions, passwords, capabilities, invitations
     db/
       context.ts            slug + user → BuildingContext
       tx.ts                 the four transaction scopes
