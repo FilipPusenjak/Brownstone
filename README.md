@@ -35,7 +35,8 @@ saying exactly what was missing — and none of them needed anything about
 tenancy, capabilities or the primitives to change on the way out of it, which
 was the point of the exercise.
 
-Outside the module list, the following are built: sign-in and invitation
+Outside the module list, the following are built: setting a building up from
+its address, sign-in and invitation
 redemption, the members page with outstanding invitations, the share register,
 the document index, the audit trail, and building work — what the building has
 to pay for, with each apartment's share of the cost shown as a percentage and a
@@ -85,6 +86,35 @@ wait for. That is deliberate, and it is why a board can text the link to a
 neighbour whose mail is bouncing. There is no open sign-up form; an account
 exists to hold a membership, and memberships come from invitations.
 
+### Starting a building of your own
+
+Invitations come from members, and members come from invitations, so the chain
+needs a first link. Signing in with an address that belongs to no building
+offers one: **Set up a building** at `/start`.
+
+Give it the address and Co-operator asks the city — PLUTO for the lot and the
+building footprints dataset for the BIN and roof height — and fills in the unit
+count, storeys, year built, floor area, landmark status and BBL for you to
+check. If the city has no record of the address, or is having a bad morning,
+"Enter it myself" does the same job without the prefill; nothing about the
+lookup can stop you.
+
+Then it proposes the apartments from the shape of the building — a brownstone
+gets a garden floor, a walk-up starts at one — with an even share split you
+should replace with the offering plan's when you have it to hand. Shares only
+matter as proportions, and the form shows each apartment's percentage as you
+type. Whoever sets the building up becomes its president, because somebody has
+to be able to invite everybody else.
+
+Nothing lands on the compliance calendar. The engine reads the attributes you
+confirmed and says which of New York's requirements look like they apply, and
+the board decides.
+
+On a deployment that exists to serve one co-op, set `ALLOW_NEW_BUILDINGS=0` once
+that building is set up. Anyone who can receive a sign-in link can otherwise
+start one — they would see nothing but their own, but there is no reason to
+leave the door open.
+
 With `EMAIL_DRIVER=catcher` (the default) no mail leaves the machine. Sign-in
 links, invitations and notices are written to `./.mail` as `.eml` files; open
 the newest one and follow the link. Seed data uses plausible addresses at real
@@ -133,7 +163,12 @@ a migration leaves a tenant table without a row-level security policy.
 
 ### The browser tests
 
-`pnpm test:e2e` runs twenty-two paths end to end. A president signs in, invites a
+`pnpm test:e2e` runs twenty-three paths end to end. A stranger with nothing but
+an email address signs in, finds an account that belongs to no building, sets
+one up — its apartments, its share register, its attributes — lands on the list
+of requirements that look like they apply, puts one on the calendar, and finds
+that being president of a new building grants no sight whatever of the two that
+were already there. A president signs in, invites a
 neighbour, the neighbour follows the link, signs in as the invited address,
 joins, opens the compliance calendar, puts a requirement on it and files it. A
 treasurer posts a month's maintenance, checks the share-weighted split adds up

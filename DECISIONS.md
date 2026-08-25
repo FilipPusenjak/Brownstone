@@ -1121,3 +1121,97 @@ whoever uploaded the file.
 silent and expensive: a deployment that means to use Blob but quietly writes to
 a Vercel filesystem reports every upload as a success, and the building's
 certificates are gone at the next deploy.
+
+## Founding a building, and who is allowed to
+
+Every module before this one assumed a building already existed. The two in the
+product came out of a seed script, which is not a thing a board president has.
+So the honest summary of the state before this change is that a real co-op could
+not begin using Co-operator at all — and the gap was invisible from inside,
+because every screen worked perfectly once you were already in.
+
+**Being signed in is the whole authorisation, and it has to be.** Capabilities
+come from a membership, memberships come from invitations, and invitations come
+from members who already hold one. That chain is right for everybody except the
+first person, who has nobody to be invited by. Founding is the link at the top
+of it, so there is no capability to check and no third party to ask.
+
+Rejected: an instance administrator who provisions buildings. It is one more
+concept, one more role in an enum that currently maps cleanly onto things a
+co-op actually has, and it moves the bootstrap problem rather than solving it —
+somebody still has to be the first administrator. Rejected too: making the seed
+the only way in, which is what we had.
+
+What makes the open door tolerable is that it grants nothing. A building founded
+by a stranger is visible to that stranger and to nobody else on the deployment,
+because `tenant_isolation` keys `Building` on its own `id` and there is no
+policy that widens it. The worst available outcome is rows only their author can
+read. For a deployment serving one co-op that already exists,
+`ALLOW_NEW_BUILDINGS=0` shuts it; it defaults open because a deployment with it
+shut and no building yet has no way to make its first one, and a product that
+cannot be started is a worse failure than an untidy table.
+
+**The apartment list is the unit count.** Asking for the number and then asking
+for the apartments gives two sources for one fact, and they drift the moment
+somebody adds a row — with the count feeding every applicability predicate in
+the ruleset and the list feeding everything else. A building that thinks it has
+five apartments and shows six is a building whose compliance calendar is wrong
+about which laws apply, silently.
+
+**Shares are proposed, and the proposal says it is one.** Quorum, every
+assessment and the maintenance split all divide by the share register, so a
+building founded on placeholder shares has quietly wrong arithmetic everywhere.
+Demanding the offering plan up front is not the fix: the person setting this up
+has about three minutes and possibly no paperwork, and a form that refuses to
+proceed without it gets closed. So every apartment starts on a round hundred,
+the form shows each one's percentage of the running total as it is typed, and
+every allocation carries a note saying it was recorded at setup and should be
+replaced. `looksProvisional` recognises the state afterwards — by the shares
+being _identical_, not by their matching the default, because a founder who
+replaced 100s with 250s and stopped has still not typed an allocation. That
+distinction came out of a test that contradicted itself and was right to.
+
+**Provenance is evidence, not a claim.** `attributeSource` exists so that a
+board three years from now can tell which numbers a human actually looked at —
+an unvouched-for attribute set makes the compliance assessment provisional. A
+browser can assert anything about where its own values came from, so the server
+asks the city itself at submit time and compares: every published figure
+accepted unchanged is `NYC_OPEN_DATA`, any override is `MIXED`, nothing to
+compare against is `MANUAL`. An attribute PLUTO did not publish is not an
+override, because a null there is the absence of an opinion.
+
+**The address is normalised to the city's conventions, and they are not
+guessable.** PLUTO holds `150 BERGEN STREET`, `EAST 10 STREET`, `5 AVENUE`,
+`84-74 257 STREET`. Directions are spelled out, ordinals are stripped from
+numbered streets, Queens house numbers keep their hyphens — and street types are
+expanded only in final position, because the dataset has 288 lots on `ST MARKS
+PLACE` and expanding `ST` everywhere turns a saint into a street and matches
+nothing. Every one of those rules was checked against the live dataset rather
+than reasoned about; the tests record the counts that settled them and then
+never call the API again, because a unit suite that depends on Socrata's mood is
+a suite that goes red for reasons outside this repository.
+
+**Nothing about the lookup can block founding.** It returns a value on every
+path — found, not-found, unavailable — and never throws. `not-found` and
+`unavailable` are kept distinct even though both lead to the same screen,
+because a founder told "the city has no record of this address" when the truth
+is "the city's API timed out" goes and digs out their deed.
+
+**A slug collision is discovered by the insert, not by a query.** Slugs are
+unique across the deployment and row-level security deliberately hides the
+buildings a founder does not belong to, so there is no "is this taken?" to run
+first — and adding a policy that permitted one would leak the list of every
+co-op on the instance. The insert is the check, and a retry is a fresh
+transaction with a fresh id, because a unique violation aborts the one it
+happened in. The alternative slugs carry a random suffix rather than counting
+upward: `adelaide-2` would tell whoever typed it exactly how many other
+Adelaides exist, which is precisely what RLS hides everywhere else.
+
+Recognising that violation turned out to need care. Prisma's documented
+`meta.target` is empty under a driver adapter — a P2002 through
+`@prisma/adapter-pg` reports "Unique constraint failed on the (not available)"
+and carries the real Postgres message nested underneath — so the constraint name
+is read from there, with the documented field kept as a fallback. The bug was
+found by the test that founds two buildings under one name, which is the only
+reason it is not still there: without it the retry never ran and the second
+founder saw a crash.

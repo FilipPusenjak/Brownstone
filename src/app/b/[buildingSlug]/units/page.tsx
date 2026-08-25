@@ -5,6 +5,7 @@ import { primaryRole } from "~/lib/auth/roles";
 import { floorLabel } from "~/lib/building/floors";
 import { buildingElevation } from "~/lib/db/scoped/elevation";
 import { listMembers, listUnitsWithShares } from "~/lib/db/scoped/units";
+import { looksProvisional } from "~/lib/primitives/founding";
 
 /**
  * The share register.
@@ -59,6 +60,21 @@ export default async function UnitsPage({
         floorNaming={ctx.building.floorNaming}
         units={elevation}
       />
+
+      {/* Every apartment holding the same number of shares is what setting a
+          building up proposes when nobody had the offering plan to hand. Real
+          allocations follow floor area, so they vary. Saying so here is the
+          point: quorum at a meeting and every apartment's part of a new roof
+          divide by these numbers, and a board should not find that out from a
+          disputed vote. */}
+      {looksProvisional(units.map((unit) => unit.shares)) ? (
+        <p className="text-ironwork-soft border-stamp mt-6 border-l-2 pl-3 text-sm">
+          Every apartment here holds the same number of shares, which is what this
+          building was set up with rather than what its offering plan says. Quorum,
+          assessments and the maintenance split are all worked out from these figures —
+          replace them with the real allocation before relying on any of it.
+        </p>
+      ) : null}
 
       <div className="mt-8 overflow-x-auto">
         <table className="w-full border-collapse text-left">

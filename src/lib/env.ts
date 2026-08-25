@@ -50,6 +50,22 @@ const schema = z
       .min(16, "CRON_SECRET must be at least 16 characters (openssl rand -hex 32)"),
 
     NYC_OPEN_DATA_APP_TOKEN: z.string().optional(),
+
+    /**
+     * Whether a signed-in account may found a new building.
+     *
+     * Open by default, and it has to be: memberships come from invitations,
+     * invitations come from existing members, and a deployment with this shut
+     * and no building yet has no way to make its first one. A co-op running
+     * Co-operator for itself should turn it off once its building exists —
+     * anyone who can receive a sign-in link can otherwise create buildings,
+     * which is untidy rather than dangerous, since row-level security means
+     * they see nothing but their own.
+     */
+    ALLOW_NEW_BUILDINGS: z
+      .enum(["0", "1", "true", "false"])
+      .default("1")
+      .transform((value) => value === "1" || value === "true"),
   })
   .superRefine((env, ctx) => {
     if (env.EMAIL_DRIVER === "resend") {
@@ -146,6 +162,7 @@ const SAFE_TO_ECHO = new Set([
   "EMAIL_FROM",
   "STORAGE_DRIVER",
   "S3_REGION",
+  "ALLOW_NEW_BUILDINGS",
 ]);
 
 function load(): Env {

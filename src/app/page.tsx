@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getMemberBuildings, sessionUserId } from "~/lib/auth/current";
+import { env } from "~/lib/env";
 
 export default async function Home() {
   const userId = await sessionUserId();
@@ -14,9 +15,16 @@ export default async function Home() {
   if (buildings.length === 1 && first) redirect(`/b/${first.slug}`);
 
   // Signed in and a member of nothing: an invitation that lapsed before it was
-  // accepted, or a membership ended when an apartment sold. Sending them back
-  // to the sign-in page would be a loop — they are signed in — and would look
-  // like the password had stopped working.
+  // accepted, a membership ended when an apartment sold — or somebody who has
+  // come to set their own building up and has not done it yet. Sending them
+  // back to the sign-in page would be a loop, they are signed in, and would
+  // look like the password had stopped working.
+  //
+  // The two ways out are not equivalent and are not offered as though they
+  // were. Joining a building is by far the commoner one and needs nothing from
+  // this page but an explanation; founding one is rarer, larger, and the only
+  // route that exists for the first person in a co-op, who has nobody to be
+  // invited by.
   if (buildings.length === 0) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-16">
@@ -30,7 +38,25 @@ export default async function Home() {
             an invitation — ask your board to send one to this address, and opening it
             will bring you straight in.
           </p>
-          <p className="mt-4 text-sm">
+
+          {env().ALLOW_NEW_BUILDINGS ? (
+            <div className="border-limestone mt-5 border-t pt-5">
+              <p className="text-ironwork-soft text-sm">
+                If there is no board yet because you are the one starting this, set the
+                building up and invite the others from inside it.
+              </p>
+              <p className="mt-3">
+                <Link
+                  href="/start"
+                  className="border-verdigris bg-verdigris rounded-sheet inline-flex items-center border px-3.5 py-2 text-sm font-medium text-white"
+                >
+                  Set up a building
+                </Link>
+              </p>
+            </div>
+          ) : null}
+
+          <p className="mt-5 text-sm">
             <Link
               href="/account"
               className="text-verdigris underline underline-offset-4"

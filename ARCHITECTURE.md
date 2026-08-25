@@ -134,6 +134,17 @@ query rather than remembered at each call site:
 twelve-unit building that is one or two people, and who is behind on maintenance
 is the most socially explosive fact the system holds.
 
+**Founding a building is the one write with no capability behind it**, because
+it is the one write with no `BuildingContext` to check one against. Membership
+comes from invitations and invitations come from members, so the chain needs a
+first link: `src/lib/db/founding.ts` creates the building, its apartments, its
+share register and its founder's membership in a single transaction, and makes
+that founder president so the invitation chain has somebody to start it. Being
+signed in is the whole authorisation, which is a smaller claim than it sounds —
+row-level security means a building founded this way is visible to its founder
+and to nobody else. `ALLOW_NEW_BUILDINGS=0` closes the door on a deployment
+serving one co-op that already exists.
+
 ---
 
 ## The primitives
@@ -225,7 +236,19 @@ threshold: an unknown boiler type is not a boiler exemption.
 **Nothing reaches a building's calendar automatically.** The engine proposes;
 a board member confirms or dismisses, and a dismissal keeps its reason. That
 review step is the product's position on the difference between "the law
-probably applies to you" and "your building owes this on this date".
+probably applies to you" and "your building owes this on this date". It is also
+what a newly founded building lands on: `foundBuilding` runs `assessBuilding`,
+so the rules page has an opinion about every rule from the first minute, and the
+calendar is empty until somebody agrees with one.
+
+**Attributes decide applicability, so where they came from is recorded.**
+`Building.attributeSource` is `MANUAL`, `NYC_OPEN_DATA` or `MIXED`, and it is
+derived from evidence rather than asserted: founding asks the city itself
+(`src/lib/nyc/`, PLUTO for the lot and building footprints for the BIN and roof
+height) and compares the answer against what was submitted. A form can claim
+anything about its own provenance, which is why the claim is not taken from the
+form. A lookup that times out, misses, or is rate-limited degrades to manual
+entry and never blocks founding.
 
 The persistent disclaimer is on every page and is not dismissible.
 
