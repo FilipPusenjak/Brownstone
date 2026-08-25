@@ -36,7 +36,9 @@ const schema = z
     RESEND_API_KEY: z.string().optional(),
     RESEND_WEBHOOK_SECRET: z.string().optional(),
 
-    STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
+    STORAGE_DRIVER: z.enum(["local", "blob", "s3"]).default("local"),
+    /** Vercel Blob. Set automatically when a Blob store is linked to the project. */
+    BLOB_READ_WRITE_TOKEN: z.string().optional(),
     S3_BUCKET: z.string().optional(),
     S3_REGION: z.string().default("auto"),
     S3_ENDPOINT: z.string().optional(),
@@ -60,6 +62,15 @@ const schema = z
           });
         }
       }
+    }
+
+    if (env.STORAGE_DRIVER === "blob" && !env.BLOB_READ_WRITE_TOKEN) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["BLOB_READ_WRITE_TOKEN"],
+        message:
+          "BLOB_READ_WRITE_TOKEN is required when STORAGE_DRIVER=blob. Linking a Blob store to the Vercel project sets it for you.",
+      });
     }
 
     if (env.STORAGE_DRIVER === "s3") {
@@ -111,7 +122,7 @@ const schema = z
         code: "custom",
         path: ["STORAGE_DRIVER"],
         message:
-          "STORAGE_DRIVER=local writes to the filesystem, which is ephemeral on Vercel. Set STORAGE_DRIVER=s3 in production.",
+          "STORAGE_DRIVER=local writes to the filesystem, which is ephemeral on Vercel. Set STORAGE_DRIVER=blob (or s3) in production.",
       });
     }
   });

@@ -73,6 +73,27 @@ describe("the environment guard", () => {
     expect(() => env()).toThrow(/RESEND_API_KEY/);
   });
 
+  it("insists on a Blob token when Vercel Blob is selected", () => {
+    // Without it every upload fails at the moment somebody tries one, which on
+    // a co-op's instance means the day they finally scan the boiler
+    // certificate. Better to refuse to boot.
+    asProduction({ EMAIL_DRIVER: "resend", STORAGE_DRIVER: "blob" });
+    delete process.env["BLOB_READ_WRITE_TOKEN"];
+    resetEnvCache();
+    expect(() => env()).toThrow(/BLOB_READ_WRITE_TOKEN/);
+  });
+
+  it("is satisfied by Blob with its token", () => {
+    asProduction({
+      EMAIL_DRIVER: "resend",
+      STORAGE_DRIVER: "blob",
+      BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_x",
+      RESEND_API_KEY: "re_x",
+      RESEND_WEBHOOK_SECRET: "whsec_x",
+    });
+    expect(() => env()).not.toThrow();
+  });
+
   it("names every missing variable at once rather than one per restart", () => {
     asProduction({ EMAIL_DRIVER: "resend", STORAGE_DRIVER: "s3" });
     delete process.env["RESEND_API_KEY"];

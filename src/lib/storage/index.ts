@@ -1,22 +1,36 @@
 import { env } from "~/lib/env";
+import { blobStorageDriver } from "./blob";
 import { localStorageDriver } from "./local";
 import { s3StorageDriver } from "./s3";
 
 /**
  * Object storage, behind an interface.
  *
- * Cloudflare R2 in production; a filesystem driver in development so the whole
- * upload path can be exercised without credentials. Switching to S3 proper, or
- * to any other S3-compatible bucket, is a change to `.env` and nothing else.
+ * Three drivers. Vercel Blob is the one this deploys on, because it is what the
+ * hosting account already has and needs no bucket, no keys and no second
+ * vendor. An S3-compatible driver covers Cloudflare R2 and AWS proper for
+ * anyone who would rather own the bucket. And a filesystem driver runs in
+ * development so the whole upload path is exercised without credentials.
  *
  * Two rules hold whichever driver is in use:
  *
  *   Keys are namespaced `buildings/{buildingId}/{entity}/{id}/{filename}`, so a
  *   key is self-describing and a misdirected write is visible at a glance.
  *
- *   Nothing is ever public. Downloads are short-lived presigned GETs issued
- *   only after a capability check, so there is no such thing as a document URL
- *   that keeps working once someone leaves the board.
+ *   Nothing is ever public. Every file is reached only after a capability
+ *   check, so there is no such thing as a document URL that keeps working once
+ *   someone leaves the board.
+ *
+ * How a file *comes back* is the one thing the drivers genuinely disagree
+ * about, so the interface lets each say what it can do best rather than
+ * forcing the weaker answer on both. An S3 presigned GET carries the filename
+ * and `Content-Disposition: attachment` inside the signature, so the browser
+ * can be redirected straight at the bucket and the bytes never touch a
+ * function. A Vercel Blob presigned GET cannot carry either, and a PDF served
+ * inline from the storage origin is the thing that disposition header is
+ * there to prevent — so that driver streams through the application instead,
+ * where the header is ours to set. Uploads still go direct in both cases,
+ * which is the direction where 20 MB of scanned certificate actually matters.
  */
 
 export interface PresignedUpload {
@@ -27,19 +41,87 @@ export interface PresignedUpload {
   readonly expiresInSeconds: number;
 }
 
+/**
+ * How a download reaches the browser.
+ *
+ * `redirect` hands over a short-lived signed URL and gets out of the way.
+ * `stream` passes the bytes through the application, which is what a backend
+ * that cannot sign a `Content-Disposition` into its URLs requires.
+ */
+export type Download =
+  | { readonly kind: "redirect"; readonly url: string }
+  | {
+      readonly kind: "stream";
+      readonly body: ReadableStream<Uint8Array>;
+      readonly contentType: string;
+      readonly contentLength: number | null;
+    };
+
 export interface StorageDriver {
   presignUpload(input: {
     key: string;
     contentType: string;
     contentLength: number;
   }): Promise<PresignedUpload>;
-  presignDownload(key: string, filename: string): Promise<string>;
+  download(key: string, filename: string): Promise<Download>;
   delete(key: string): Promise<void>;
   exists(key: string): Promise<boolean>;
 }
 
 export function storage(): StorageDriver {
-  return env().STORAGE_DRIVER === "s3" ? s3StorageDriver() : localStorageDriver();
+  switch (env().STORAGE_DRIVER) {
+    case "blob":
+      return blobStorageDriver();
+    case "s3":
+      return s3StorageDriver();
+    default:
+      return localStorageDriver();
+  }
+}
+
+/**
+ * `Content-Disposition` for a download, with the filename quoted safely.
+ *
+ * Always an attachment. A PDF or an HTML-ish file rendered inline from a
+ * storage origin runs in that origin, and a co-op's document store is exactly
+ * the place somebody uploads something they should not.
+ */
+export function attachmentDisposition(filename: string): string {
+  const safe = safeFilename(filename) ?? "document";
+  return `attachment; filename="${safe}"`;
+}
+
+/**
+ * Turns a streamed download into the response that leaves the application.
+ *
+ * Lives here rather than in the route so the headers are testable without an
+ * HTTP round trip, because every one of them is doing a job:
+ *
+ *   `Content-Disposition: attachment` — a PDF rendered inline runs in the
+ *   origin that served it, and here that origin is the application itself.
+ *
+ *   `no-store, private` — the capability check that authorised these bytes was
+ *   about one member. A shared cache must never hand them to the next request,
+ *   and the browser's disk cache is the copy that outlives leaving the board.
+ *
+ *   `nosniff` — the content type came from whoever uploaded the file. Letting a
+ *   browser second-guess it is letting the uploader choose.
+ */
+export function downloadResponse(
+  download: Extract<Download, { kind: "stream" }>,
+  filename: string,
+): Response {
+  return new Response(download.body, {
+    headers: {
+      "content-type": download.contentType,
+      "content-disposition": attachmentDisposition(filename),
+      "cache-control": "no-store, private",
+      "x-content-type-options": "nosniff",
+      ...(download.contentLength !== null
+        ? { "content-length": String(download.contentLength) }
+        : {}),
+    },
+  });
 }
 
 /** Types a co-op actually uploads. Anything else is refused server-side. */

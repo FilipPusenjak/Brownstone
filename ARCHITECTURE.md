@@ -35,7 +35,7 @@ src/
                             sublets, duty, bookings, notices
     compliance/             the applicability DSL and the generator
     email/                  mailer drivers, and send.ts which logs before sending
-    storage/                presigned PUT/GET behind an interface
+    storage/                Vercel Blob, S3 and the disk, behind one interface
     time.ts money.ts        the two things that are wrong everywhere else
 prisma/
   schema.prisma             the domain, one file
@@ -152,9 +152,14 @@ still thinking about it.
    date and state, never stored, so nothing can go stale. An unanswerable
    question returns `indeterminate` rather than a guess.
 2. **Documents** — expiry is a first-class field, and an expiring document
-   generates a calendar obligation. Storage is behind an interface; uploads are
-   presigned PUTs namespaced `buildings/{buildingId}/{entity}/{id}/{filename}`.
-   There is no public URL and no stable document link anywhere in the product.
+   generates a calendar obligation. Storage is behind an interface with three
+   drivers — Vercel Blob, S3-compatible, and the filesystem for development.
+   Uploads are presigned PUTs straight from the browser, namespaced
+   `buildings/{buildingId}/{entity}/{id}/{filename}`, so a 20 MB scan never
+   passes through a function. Downloads either redirect to a short-lived signed
+   GET or stream through the application, whichever the driver can do while
+   still carrying `Content-Disposition: attachment`. Nothing is public, and
+   there is no stable document link anywhere in the product.
 3. **Share register** (`primitives/shares.ts`) — dated `ShareAllocation` and
    `UnitHolding` records. There is no `shares` column on `Unit`, so a quorum
    computed for a 2021 meeting still uses the 2021 numbers. Thresholds are exact

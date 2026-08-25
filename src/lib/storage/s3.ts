@@ -7,7 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "~/lib/env";
-import type { PresignedUpload, StorageDriver } from "./index";
+import { attachmentDisposition, type Download, type PresignedUpload, type StorageDriver } from "./index";
 
 /**
  * S3-compatible object storage. Cloudflare R2 by default; setting S3_ENDPOINT
@@ -71,17 +71,21 @@ export function s3StorageDriver(): StorageDriver {
       };
     },
 
-    async presignDownload(key: string, filename: string): Promise<string> {
+    async download(key: string, filename: string): Promise<Download> {
       const command = new GetObjectCommand({
         Bucket: bucket(),
         Key: key,
         // Serve under the original filename rather than the storage key, and
         // as an attachment so a PDF cannot render inline from the bucket
-        // origin.
-        ResponseContentDisposition: `attachment; filename="${filename.replace(/"/g, "")}"`,
+        // origin. Both are inside the signature, which is why this driver can
+        // redirect the browser at the bucket rather than streaming.
+        ResponseContentDisposition: attachmentDisposition(filename),
       });
 
-      return getSignedUrl(s3(), command, { expiresIn: DOWNLOAD_TTL_SECONDS });
+      return {
+        kind: "redirect",
+        url: await getSignedUrl(s3(), command, { expiresIn: DOWNLOAD_TTL_SECONDS }),
+      };
     },
 
     async delete(key: string): Promise<void> {

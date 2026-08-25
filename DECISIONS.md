@@ -1074,3 +1074,50 @@ not have to print a form to say no.
 and `scripts/write-module-todos.ts` existed to keep five half-built modules
 honest about being half-built. With none left they are code that describes a
 state the repository is no longer in, which is worse than no code at all.
+
+---
+
+## Vercel Blob, and what "private" had to mean
+
+**Vercel Blob is the storage driver this deploys on**, because the hosting
+account already has it and it needs no bucket, no access keys and no second
+vendor to fall over. The S3 driver stays for anyone who would rather own the
+bucket, and the filesystem driver stays for development.
+
+**Every blob is private, and that is a constant rather than a setting.** Blob
+will happily store objects at `access: "public"`, which means a permanent
+unauthenticated URL. Unguessable, but permanent — and still working the day
+after somebody leaves the board, which is precisely what this product says it
+does not have. Rejected outright, even though it is the simpler integration and
+the one most tutorials show.
+
+**Uploads still go straight from the browser.** `issueSignedToken` plus
+`presignUrl` produce a presigned PUT scoped to one pathname, one content type
+and one exact size, valid for fifteen minutes — the same shape the S3 driver
+already had, so nothing above the driver changed. Rejected: posting the file to
+a route handler and calling `put()` server-side, which reads well and dies at
+Vercel's 4.5 MB request body limit — well below the 25 MB a scanned certificate
+is allowed to be.
+
+**Downloads stream through the application, and only on this driver.** A Blob
+presigned GET cannot carry a `Content-Disposition`, and there is no per-request
+equivalent, so redirecting the browser at the store would serve a PDF inline
+from the storage origin — the thing that header exists to prevent. So the
+`StorageDriver` interface widened by exactly one axis: a download is either a
+`redirect` to a signed URL or a `stream` of bytes, and each driver returns what
+it can do best. S3 keeps the redirect, because its signature carries both the
+filename and the disposition and the bytes never touch a function. Blob streams,
+which costs a few hundred kilobytes of function bandwidth on something a
+twelve-unit co-op does a handful of times a month — and, incidentally, means the
+file never has a URL anybody can hold at all.
+
+**The streamed response is built in one place and tested there**, because every
+header on it is doing a job: `attachment` so nothing renders inline, `no-store,
+private` so neither a shared cache nor the browser's disk keeps a copy that
+outlives the capability check, and `nosniff` because the content type came from
+whoever uploaded the file.
+
+**Selecting Blob without a token refuses at boot.** The failure it prevents is
+silent and expensive: a deployment that means to use Blob but quietly writes to
+a Vercel filesystem reports every upload as a success, and the building's
+certificates are gone at the next deploy.

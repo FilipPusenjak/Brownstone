@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { env } from "~/lib/env";
-import type { PresignedUpload, StorageDriver } from "./index";
+import type { Download, PresignedUpload, StorageDriver } from "./index";
 
 /**
  * Filesystem storage for development.
@@ -83,11 +83,11 @@ export function localStorageDriver(): StorageDriver {
       };
     },
 
-    async presignDownload(key: string, filename: string): Promise<string> {
+    async download(key: string, filename: string): Promise<Download> {
       const expiresAt = Date.now() + DOWNLOAD_TTL_SECONDS * 1000;
       const url = new URL(signLocalUrl("get", key, expiresAt));
       url.searchParams.set("filename", filename);
-      return url.toString();
+      return { kind: "redirect", url: url.toString() };
     },
 
     async delete(key: string): Promise<void> {

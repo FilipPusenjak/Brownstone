@@ -6,6 +6,7 @@ import {
   storage,
   storageKey,
   validateUpload,
+  type Download,
   type PresignedUpload,
 } from "~/lib/storage";
 import type { BuildingContext } from "../context";
@@ -23,8 +24,10 @@ import { recordAudit } from "./audit";
  *   arrive from the browser, and the presigned URL is issued on the strength of
  *   them, so they are validated server-side before anything is signed.
  *
- *   Nothing is ever public. A download is a short-lived presigned GET issued
- *   only after a capability check, so a document link stops working when
+ *   Nothing is ever public. A download happens only after a capability check,
+ *   and whether it arrives as a short-lived signed URL or as bytes streamed
+ *   through the application is the storage driver's business — see
+ *   `src/lib/storage/index.ts`. Either way a document link stops working when
  *   someone leaves the board rather than living forever in an inbox.
  */
 
@@ -144,7 +147,7 @@ export async function attachDocument(
 export async function requestDownload(
   ctx: BuildingContext,
   documentId: string,
-): Promise<Result<{ url: string }>> {
+): Promise<Result<{ download: Download; filename: string }>> {
   const document = await withBuildingTx(ctx.building.id, (tx) =>
     tx.document.findUnique({
       where: { id: documentId },
@@ -178,8 +181,10 @@ export async function requestDownload(
   }
 
   const filename = document.storageKey.split("/").pop() ?? "document";
-  const url = await storage().presignDownload(document.storageKey, filename);
-  return ok({ url });
+  return ok({
+    download: await storage().download(document.storageKey, filename),
+    filename,
+  });
 }
 
 export async function deleteDocument(
