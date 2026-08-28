@@ -127,6 +127,12 @@ export async function logFineAction(input: {
   amount: string;
   hearingOn?: string | null;
   note?: string | null;
+  /**
+   * Which rota the summons is about. Omitted where the building runs one and
+   * there is nothing to disambiguate; `null` where it is nobody's turn's
+   * fault. See `logFine`.
+   */
+  rotationId?: string | null;
 }): Promise<Result<{ fineId: string; attributedUnitId: string | null }>> {
   if (!isPlainDate(input.issuedOn)) {
     return fail("invalid", "That date could not be read.", {
@@ -154,6 +160,7 @@ export async function logFineAction(input: {
       amountCents,
       hearingOn: input.hearingOn ? plainDate(input.hearingOn) : null,
       note: input.note ?? null,
+      ...("rotationId" in input ? { rotationId: input.rotationId } : {}),
     }),
   );
 

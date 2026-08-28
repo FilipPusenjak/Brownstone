@@ -894,6 +894,41 @@ unattributed, and `chargeFineToUnit` refuses one. A building with no rotation on
 record has nobody the bill honestly belongs to, and picking somebody plausible
 is the failure mode this whole module exists to prevent.
 
+**And "which rota" is a second question the date cannot answer.** This was a
+bug for as long as the module existed. `assignmentCovering` asked for _the_
+turn on a date, ordered by period start, and took the first row — which is a
+well-defined query and a meaningless answer once a building keeps more than one
+rota. Bins and recycling run on different cycles and are frequently different
+apartments' weeks, so a bin summons could be attributed to whoever had the
+recycling week, and then billed to them. Nothing about the failure was visible:
+it produced a name, and the name was wrong roughly half the time.
+
+The fix is the module's own rule applied to a question it had not been asked.
+`turnsCovering` returns every turn covering the date, and `logFine` refuses to
+choose between them — the same refusal it already gives when no rota covers the
+date at all. The difference is that this one is answerable, so it asks rather
+than shrugging: the treasurer is holding the summons, and the summons says
+which rota it is about. `LogFineInput.rotationId` is three-valued — omitted
+means work it out, an id names the rota, and `null` says this was nobody's
+turn's fault.
+
+Rejected: recording an ambiguous summons unattributed. It reads as the safe
+option and is a dead end — `updateFine` deliberately cannot re-attribute a
+summons, so a fine logged against nobody stays that way, and the treasurer
+would have to notice the omission on a page they have no reason to revisit.
+Rejected too: inferring the rota from the violation text, which is guessing
+with extra steps, and from `DutyKind`, which would need the violation
+classified first and lands in the same place.
+
+The form asks only where there is something to ask about: one rota, no picker,
+and the date is enough. That matters more than it looks — the module's best
+property is that logging a summons takes four fields and no memory, and making
+every building pay for a case only some have would have spent it.
+
+Found by a test that had been failing for a while and was easy to read as
+flaky: the seeded building keeps a rota, the suite added a second, and the
+attribution came back as whichever sorted first.
+
 **The answer-by date comes off the summons, not out of the software.** The
 window to contest a DSNY violation is the most expensive thing here — miss it
 and a contestable fine becomes an unarguable one — but the deadline is printed

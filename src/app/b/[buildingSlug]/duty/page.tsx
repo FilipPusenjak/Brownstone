@@ -2,7 +2,12 @@ import Link from "next/link";
 import { EmptyState, PageHeader } from "~/components/patterns/PageHeader";
 import { can } from "~/lib/auth/capabilities";
 import { getBuildingContext } from "~/lib/auth/current";
-import { currentTurns, listFines, turnsPerUnit } from "~/lib/db/scoped/duty";
+import {
+  currentTurns,
+  listFines,
+  listRotations,
+  turnsPerUnit,
+} from "~/lib/db/scoped/duty";
 import { listUnits } from "~/lib/db/scoped/units";
 import { formatAmount, money } from "~/lib/money";
 import { addDays, formatDate, relativeDays, today, toPlainDate } from "~/lib/time";
@@ -24,10 +29,13 @@ export default async function DutyPage({
   const ctx = await getBuildingContext(buildingSlug);
   const now = today(ctx.building.timezone);
 
-  const [turns, fines, units] = await Promise.all([
+  const [turns, fines, units, rotations] = await Promise.all([
     currentTurns(ctx, now),
     listFines(ctx),
     listUnits(ctx),
+    // All of them, not just the active ones `currentTurns` returns: a summons
+    // that arrives in March can belong to a rota paused in February.
+    listRotations(ctx),
   ]);
 
   const labels = new Map(units.map((unit) => [unit.id, unit.label]));
@@ -202,7 +210,14 @@ export default async function DutyPage({
             Sanitation summonses
           </h2>
           {mayManage ? (
-            <LogFine buildingSlug={buildingSlug} defaultIssuedOn={now} />
+            <LogFine
+              buildingSlug={buildingSlug}
+              defaultIssuedOn={now}
+              rotations={rotations.map((rotation) => ({
+                id: rotation.id,
+                name: rotation.name,
+              }))}
+            />
           ) : null}
         </div>
 

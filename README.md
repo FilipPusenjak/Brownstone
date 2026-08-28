@@ -35,12 +35,12 @@ saying exactly what was missing — and none of them needed anything about
 tenancy, capabilities or the primitives to change on the way out of it, which
 was the point of the exercise.
 
-Outside the module list, the following are built: setting a building up from
-its address, sign-in and invitation
-redemption, the members page with outstanding invitations, the share register,
-the document index, the audit trail, and building work — what the building has
-to pay for, with each apartment's share of the cost shown as a percentage and a
-figure, and the assessment that turns it into money owed.
+Outside the module list, the following are built: setting a building up from its
+address, sign-in and invitation redemption, the members page with outstanding
+invitations, the share register, the document index, the audit trail, and
+building work — what the building has to pay for, with each apartment's share of
+the cost shown as a percentage and a figure, and the assessment that turns it
+into money owed.
 
 Nothing in Co-operator votes, decides, or predicts. Meetings records what a
 board resolved in a room; building work records what it authorised. The
@@ -53,7 +53,8 @@ over its cap, no booking confirmed whose conditions are not met on the day of
 the move, no apartment that ignored the window guard notice filed as a no, and
 no editing a record the board has adopted. What it will not do is guess: a
 sanitation summons the rota does not cover is left unattributed rather than
-pinned on somebody plausible.
+pinned on somebody plausible, and one that two rotas both cover is a question
+put back to the board rather than answered by whichever row sorted first.
 
 ## Getting started
 
@@ -163,7 +164,7 @@ a migration leaves a tenant table without a row-level security policy.
 
 ### The browser tests
 
-`pnpm test:e2e` runs twenty-three paths end to end. A stranger with nothing but
+`pnpm test:e2e` runs twenty-four paths end to end. A stranger with nothing but
 an email address signs in, finds an account that belongs to no building, sets
 one up — its apartments, its share register, its attributes — lands on the list
 of requirements that look like they apply, puts one on the calendar, and finds
@@ -186,7 +187,9 @@ list. And the board is refused a sublet that would put the building over its
 twenty per cent cap, records the running one ending early, and watches the same
 refusal turn into an approval. And two neighbours swap a week on the bin rota,
 a summons is logged with nothing but its date, and the building names the
-apartment that actually took the turn. And a move is refused because the
+apartment that actually took the turn — while a building keeping two rotas is
+asked which one a summons is about, because that is the one thing its date
+cannot settle. And a move is refused because the
 deposit is missing and the mover's certificate — current today — lapses before
 the day of the move, then confirmed once both hold; a slot somebody is holding
 cannot be taken; and the roof deck is added as a row, with its own hours and

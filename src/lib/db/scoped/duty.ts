@@ -1,6 +1,6 @@
 import { assertCan } from "~/lib/auth/capabilities";
 import { turnOn, turnsEach, type Rotation } from "~/lib/primitives/duty";
-import { today, toPlainDate, type PlainDate } from "~/lib/time";
+import { today, toDbDate, toPlainDate, type PlainDate } from "~/lib/time";
 import type { BuildingContext } from "../context";
 import { withBuildingTx, type ScopedTx } from "../tx";
 
@@ -248,20 +248,59 @@ export function liveCharges(charges: FineDetail["charges"]): FineDetail["charges
   return charges.filter((c) => !c.reversesChargeId && !reversed.has(c.id));
 }
 
-/** Used by the write path so it and the read path agree about attribution. */
-export async function assignmentCovering(
+export interface CoveringTurn {
+  readonly id: string;
+  readonly unitId: string;
+  readonly rotationId: string;
+  readonly rotationName: string;
+}
+
+/**
+ * Every turn that covers a date — usually one, and the point is the "usually".
+ *
+ * A building with a bin rota and a recycling rota has two turns running on any
+ * given Tuesday, and they are frequently different apartments. Asking for "the"
+ * turn on a date is therefore a question with no answer, and the previous
+ * version of this function answered it anyway: it took whichever row sorted
+ * first by `periodStart` and handed it back as fact. A sanitation summons for
+ * a bin violation could be attributed to whoever had the recycling week, and
+ * then billed to them.
+ *
+ * So this returns all of them and lets the caller decide what to do with more
+ * than one. `logFine` refuses to guess and asks which rota the summons is
+ * about, which is the same answer the module already gives when the rota covers
+ * nothing at all: leave it unattributed rather than pin it on somebody
+ * plausible.
+ *
+ * Used by the write path so it and the read path agree about attribution.
+ */
+export async function turnsCovering(
   tx: ScopedTx,
   date: PlainDate,
-): Promise<{ id: string; unitId: string } | null> {
+): Promise<CoveringTurn[]> {
+  // Both bounds in the query rather than a `take` and a filter in memory: the
+  // old version read the eight most recent starts and hoped the covering row
+  // was among them, which stops being true at four rotations.
   const rows = await tx.dutyAssignment.findMany({
-    where: { periodStart: { lte: new Date(`${date}T00:00:00.000Z`) } },
+    where: {
+      periodStart: { lte: toDbDate(date) },
+      periodEnd: { gte: toDbDate(date) },
+    },
     orderBy: { periodStart: "desc" },
-    take: 8,
-    select: { id: true, unitId: true, periodStart: true, periodEnd: true },
+    select: {
+      id: true,
+      unitId: true,
+      rotationId: true,
+      rotation: { select: { name: true } },
+    },
   });
 
-  const match = rows.find((row) => date <= toPlainDate(row.periodEnd));
-  return match ? { id: match.id, unitId: match.unitId } : null;
+  return rows.map((row) => ({
+    id: row.id,
+    unitId: row.unitId,
+    rotationId: row.rotationId,
+    rotationName: row.rotation.name,
+  }));
 }
 
 /** Unfiltered reads used by the tenancy suite. */

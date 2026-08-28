@@ -7,7 +7,7 @@ import { compareDates, toDbDate, today, toPlainDate, type PlainDate } from "~/li
 import type { BuildingContext } from "../context";
 import { withBuildingTx, type ScopedTx } from "../tx";
 import { recordAudit } from "./audit";
-import { asRotation, assignmentCovering } from "./duty";
+import { asRotation, turnsCovering } from "./duty";
 
 /**
  * Setting up the rotation, swapping turns, and logging what it cost when
@@ -27,7 +27,10 @@ import { asRotation, assignmentCovering } from "./duty";
  * 3. **A fine is attributed from its date, not from memory.** A sanitation
  *    summons arrives weeks after the violation. The apartment is looked up from
  *    the turn the violation date fell in, and the officer logging it is shown
- *    the answer rather than asked for it.
+ *    the answer rather than asked for it — except for the one thing the date
+ *    genuinely cannot settle, which is *which* rota a summons is about once a
+ *    building runs bins and recycling on different weeks. That gets asked; see
+ *    `attribute`.
  */
 
 /** How far ahead of a turn to remind the apartment, in days. */
@@ -445,6 +448,19 @@ export interface LogFineInput {
   readonly note?: string | null;
   /** Overrides the apartment derived from the date. Rarely right. */
   readonly unitId?: string | null;
+  /**
+   * Which rota this summons is about. Three-valued on purpose:
+   *
+   *   omitted — work it out from the date, and refuse if more than one rota
+   *             was running, because that is a question only the summons can
+   *             answer;
+   *   `null`  — this is not a rota's fault. Log it against the building.
+   *   an id   — this rota, and derive the apartment from its turn.
+   *
+   * A building with one rotation never sees any of this: there is nothing to
+   * disambiguate and the date is enough.
+   */
+  readonly rotationId?: string | null;
 }
 
 /**
@@ -454,6 +470,14 @@ export interface LogFineInput {
  * summons arrives two or three weeks after the fact, and by then the honest
  * answer to "whose week was that" is nobody's memory — it is the rota, which is
  * on record here.
+ *
+ * What the date alone cannot answer is *which* rota, once a building runs more
+ * than one — bins on Tuesdays and recycling on Fridays are different weeks and
+ * frequently different apartments. So the date settles whose turn it was within
+ * a rota, and the summons settles which rota; where that is genuinely ambiguous
+ * this refuses rather than picks, on the same principle that leaves a summons
+ * the rota does not cover unattributed instead of pinned on somebody plausible.
+ * The difference is that this one is answerable, so it asks.
  *
  * If the summons carries an answer-by date, it goes on the compliance calendar.
  * Missing that window is how a contestable fine becomes an unarguable one, and
@@ -508,7 +532,10 @@ export async function logFine(
     }
 
     // Whose week it was, from the rota rather than from anybody's memory.
-    const turn = await assignmentCovering(tx, input.issuedOn);
+    const attribution = await attribute(tx, input.issuedOn, input.rotationId);
+    if (!attribution.ok) return attribution.failure;
+    const turn = attribution.turn;
+
     const unitId = input.unitId ?? turn?.unitId ?? null;
 
     if (unitId) {
@@ -589,6 +616,70 @@ export async function logFine(
 
     return ok({ fineId: fine.id, attributedUnitId: unitId });
   });
+}
+
+/**
+ * Which turn a summons belongs to, or a refusal to guess.
+ *
+ * Kept apart from `logFine` because the interesting case is one line of code
+ * and several paragraphs of reasoning: when two rotas were running on the day,
+ * there is no fact of the matter to derive. The date says whose turn it was in
+ * each rota; only the summons says which rota it is about.
+ *
+ * Refusing is the right failure rather than the safe-looking one. Recording it
+ * unattributed would be quieter, and it would also be a dead end — `updateFine`
+ * deliberately cannot re-attribute a summons, so a fine logged against nobody
+ * stays that way. The information exists, the person logging it is holding the
+ * ticket, and a form is the right place to ask.
+ */
+type Attribution =
+  | { ok: true; turn: { id: string; unitId: string } | null }
+  | { ok: false; failure: Failure };
+
+async function attribute(
+  tx: ScopedTx,
+  issuedOn: PlainDate,
+  rotationId: string | null | undefined,
+): Promise<Attribution> {
+  // An explicit "this is not a rota's fault". The building pays it.
+  if (rotationId === null) return { ok: true, turn: null };
+
+  const covering = await turnsCovering(tx, issuedOn);
+
+  if (rotationId !== undefined) {
+    const named = covering.find((turn) => turn.rotationId === rotationId);
+    if (named) return { ok: true, turn: named };
+
+    // Naming a rota that was not running is a mistake worth reporting, not one
+    // to absorb: the alternative is a summons quietly logged against nobody
+    // under a rota the person believes it was attributed to.
+    const rotation = await tx.dutyRotation.findUnique({
+      where: { id: rotationId },
+      select: { name: true },
+    });
+    if (!rotation) return { ok: false, failure: fail("not_found", "No such rota.") };
+
+    return {
+      ok: false,
+      failure: fail(
+        "invalid",
+        `The ${rotation.name} rota has no turn covering ${issuedOn}. Generate its turns for that week, or log the summons against the building.`,
+        { rotationId: "This rota was not running that day." },
+      ),
+    };
+  }
+
+  if (covering.length <= 1) return { ok: true, turn: covering[0] ?? null };
+
+  const names = covering.map((turn) => turn.rotationName);
+  return {
+    ok: false,
+    failure: fail(
+      "invalid",
+      `${names.join(" and ")} were both running on ${issuedOn}, and they were different apartments' weeks. Which rota is this summons about?`,
+      { rotationId: "Pick the rota, or log it against the building." },
+    ),
+  };
 }
 
 export interface UpdateFineInput {

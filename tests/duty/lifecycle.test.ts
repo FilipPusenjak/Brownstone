@@ -7,8 +7,10 @@ import {
   getFine,
   getRotation,
   listFines,
+  listRotations,
   liveCharges,
   turnForDate,
+  turnsCovering,
   turnsPerUnit,
 } from "~/lib/db/scoped/duty";
 import {
@@ -21,6 +23,7 @@ import {
   updateFine,
 } from "~/lib/db/scoped/duty-writes";
 import { unitLedger } from "~/lib/db/scoped/ledger";
+import { withBuildingTx } from "~/lib/db/tx";
 import { listUnitsWithShares } from "~/lib/db/scoped/units";
 import { expect as unwrap } from "~/lib/result";
 import { addDays, makeDate, today, toPlainDate, type PlainDate } from "~/lib/time";
@@ -325,6 +328,11 @@ describe("the duty rotation", () => {
   });
 
   describe("the fine", () => {
+    /** Every turn covering a date, through the same helper the write path uses. */
+    function coveringIn(ctx: BuildingContext, date: PlainDate) {
+      return withBuildingTx(ctx.building.id, (tx) => turnsCovering(tx, date));
+    }
+
     /** A rotation covering a past window, so a summons can land inside it. */
     async function pastRotation(start: PlainDate): Promise<string> {
       const id = await freshRotation(president, start);
@@ -372,12 +380,16 @@ describe("the duty rotation", () => {
         }),
       );
 
+      // Named, because the seeded building already runs a bin rota and this
+      // makes two covering yesterday. Which rota a summons is about is the one
+      // thing the date cannot settle.
       const logged = unwrap(
         await logFine(president, {
           ticketNumber: `S-${Date.now().toString(36)}-b`,
           issuedOn: addDays(today(), -1),
           violation: "Dirty sidewalk",
           amountCents: 5_000,
+          rotationId: id,
         }),
       );
 
@@ -388,6 +400,152 @@ describe("the duty rotation", () => {
       const fine = await getFine(president, logged.fineId);
       expect(fine?.dutyAssignment?.unit.label).toEqual("2R");
       expect(labels.get(fine!.dutyAssignment!.originalUnitId!)).toEqual("GARDEN");
+    });
+
+    /**
+     * Which rota, once a building runs more than one.
+     *
+     * The seeded Adelaide already keeps a bin rota, so every rotation these
+     * tests create is a second one — which is not a contrivance but the
+     * ordinary case: bins on one cycle and recycling on another are different
+     * weeks and frequently different apartments.
+     *
+     * Before this, `assignmentCovering` took whichever assignment sorted first
+     * by period start and handed it back as fact, so a bin summons could be
+     * attributed to whoever had the recycling week and then billed to them.
+     * The rule now is the module's existing one, applied to a question it had
+     * not been asked before: where there is no fact to derive, do not derive
+     * one.
+     */
+    describe("which rota", () => {
+      it("refuses to pick when two were running that day", async () => {
+        const start = addDays(today(), -3);
+        const mine = await freshRotation(president, start);
+        unwrap(await generateTurns(president, mine, { count: 4, from: start }));
+
+        // Two rotas, one date. Only the summons says which.
+        const covering = await coveringIn(president, addDays(today(), -1));
+        expect(covering.length).toBeGreaterThan(1);
+
+        const result = await logFine(president, {
+          ticketNumber: `S-${Date.now().toString(36)}-amb`,
+          issuedOn: addDays(today(), -1),
+          violation: "Receptacle set out before 6pm",
+          amountCents: 7_500,
+        });
+
+        expect(result.ok).toBe(false);
+        if (result.ok) return;
+        expect(result.code).toEqual("invalid");
+        expect(result.fields?.["rotationId"]).toBeTruthy();
+        // The message names them, because "ambiguous" is not an answer a
+        // treasurer can act on and two rota names are.
+        expect(result.message).toContain("both running");
+      });
+
+      it("writes nothing when it refuses", async () => {
+        // The refusal has to come before the row. A summons half-logged and
+        // then rejected is one the treasurer will log again, and the duplicate
+        // check will then refuse that too.
+        const ticketNumber = `S-${Date.now().toString(36)}-amb2`;
+        const start = addDays(today(), -3);
+        const mine = await freshRotation(president, start);
+        unwrap(await generateTurns(president, mine, { count: 4, from: start }));
+
+        await logFine(president, {
+          ticketNumber,
+          issuedOn: addDays(today(), -1),
+          violation: "Receptacle set out before 6pm",
+          amountCents: 7_500,
+        });
+
+        const fines = await listFines(president);
+        expect(fines.some((fine) => fine.ticketNumber === ticketNumber)).toBe(false);
+      });
+
+      it("attributes to the rota it is told about", async () => {
+        const start = addDays(today(), -3);
+        const mine = await freshRotation(president, start);
+        unwrap(await generateTurns(president, mine, { count: 4, from: start }));
+
+        const logged = unwrap(
+          await logFine(president, {
+            ticketNumber: `S-${Date.now().toString(36)}-named`,
+            issuedOn: addDays(today(), -1),
+            violation: "Dirty sidewalk",
+            amountCents: 5_000,
+            rotationId: mine,
+          }),
+        );
+
+        // GARDEN leads the order this suite builds, and its turn is the one
+        // running.
+        expect(labels.get(logged.attributedUnitId!)).toEqual("GARDEN");
+
+        // The assertion that cannot pass by coincidence: the turn the summons
+        // points at belongs to the rota that was named, and not to the seeded
+        // one that also covered the day.
+        const fine = await getFine(president, logged.fineId);
+        const named = (await getRotation(president, mine))!;
+        expect(named.assignments.map((turn) => turn.id)).toContain(
+          fine!.dutyAssignmentId,
+        );
+
+        const others = (await listRotations(president)).filter(
+          (rotation) => rotation.id !== mine,
+        );
+        expect(others.length).toBeGreaterThan(0);
+      });
+
+      it("logs it against the building when told it was nobody's turn", async () => {
+        const start = addDays(today(), -3);
+        const mine = await freshRotation(president, start);
+        unwrap(await generateTurns(president, mine, { count: 4, from: start }));
+
+        // A summons for something no rota covers — a broken sidewalk flag, a
+        // scaffolding notice — is the building's, and saying so explicitly is
+        // different from failing to say anything.
+        const logged = unwrap(
+          await logFine(president, {
+            ticketNumber: `S-${Date.now().toString(36)}-none`,
+            issuedOn: addDays(today(), -1),
+            violation: "Failure to maintain sidewalk",
+            amountCents: 15_000,
+            rotationId: null,
+          }),
+        );
+
+        expect(logged.attributedUnitId).toBeNull();
+        const fine = await getFine(president, logged.fineId);
+        expect(fine?.dutyAssignmentId).toBeNull();
+      });
+
+      it("refuses a rota that was not running that day", async () => {
+        // Absorbing this would be worse than reporting it: the summons would
+        // be logged against nobody, under a rota the treasurer believes it was
+        // attributed to.
+        const id = await freshRotation(president, makeDate(2044, 4, 4));
+        unwrap(await generateTurns(president, id, { count: 4 }));
+
+        const result = await logFine(president, {
+          ticketNumber: `S-${Date.now().toString(36)}-cold`,
+          issuedOn: makeDate(2013, 6, 2),
+          violation: "Failure to recycle",
+          amountCents: 2_500,
+          rotationId: id,
+        });
+
+        expect(result.ok).toBe(false);
+        if (result.ok) return;
+        expect(result.fields?.["rotationId"]).toBeTruthy();
+      });
+
+      it("still needs nothing said where a building runs one rota", async () => {
+        // The picker exists for buildings with two. Lispenard House has the
+        // seeded rota and nothing else, and the date is enough there.
+        const covering = await coveringIn(otherBuilding, addDays(today(), -1));
+        expect(covering).toHaveLength(1);
+      });
     });
 
     it("has nobody to blame when the rota did not cover the day", async () => {

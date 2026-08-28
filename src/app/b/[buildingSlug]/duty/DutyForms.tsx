@@ -414,12 +414,33 @@ export function SwapTurns({
 
 // --- Logging a summons -----------------------------------------------------
 
+/**
+ * The picker's value for "this was nobody's turn's fault". Not a uuid, so it
+ * cannot collide with a rota id, and explicit so that "nothing chosen yet" and
+ * "chosen, and the answer is nobody" stay distinguishable — the first must not
+ * silently log a summons against the building.
+ */
+const NOT_A_ROTA = "not-a-rota";
+
+/**
+ * Logging a summons.
+ *
+ * The rota picker appears only where there is something to pick between. A
+ * building with one rotation has nothing to disambiguate — the date settles it
+ * — and asking anyway would turn the module's best property into a chore. With
+ * two, the question is unavoidable: bins and recycling run different weeks and
+ * are frequently different apartments, and only the summons says which one it
+ * is about.
+ */
 export function LogFine({
   buildingSlug,
   defaultIssuedOn,
+  rotations,
 }: {
   buildingSlug: string;
   defaultIssuedOn: string;
+  /** Every rota, paused ones included — a summons can predate a pause. */
+  rotations: Array<{ id: string; name: string }>;
 }) {
   const [open, setOpen] = useState(false);
   const [ticketNumber, setTicketNumber] = useState("");
@@ -428,6 +449,8 @@ export function LogFine({
   const [amount, setAmount] = useState("");
   const [hearingOn, setHearingOn] = useState("");
   const [note, setNote] = useState("");
+  // "" means nothing chosen; NOT_A_ROTA means chosen, and the answer is nobody.
+  const [rotationId, setRotationId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
@@ -458,6 +481,9 @@ export function LogFine({
       <p className="text-ironwork-soft mb-3 max-w-2xl text-sm">
         Whose week it was is worked out from the date on the summons, so there is
         nothing to remember and nothing to argue about.
+        {rotations.length > 1
+          ? " Say which rota it is about, though — more than one runs here, and they are different weeks."
+          : ""}
       </p>
 
       <div className="grid gap-3 sm:grid-cols-4">
@@ -514,6 +540,30 @@ export function LogFine({
         </div>
       </div>
 
+      {rotations.length > 1 ? (
+        <div className="mt-3 max-w-sm">
+          <Field
+            label="Which rota?"
+            hint="The date says whose turn it was. Only the summons says which rota."
+            error={fieldError["rotationId"]}
+          >
+            <select
+              value={rotationId}
+              onChange={(event) => setRotationId(event.target.value)}
+              className={inputClass}
+            >
+              <option value="">Choose…</option>
+              {rotations.map((rotation) => (
+                <option key={rotation.id} value={rotation.id}>
+                  {rotation.name}
+                </option>
+              ))}
+              <option value={NOT_A_ROTA}>Not a rota&rsquo;s fault</option>
+            </select>
+          </Field>
+        </div>
+      ) : null}
+
       <div className="mt-3">
         <Field label="Note">
           <textarea
@@ -543,6 +593,12 @@ export function LogFine({
                 amount,
                 hearingOn: hearingOn || null,
                 note: note || null,
+                // Omitted entirely where there is one rota: the write path
+                // derives it, and only refuses if it turns out to be
+                // ambiguous after all.
+                ...(rotations.length > 1 && rotationId
+                  ? { rotationId: rotationId === NOT_A_ROTA ? null : rotationId }
+                  : {}),
               });
               if (result.ok) {
                 setOpen(false);
@@ -550,6 +606,7 @@ export function LogFine({
                 setViolation("");
                 setAmount("");
                 setNote("");
+                setRotationId("");
               } else {
                 setError(result.message);
                 setFieldError(result.fields ?? {});

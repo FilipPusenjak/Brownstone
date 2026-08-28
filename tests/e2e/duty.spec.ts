@@ -150,6 +150,103 @@ test("a summons names whoever actually had the week, swap included", async ({
   ).toBeVisible();
 });
 
+/**
+ * Two rotas, one Tuesday.
+ *
+ * Bins and recycling run on different cycles and are frequently different
+ * apartments' weeks, so "whose turn was it on the 3rd" stops having a single
+ * answer the moment a building keeps a second rota. The write path used to
+ * answer anyway — whichever assignment sorted first — which meant a bin summons
+ * could be attributed to whoever had the recycling week, and then billed to
+ * them.
+ *
+ * Run against Lispenard House rather than The Adelaide because it leaves a
+ * second rotation behind: the development database this suite drives is not
+ * reseeded between runs, and every other duty test reads The Adelaide's page.
+ * The rota is created once and reused on later runs.
+ */
+test("with two rotas running, the summons has to say which", async ({
+  page,
+  baseURL,
+}) => {
+  test.slow();
+  const base = baseURL ?? "http://localhost:3000";
+  const SECOND = "Recycling";
+  const ticket = `E2E-AMB-${Date.now().toString(36)}`;
+
+  await signIn(page, "ivan.petrosyan@example.com", base);
+  await page.goto("/b/lispenard-house/duty");
+
+  // ---- A second rota, made once and reused -------------------------------
+  const second = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: SECOND, exact: true }) });
+
+  if ((await second.count()) === 0) {
+    await page.getByRole("button", { name: "Set up a rotation" }).click();
+    await page.getByLabel("What it is").fill(SECOND);
+    await page.getByLabel("Kind").selectOption("RECYCLING_SET_OUT");
+    // Three days ago, not a week: turns are generated forward from today, so a
+    // rota that started a full period back would have its first materialised
+    // turn begin today and cover nothing yesterday.
+    await page.getByLabel("First turn starts").fill(isoDaysFromNow(-3));
+    await page.getByRole("button", { name: "Set it up" }).click();
+    await expect(
+      page.getByRole("heading", { name: SECOND, exact: true }),
+    ).toBeVisible();
+  }
+
+  // Its turns have to exist for a date to fall inside one — the rota is rows,
+  // not a formula, and attribution reads the rows. Generated only when there
+  // is no current turn, so repeated runs do not extend it forever.
+  if ((await second.getByText("This week").count()) === 0) {
+    await second.getByRole("button", { name: "Extend the rota" }).click();
+    await expect(second.getByText("This week")).toBeVisible();
+  }
+
+  // ---- The summons cannot be logged without naming a rota -----------------
+  await page.getByRole("button", { name: "Log a summons" }).click();
+  await page.getByLabel("Summons number").fill(ticket);
+  // Today, and deliberately: both sections above show a current turn, so both
+  // rotas provably cover this date whatever start dates they were set up with.
+  // A date chosen relative to one rota's start is a date the other may not
+  // cover, and the ambiguity this test exists for would quietly not arise.
+  await page.getByLabel("Issued").fill(isoDaysFromNow(0));
+  await page.getByLabel("Amount").fill("100.00");
+  await page.getByLabel("Violation").fill("Receptacle set out before 6pm");
+
+  // The picker only exists because this building now keeps two.
+  const which = page.getByLabel("Which rota?");
+  await expect(which).toBeVisible();
+
+  // Submitting without choosing is refused, and the refusal names both rotas
+  // rather than saying "ambiguous" — two names are something a treasurer can
+  // act on.
+  await page.getByRole("button", { name: "Log it" }).click();
+  // Matched on the text rather than on role=alert: Next renders its own empty
+  // route announcer with that role, and it wins the lookup.
+  await expect(page.getByText(/both running on/)).toBeVisible();
+  await expect(page.getByText(/both running on/)).toContainText(SECOND);
+
+  // Nothing was written on the way to that refusal.
+  await expect(page.getByText(ticket)).toHaveCount(0);
+
+  // ---- Naming it is enough ------------------------------------------------
+  await which.selectOption({ label: SECOND });
+  await page.getByRole("button", { name: "Log it" }).click();
+
+  await expect(page.getByText(ticket)).toBeVisible();
+
+  // And it names an apartment, worked out from the date within the rota that
+  // was named — nobody typed one.
+  await page
+    .getByRole("link", { name: "Receptacle set out before 6pm" })
+    .first()
+    .click();
+  await page.waitForURL(/\/duty\/fines\/[0-9a-f-]{36}/);
+  await expect(page.getByRole("heading", { name: "Whose week it was" })).toBeVisible();
+});
+
 test("a summons the rota does not cover has nobody to bill", async ({
   page,
   baseURL,

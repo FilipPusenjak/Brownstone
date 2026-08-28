@@ -202,7 +202,10 @@ still thinking about it.
    whole-day arithmetic so a year of periods tiles the calendar exactly. The
    rollover is the whole point: a seven-day turn starting Monday puts the
    following Monday in the _next_ period, and getting that off by one blames the
-   wrong neighbour every time a summons lands on a changeover day.
+   wrong neighbour every time a summons lands on a changeover day. A date can
+   fall inside more than one rota's turn — bins and recycling run different
+   cycles — so attribution reads every turn covering a date and refuses to pick
+   between them; see `DECISIONS.md`.
 10. **Slots** (`primitives/bookings.ts`) — a resource's day, built from the
     wall clock rather than from elapsed milliseconds, so the freight elevator
     still opens at eight on the two Sundays a year the clocks move. Overlap is
@@ -278,23 +281,23 @@ The persistent disclaimer is on every page and is not dismissible.
 
 ## Testing
 
-| Suite                                                 | What it proves                                                       |
-| ----------------------------------------------------- | -------------------------------------------------------------------- |
-| `tests/tenancy/isolation.test.ts`                     | The scoped query layer never crosses buildings                       |
-| `tests/tenancy/rls.test.ts`                           | The database refuses too, via raw SQL as the app role                |
-| `tests/tenancy/coverage.test.ts`                      | Every tenant table has a policy                                      |
-| `tests/arch/*`                                        | Nothing imports Prisma directly                                      |
-| `tests/primitives/*`                                  | Recurrence, shares, ledger, approvals, prerequisites, slots, notices |
-| `tests/compliance`, `tests/alterations`, `tests/auth` | Module lifecycles against a real database                            |
-| `tests/meetings/lifecycle.test.ts`                    | Quorum, proxies and thresholds against the real share register       |
-| `tests/tickets/lifecycle.test.ts`                     | Repair responsibility, unit scoping, and the gate on billing         |
-| `tests/sublets/lifecycle.test.ts`                     | The cap as a building-wide invariant, checked at approval            |
-| `tests/duty/lifecycle.test.ts`                        | Whose week it was, swaps included, and the fine that follows         |
-| `tests/e2e/smoke.spec.ts`                             | Invite → accept → calendar → file, in a real browser                 |
-| `tests/e2e/meetings.spec.ts`                          | Roster → quorum refusal → vote → minutes, in a real browser          |
-| `tests/e2e/tickets.spec.ts`                           | Report → refusal → determination → bill, in a real browser           |
-| `tests/e2e/sublets.spec.ts`                           | Cap refusal, then approval once a slot frees, in a browser           |
-| `tests/e2e/duty.spec.ts`                              | Swap a week, log a summons, watch it name the right flat             |
+| Suite                                                 | What it proves                                                                                  |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `tests/tenancy/isolation.test.ts`                     | The scoped query layer never crosses buildings                                                  |
+| `tests/tenancy/rls.test.ts`                           | The database refuses too, via raw SQL as the app role                                           |
+| `tests/tenancy/coverage.test.ts`                      | Every tenant table has a policy                                                                 |
+| `tests/arch/*`                                        | Nothing imports Prisma directly                                                                 |
+| `tests/primitives/*`                                  | Recurrence, shares, ledger, approvals, prerequisites, slots, notices                            |
+| `tests/compliance`, `tests/alterations`, `tests/auth` | Module lifecycles against a real database                                                       |
+| `tests/meetings/lifecycle.test.ts`                    | Quorum, proxies and thresholds against the real share register                                  |
+| `tests/tickets/lifecycle.test.ts`                     | Repair responsibility, unit scoping, and the gate on billing                                    |
+| `tests/sublets/lifecycle.test.ts`                     | The cap as a building-wide invariant, checked at approval                                       |
+| `tests/duty/lifecycle.test.ts`                        | Whose week it was, swaps included, and the fine that follows                                    |
+| `tests/e2e/smoke.spec.ts`                             | Invite → accept → calendar → file, in a real browser                                            |
+| `tests/e2e/meetings.spec.ts`                          | Roster → quorum refusal → vote → minutes, in a real browser                                     |
+| `tests/e2e/tickets.spec.ts`                           | Report → refusal → determination → bill, in a real browser                                      |
+| `tests/e2e/sublets.spec.ts`                           | Cap refusal, then approval once a slot frees, in a browser                                      |
+| `tests/e2e/duty.spec.ts`                              | Swap a week, log a summons, watch it name the right flat — and be asked which rota when two run |
 
 The tenancy suite has been mutation-tested: breaking unit scoping fails eight
 tests, removing the tenant setting fails the seed and the suite, and adding a
