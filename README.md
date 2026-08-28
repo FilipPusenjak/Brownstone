@@ -164,7 +164,7 @@ a migration leaves a tenant table without a row-level security policy.
 
 ### The browser tests
 
-`pnpm test:e2e` runs twenty-four paths end to end. A stranger with nothing but
+`pnpm test:e2e` runs twenty-nine paths end to end. A stranger with nothing but
 an email address signs in, finds an account that belongs to no building, sets
 one up — its apartments, its share register, its attributes — lands on the list
 of requirements that look like they apply, puts one on the calendar, and finds
@@ -197,8 +197,14 @@ its own conditions, and books like everything else. And a neighbour makes an
 account from an invitation link, without an email ever arriving. And the board
 sends the window guard notice to every apartment, one household answers, and
 closing the year out puts each apartment that never replied on the compliance
-calendar to be inspected — because silence is not a no. Nothing is faked — they read magic links out of `./.mail` the way a person
-reads them out of an inbox.
+calendar to be inspected — because silence is not a no. On top of those, a walk
+opens every section of both buildings from the navigation, follows the first
+record in each into its detail view, and puts a real file through the upload
+round trip — the plain question underneath all the others, which is whether a
+board member can open every part of this product and find something to act on.
+Nothing is faked — they read magic links out of `./.mail` the way a person
+reads them out of an inbox, and the uploaded file goes to storage and comes
+back.
 
 It builds the app and starts it, so the first run takes a minute. If Playwright
 cannot find a browser, point it at one:

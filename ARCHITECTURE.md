@@ -297,6 +297,8 @@ The persistent disclaimer is on every page and is not dismissible.
 | `tests/e2e/meetings.spec.ts`                          | Roster → quorum refusal → vote → minutes, in a real browser                                     |
 | `tests/e2e/tickets.spec.ts`                           | Report → refusal → determination → bill, in a real browser                                      |
 | `tests/e2e/sublets.spec.ts`                           | Cap refusal, then approval once a slot frees, in a browser                                      |
+| `tests/e2e/modules.spec.ts`                           | Every section opens, every record opens, and a file goes up and comes back                      |
+| `tests/arch/routes.test.ts`                           | Every URL the application mints is served by a route that exists                                |
 | `tests/e2e/duty.spec.ts`                              | Swap a week, log a summons, watch it name the right flat — and be asked which rota when two run |
 
 The tenancy suite has been mutation-tested: breaking unit scoping fails eight

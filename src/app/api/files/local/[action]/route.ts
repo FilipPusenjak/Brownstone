@@ -21,6 +21,19 @@ export const runtime = "nodejs";
  *
  * Refuses to run at all under the S3 driver, so a misconfigured production
  * cannot expose a filesystem endpoint that was only ever meant for a laptop.
+ *
+ * The `[action]` segment is what `signLocalUrl` writes — `/put` or `/get` — and
+ * it is part of the signed material, so a download link cannot be replayed as
+ * an upload. The handlers do not read it: each already knows which action it
+ * is and verifies the signature against that, so a request to `/get` with a PUT
+ * fails the signature rather than needing a second check to agree with.
+ *
+ * This directory did not exist until an end-to-end test put a real file through
+ * the round trip. The route sat at `/api/files/local`, the driver signed URLs
+ * at `/api/files/local/put`, and every upload and download on the development
+ * driver answered 404 — invisibly, because the unit tests assert the shape of
+ * the URL the driver builds and nothing had ever asked whether a route answered
+ * it.
  */
 
 function guardDriver(): NextResponse | null {

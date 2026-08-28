@@ -1250,3 +1250,55 @@ is read from there, with the documented field kept as a fallback. The bug was
 found by the test that founds two buildings under one name, which is the only
 reason it is not still there: without it the retry never ran and the second
 founder saw a crash.
+
+## Every module, actually usable
+
+A question worth asking out loud after nine modules: can a board member open
+every section of this product and find something to act on? Each module had a
+browser test driving it deeply, and each passed. None of them asked the plain
+question underneath, and the answer turned out to be no.
+
+**The filesystem storage driver's endpoints did not exist.** `signLocalUrl`
+mints `/api/files/local/put` and `/api/files/local/get`; the route handler sat
+at `/api/files/local`. Every upload and every download on the development
+driver answered 404, and had done for as long as the driver had existed —
+which is to say nobody had ever attached a certificate to an alteration or a
+repair on a laptop, and the README tells people to run exactly that
+configuration.
+
+Production was never affected: Blob and S3 sign URLs at the storage provider
+and never touch this route. That is precisely why it survived. The failure
+lived only where no test looked and no deployment ran.
+
+What let it hide is worth more than the fix. `tests/storage/drivers.test.ts`
+asserts what the driver _builds_ — that the local URL contains
+`/api/files/local/`, that the S3 one carries a signature — which is the right
+thing for that suite to assert and is structurally incapable of noticing this.
+A URL is a claim about the server, and only the server can settle it.
+`tests/arch/routes.test.ts` now resolves every URL the application mints
+against the App Router's directory layout, which is cheap, static, and about
+the one thing the driver tests cannot see.
+
+**So the audit is a test, not an exercise.** `tests/e2e/modules.spec.ts` reads
+the navigation off the shell rather than hard-coding paths — a module added
+later is walked without anybody remembering to add it — opens every section of
+both seeded buildings, follows the first record in each into its detail view,
+and asserts the same three things everywhere: the server did not error, the
+page says what it is, and it rendered a heading rather than resolving to
+nothing. Both buildings, because they are deliberately shaped differently, and
+a page that only works on one of them is a page that will not work on a co-op
+that just signed up.
+
+Two modules turned out to have no browser coverage at all despite being named
+in the product's own status table: filing an alteration, and recording the
+certificate of insurance that decides whether the work may start. Both have it
+now, along with a real file going up to storage and coming back down — the one
+path where the signing, the direct PUT and the document record all have to
+agree, and no unit test can see any of it.
+
+The first version of the walk was worth less than it looked: it took the first
+link inside `<main>` and gave up if it was not record-shaped, which on most
+list pages is the button that _creates_ a record. It silently skipped the
+alteration and booking detail views entirely. Checking that a test does the
+work it claims — by tracing what it visited, and by breaking pages to watch it
+fail by name — is the part that made it worth writing.
