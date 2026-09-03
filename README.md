@@ -162,6 +162,21 @@ db:deploy:ws` does the same over a WebSocket. It dry-runs by default, applies
 with `APPLY=1`, runs each migration in its own transaction, and fails loudly if
 a migration leaves a tenant table without a row-level security policy.
 
+**"First" means before the push, and the push is the deploy.** Vercel's
+production branch is the branch this is developed on, so a push ships
+immediately — there is no staging step in between to notice the schema is
+behind. A module whose migration is unapplied does not fail at boot, either:
+its tables were created by an earlier migration and only the new columns are
+missing, so the deployment goes green and the page throws the first time
+somebody opens it. That is how the bookings and annual notices migrations sat
+unapplied for a week while every deployment reported success.
+
+To check what a deployed database actually has rather than what it should:
+
+```bash
+DATABASE_OWNER_URL=<owner connection string> pnpm db:deploy:ws   # dry run lists what is pending
+```
+
 ### The browser tests
 
 `pnpm test:e2e` runs twenty-nine paths end to end. A stranger with nothing but
